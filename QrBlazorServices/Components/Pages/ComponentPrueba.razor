@@ -1,0 +1,59 @@
+﻿@page "/Prueba"
+@using System.Data
+
+<h3>ComponentPrueba</h3>
+
+@if (tablaDatos != null && tablaDatos.Count > 0)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                @foreach (var columna in columnas)
+                {
+                    <th>@columna</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var fila in tablaDatos)
+            {
+                <tr>
+                    @foreach (var valor in fila)
+                    {
+                        <td>@valor</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Cargando datos...</p>
+}
+
+@code {
+    private static AccesoDatos.AccesoDatosSoap _accesoDatos =
+        new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
+
+    private List<List<object>> tablaDatos;
+    private List<string> columnas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        DataTable prueba = await _accesoDatos.TraerTablaAsync("Carnet2", 18);
+
+        // Extraer columnas
+        columnas = prueba.Columns.Cast<DataColumn>()
+                                 .Select(col => col.ColumnName)
+                                 .ToList();
+
+        // Extraer filas
+        tablaDatos = new List<List<object>>();
+        foreach (DataRow row in prueba.Rows)
+        {
+            var fila = row.ItemArray.ToList();
+            tablaDatos.Add(fila);
+        }
+    }
+}
