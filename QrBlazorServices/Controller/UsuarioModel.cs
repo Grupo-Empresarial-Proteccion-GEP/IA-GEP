@@ -1,4 +1,4 @@
-﻿namespace QrBlazorServices.Controller
+﻿namespace QrBlazor.Controller
 {
     public class UsuarioModel
     {

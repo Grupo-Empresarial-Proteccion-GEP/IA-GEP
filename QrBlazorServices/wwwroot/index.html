@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QrBlazor</title>
+    <base href="/" />
+    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="QrBlazor.styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="https://unpkg.com/qr-code-styling/lib/qr-code-styling.js"></script>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+ window.descargarCarnet = (elementId, fileName) => {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            alert("No se encontró el carnet para descargar.");
+            return;
+        }
+
+        html2canvas(element, {
+            backgroundColor: "#000000",
+            scale: 1, // ya lo definimos en px, no hace falta escalar
+            width: 326,
+            height: 205
+        }).then(canvas => {
+            const link = document.createElement("a");
+            link.download = fileName + ".png";
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        }).catch(error => {
+            alert("Error al generar imagen: " + error);
+            console.error(error);
+        });
+    };
+    </script>
+
+
+
+    <script>
+        window.descargarCarnetComoPDF = async function () {
+            const element = document.getElementById("carnetContainer");
+            if (!element) return;
+
+            const canvas = await html2canvas(element, {
+                scale: 2 // mejora la resolución del renderizado
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+
+            // Crear PDF con tamaño físico exacto en cm
+            const pdf = new jspdf.jsPDF({
+                orientation: "landscape",
+                unit: "mm",
+                format: [86, 54]  // 8.6 cm x 5.4 cm en milímetros
+            });
+
+            pdf.addImage(imgData, "PNG", 0, 0, 86, 54);
+            pdf.save("Carnet.pdf");
+        };
+    </script>
+
+
+
+
+
+</body>
+
+</html>
