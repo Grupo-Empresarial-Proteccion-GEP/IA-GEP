@@ -1,5 +1,7 @@
+using AccesoDatos;
 using QrBlazorServices.Components;
 using Radzen;
+using System.ServiceModel;
 
 namespace QrBlazorServices
 {
@@ -23,6 +25,12 @@ namespace QrBlazorServices
             builder.Services.AddRazorPages();
 
             builder.Services.AddHttpClient();
+
+            builder.Services.AddScoped<AccesoDatos.AccesoDatosSoapClient>(sp =>
+    new AccesoDatos.AccesoDatosSoapClient(
+        AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12));
+
+
 
 
             var app = builder.Build();

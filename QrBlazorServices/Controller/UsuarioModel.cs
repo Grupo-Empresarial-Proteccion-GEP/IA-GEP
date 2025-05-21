@@ -1,12 +1,12 @@
-﻿namespace QrBlazor.Controller
+﻿namespace QrBlazorServices.Controller
 {
-    public class UsuarioModel
+    public class Usuario
     {
-        public string Nombre { get; set; }
-        public string Documento { get; set; }
+        public int Id { get; set; }
+        public string NombreUsuario { get; set; }
+        public string Area { get; set; }
         public string Cargo { get; set; }
-        public string Correo { get; set; }
-        public string Telefono { get; set; }
-
+        public string Documento { get; set; }
+        public string Clave { get; set; }
     }
 }

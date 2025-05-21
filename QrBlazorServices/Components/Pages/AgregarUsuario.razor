@@ -1,0 +1,128 @@
+﻿@page "/agregar"
+@using AccesoDatos
+@inject AccesoDatosSoapClient ServicioUsuario
+@using QrBlazorServices.Controller
+@using System.Data;
+@rendermode InteractiveServer
+
+
+
+<h3>AGREGAR USUARIO</h3>
+
+<EditForm Model="@usuario" OnSubmit="GuardarUsuario" FormName="formAgregarUsuario">
+
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Nombre de Usuario:</label>
+        <InputText @bind-Value="usuario.NombreUsuario" class="form-control" />
+    </div>
+    <div>
+        <label>Área:</label>
+        <InputText @bind-Value="usuario.Area" class="form-control" />
+    </div>
+    <div>
+        <label>Cargo:</label>
+        <InputText @bind-Value="usuario.Cargo" class="form-control" />
+    </div>
+    <div>
+        <label>Documento:</label>
+        <InputText @bind-Value="usuario.Documento" class="form-control" />
+    </div>
+    <div>
+        <label>Clave:</label>
+        <InputText @bind-Value="usuario.Clave" type="password" class="form-control" />
+    </div>
+
+    <br />
+    <button type="submit" class="btn btn-primary">Guardar</button>
+</EditForm>
+
+
+@if (mensaje != null)
+{
+    <div class="alert alert-success">@mensaje</div>
+}
+
+<p>@mensaje</p>
+
+
+@code {
+    private Usuario usuario = new Usuario();
+    private string mensaje;
+
+    private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(
+        AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
+
+
+    private string HashPassword(string password)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var bytes = System.Text.Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
+
+    private async Task GuardarUsuario()
+
+    {
+        try
+        {
+            // Aquí puedes dejar un mensaje de debug para verificar datos
+            mensaje = $"Guardando: {usuario.NombreUsuario}, {usuario.Area}, {usuario.Cargo}, {usuario.Documento}, {usuario.Clave}";
+
+            DataTable tablaUsuario = new DataTable("Usuarios");
+            tablaUsuario.Columns.Add("Id", typeof(int));
+            tablaUsuario.Columns.Add("NombreUsuario", typeof(string));
+            tablaUsuario.Columns.Add("Area", typeof(string));
+            tablaUsuario.Columns.Add("Cargo", typeof(string));
+            tablaUsuario.Columns.Add("Documento", typeof(string));
+            tablaUsuario.Columns.Add("Clave", typeof(string));
+
+            DataRow fila = tablaUsuario.NewRow();
+
+            fila["Id"] = 0;
+            fila["NombreUsuario"] = usuario.NombreUsuario ?? "";
+            fila["Area"] = usuario.Area ?? "";
+            fila["Cargo"] = usuario.Cargo ?? "";
+            fila["Documento"] = string.IsNullOrWhiteSpace(usuario.Documento) ? DBNull.Value : usuario.Documento;
+            
+            fila["Clave"] = string.IsNullOrWhiteSpace(usuario.Clave)
+            ? ""
+            : HashPassword(usuario.Clave);
+
+
+            tablaUsuario.Rows.Add(fila);
+
+            await _servicioUsuario.InsertarTablaAsync(tablaUsuario, "Usuarios", 18);
+
+            mensaje = "Usuario guardado exitosamente.";
+
+            usuario = new Usuario(); // resetear formulario
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error: {ex.Message}";
+        }
+    }
+
+
+    // Método para convertir DataTable a XML con esquema
+    private string DataTableToXml(DataTable dt)
+    {
+        using var sw = new StringWriter();
+        dt.WriteXml(sw, XmlWriteMode.WriteSchema);
+        return sw.ToString();
+    }
+
+    public class Usuario
+    {
+        public string NombreUsuario { get; set; } = string.Empty;
+        public string Area { get; set; } = string.Empty;
+        public string Cargo { get; set; } = string.Empty;
+        public string Documento { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
+    }
+
+}
