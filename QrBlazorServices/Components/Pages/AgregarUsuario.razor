@@ -1,51 +1,67 @@
 ﻿@page "/agregar"
 @using AccesoDatos
 @inject AccesoDatosSoapClient ServicioUsuario
-@using QrBlazorServices.Controller
 @using System.Data;
 @rendermode InteractiveServer
 
 
+    <head>
+        <link href="css/Style.css" rel="stylesheet" />
+    </head>
 
-<h3>AGREGAR USUARIO</h3>
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+        <div class="col-md-6">
+            <fieldset class="fieldset-custom">
+                <legend class="legend">Registro de Usuario</legend>
 
 <EditForm Model="@usuario" OnSubmit="GuardarUsuario" FormName="formAgregarUsuario">
 
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div>
-        <label>Nombre de Usuario:</label>
-        <InputText @bind-Value="usuario.NombreUsuario" class="form-control" />
-    </div>
-    <div>
-        <label>Área:</label>
-        <InputText @bind-Value="usuario.Area" class="form-control" />
-    </div>
-    <div>
-        <label>Cargo:</label>
-        <InputText @bind-Value="usuario.Cargo" class="form-control" />
-    </div>
-    <div>
-        <label>Documento:</label>
-        <InputText @bind-Value="usuario.Documento" class="form-control" />
-    </div>
-    <div>
-        <label>Clave:</label>
-        <InputText @bind-Value="usuario.Clave" type="password" class="form-control" />
-    </div>
+                <div class="form-group">
+                    <label for="NombreUsuario">Nombre de Usuario:</label>
+                    <InputText id="NombreUsuario" @bind-Value="usuario.NombreUsuario" class="form-control" placeholder="Nombre de Usuario" />
+                </div>
 
-    <br />
-    <button type="submit" class="btn btn-primary">Guardar</button>
+                <div class="form-group">
+                    <label for="Area">Area:</label>
+                    <InputText id="Area" @bind-Value="usuario.Area" class="form-control" placeholder="Area" />
+                </div>
+
+                <div class="form-group">
+                    <label for="Cargo">Cargo:</label>
+                    <InputText id="Cargo" @bind-Value="usuario.Cargo" class="form-control" placeholder="Cargo" />
+                </div>
+
+                <div class="form-group">
+                    <label for="Documento">Documento:</label>
+                    <InputText id="Documento" @bind-Value="usuario.Documento" class="form-control" placeholder="Documento" />
+                </div>
+
+                <div class="form-group">
+                    <label for="Clave">Clave:</label>
+                    <InputText id="Clave" @bind-Value="usuario.Clave" type="password" class="form-control" placeholder="Clave" />
+                </div>
+
+                <div class="form-group d-flex" style="gap: 10px;">
+                    <button type="submit" class="btn btn-success mt-2 btn-custom">Registrar usuario</button>
+              
+                </div>
+
+                    
 </EditForm>
-
+             
+        </fieldset>
+        </div>
+    </div>
+    
 
 @if (mensaje != null)
 {
     <div class="alert alert-success">@mensaje</div>
 }
 
-<p>@mensaje</p>
 
 
 @code {
@@ -70,7 +86,7 @@
         try
         {
             // Aquí puedes dejar un mensaje de debug para verificar datos
-            mensaje = $"Guardando: {usuario.NombreUsuario}, {usuario.Area}, {usuario.Cargo}, {usuario.Documento}, {usuario.Clave}";
+            //mensaje = $"Guardando: {usuario.NombreUsuario}, {usuario.Area}, {usuario.Cargo}, {usuario.Documento}, {usuario.Clave}";
 
             DataTable tablaUsuario = new DataTable("Usuarios");
             tablaUsuario.Columns.Add("Id", typeof(int));
@@ -97,7 +113,7 @@
 
             await _servicioUsuario.InsertarTablaAsync(tablaUsuario, "Usuarios", 18);
 
-            mensaje = "Usuario guardado exitosamente.";
+            //mensaje = "Usuario guardado exitosamente.";
 
             usuario = new Usuario(); // resetear formulario
         }

@@ -30,6 +30,11 @@ namespace QrBlazorServices
     new AccesoDatos.AccesoDatosSoapClient(
         AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12));
 
+            // Registrar servicios
+            builder.Services.AddScoped<ChatService>();
+            
+            builder.Services.AddScoped<GeminiService>();
+            
 
 
 

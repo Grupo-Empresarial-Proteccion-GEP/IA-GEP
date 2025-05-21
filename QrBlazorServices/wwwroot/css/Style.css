@@ -82,6 +82,12 @@ body {
     text-transform: uppercase;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
+
+    /* 🛠️ NUEVOS ESTILOS PARA EVITAR DESBORDAMIENTO */
+    white-space: normal; /* Permite saltos de línea */
+    word-wrap: break-word; /* Rompe las palabras largas si es necesario */
+    text-align: center; /* Centra el texto */
+    padding: 0.5rem 1rem; /* Asegura un espacio adecuado */
 }
 
     .btn-custom:hover {

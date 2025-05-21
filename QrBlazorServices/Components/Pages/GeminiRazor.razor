@@ -1,0 +1,878 @@
+﻿@page "/GR"
+@inject GeminiService GeminiService
+@using static System.Net.WebRequestMethods;
+@inject HttpClient Http
+@using System.Text.Json
+@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
+@using Microsoft.AspNetCore.Hosting
+@using QrBlazorServices.Helpers
+@inject ChatService ChatService
+@using System.Text.RegularExpressions;
+@rendermode InteractiveServer
+
+
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
+<EditForm Model="@this" OnValidSubmit="SendToGemini">
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <!-- Centrar horizontalmente -->
+        <!-- Fila 1: Datos Receptor / Datos Emisor -->
+        <div class="row">
+            <div class="col-md-6">
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Datos del Receptor</legend>
+                    <div class="form-group">
+                        <label for="Receptor">Receptor</label>
+                        <InputText id="Receptor" @bind-Value="Receptor" class="form-control" placeholder="Nombre del Receptor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Documento_R">Tipo de documento</label>
+                        <select id="Documento_R" @bind="Documento_R" class="form-control">
+                            <option value="">Seleccione</option>
+                            <option value="CEDULA DE CIUDADANÍA">Cedula De Ciudadanía</option>
+                            <option value="TARJETA DE IDENTIDAD">Tarjeta De Identidad</option>
+                            <option value="PEP">PEP</option>
+                            <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Por Protección Temporal</option>
+                            <option value="NIT">NIT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="NumeroDoc_R">Numero de documento</label>
+                        <InputText id="NumeroDoc_R" @bind-value="NumeroDoc_R" class="form-control" placeholder="Número Documento Receptor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Direccion_R">Dirección</label>
+                        <InputText id="Direccion_R" @bind-Value="Direccion_R" class="form-control" placeholder="Dirección Receptor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Telefono_R">Teléfono</label>
+                        <InputText id="Telefono_R" @bind-Value="Telefono_R" class="form-control" placeholder="Teléfono Receptor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Correo_R">Correo</label>
+                        <InputText id="Correo_R" @bind-Value="Correo_R" class="form-control" placeholder="Correo Receptor" />
+                    </div>
+                </fieldset>
+            </div>
+            <div class="col-md-6">
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Datos del Emisor</legend>
+                    <div class="form-group">
+                        <label for="Emisor">Emisor</label>
+                        <InputText id="Emisor" @bind-Value="Emisor" class="form-control" placeholder="Nombre del Emisor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Documento_E">Tipo de documento</label>
+                        <select id="Documento_E" @bind="Documento_E" class="form-control">
+                            <option value="">Seleccione</option>
+                            <option value="CEDULA DE CIUDADANÍA">Cedula De Ciudadanía</option>
+                            <option value="TARJETA DE IDENTIDAD">Tarjeta De Identidad</option>
+                            <option value="PEP">PEP</option>
+                            <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Por Protección Temporal</option>
+                            <option value="NIT">NIT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="NumeroDoc_E">Numero de documento</label>
+                        <InputText id="NumeroDoc_E" @bind-Value="NumeroDoc_E" class="form-control" placeholder="Número Documento Emisor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Direccion_E">Dirección</label>
+                        <InputText id="Direccion_E" @bind-Value="Direccion_E" class="form-control" placeholder="Dirección Emisor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Telefono_E">Teléfono</label>
+                        <InputText id="Telefono_E" @bind-Value="Telefono_E" class="form-control" placeholder="Teléfono Emisor" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Correo_E">Correo</label>
+                        <InputText id="Correo_E" @bind-Value="Correo_E" class="form-control" placeholder="Correo Emisor" />
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+
+        <!-- Fila 2: Información general / Detalles adicionales -->
+        <div class="row">
+            <div class="col-md-6">
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Información General</legend>
+                    <div class="form-group">
+                        <label for="TipoDocumento">Tipo de documento</label>
+                        <select id="TipoDocumento" @bind="TipoDocumento" class="form-control">
+                            <option value="">Seleccione</option>
+                            <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
+                            <option value="CARTA LABORAL">Carta Laboral</option>
+                            <option value="CONSTANCIA">Constancia</option>
+                            <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
+                            <option value="SOLICITUD GENERAL">Solicitud General</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="Ciudad">Ciudad</label>
+                        <InputText id="Ciudad" @bind-Value="Ciudad" class="form-control" placeholder="Ciudad" />
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="col-md-6">
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Detalles adicionales</legend>
+                    <div class="form-group">
+                        <label for="Asunto">Asunto</label>
+                        <InputText id="Asunto" @bind-Value="Asunto" class="form-control" placeholder="Asunto" />
+                    </div>
+                    <div class="form-group">
+                        <label for="UserPrompt">Descripción adicional (opcional)</label>
+                        <InputTextArea id="UserPrompt" @bind-Value="UserPrompt" class="form-control" placeholder="Describe algún detalle adicional..." />
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+
+        <!-- Fila 3: Subir archivo -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <fieldset class="fieldset-custom ">
+                    <legend class="legend">Subir archivo</legend>
+                    <div class="form-group">
+                        <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control" disabled=" @cargantwo" />
+
+                            <div class="form-group d-flex" style="gap: 20px;">
+
+                        <button @onclick="EnviarYLimpiarDespues" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargando">
+                            @(cargando ? "Generando documento..." : "Generar Documento Con IA")
+                        </button>
+
+
+                        <button @onclick="EnviarYLimpiarDespues2" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargantwo">
+                            @(cargantwo ? "Analizando..." : "Analizar Documento")
+                        </button>
+                    </div>
+                        </div>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
+    {
+
+         <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Sugerencias Generadas</legend>
+                    <div class="form-group">
+                        <p><strong>Selecciona la(s) sugerencia(s) que prefieras:</strong></p>
+                        <ul class="list-unstyled">
+                            @foreach (var opcion in opcionesGeneradas)
+                            {
+                                  <div class="container mt-4">
+                                              <li class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                    @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
+                                    <label class="form-check-label">
+                                        @opcion
+                                    </label>
+                                </li>
+                        </div>
+                            }
+                        </ul>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+        </div>
+    }
+
+
+
+
+</EditForm>
+
+@code {
+    private string userInput = "";
+
+    private async Task EnviarMensaje()
+    {
+        if (!string.IsNullOrWhiteSpace(userInput))
+        {
+            await ChatService.SendMessageAsync(userInput);
+            userInput = "";
+        }
+    }
+
+    private async Task CheckEnter(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await EnviarMensaje();
+    }
+}
+
+
+
+
+
+
+@if (cargantwo)
+{
+    <div class="container mt-4">
+    <div style="text-align:center; margin-top: 20px;">
+        <div class="spinner"></div>
+        <p><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    </div>
+    </div>
+}
+
+@if (cargando)
+{
+    <div style="text-align:center; margin-top: 20px;">
+        <div class="spinner"></div>
+        <p><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    </div>
+}
+else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
+{
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Detalles de la Respuesta</legend>
+                    <div class="form-group">
+                        <p><strong>Respuesta generada:</strong></p>
+                        <div class="resultado-html form-control mb-3"
+                             style="height: 500px; overflow: auto; white-space: normal; word-wrap: break-word;">
+                            @((MarkupString)ResponseText)
+                        </div>
+
+                    </div>
+
+                    <div class="form-group d-flex" style="gap: 20px;">
+                        <button @onclick="DescargarDocSimple" class="btn btn-primary mt-2 btn-custom" type="button">
+                            Descargar como Word
+                        </button>
+                        <button @onclick="ToggleHistorialVisibility" class="btn btn-primary mt-2 btn-custom" type="button">
+                            Mostrar/Ocultar Historial
+                        </button>
+                    </div>
+
+
+                    <div id="historial-container" class="historial" style="@HistorialStyle">
+                        <h3>Historial de Chat:</h3>
+                        <div>
+                            @foreach (var mensaje in ChatService.ChatHistory)
+                            {
+                                <div class="p-4 border rounded bg-white shadow mb-4">
+                                    @if (mensaje.Role == "user")
+                                    {
+                                        <p class="font-semibold text-blue-600">🧑‍💻 Tú:</p>
+                                        <p>@LimpiarInstrucciones(mensaje.Content)</p>
+                                    }
+                                    else if (mensaje.Role == "assistant")
+                                    {
+                                        <p class="font-semibold text-green-600">🤖 Asistente:</p>
+                                        @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+
+
+
+
+@code {
+    private bool isHistorialVisible = false;
+    private string HistorialStyle => isHistorialVisible ? "display: block;" : "display: none;";
+
+    private void ToggleHistorialVisibility()
+    {
+        isHistorialVisible = !isHistorialVisible;
+    }
+}
+
+<!-- @if (!string.IsNullOrEmpty(ResponseText))
+{
+    <hr />
+    <h3>Respuesta de Gemini</h3>
+    <div style="border:1px solid black; padding:10px;" @onclick="ToggleHtml">
+        @if (mostrarHtml)
+        {
+            @((MarkupString)ResponseText)
+        }
+        else
+        {
+            <pre>@ResponseText</pre>
+        }
+    </div>
+} 
+}
+@if (!string.IsNullOrEmpty(fileContent))
+{
+    <p>Contenido del archivo:</p>
+    <pre>@fileContent</pre>
+}-->
+
+<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+<!-- /////////////////////////////////////////////////AQUII/////////////////////////////////// -->
+
+    @foreach (var item in opcionesCheckbox)
+{
+    <div>
+        <input type="checkbox" @bind="item.Seleccionada" />
+        @item.Texto
+    </div>
+}
+
+<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+
+@code {
+
+    private string? Ciudad;
+    private string? Receptor;
+    private string? Documento_R;
+    private string? NumeroDoc_R;
+    private string? Direccion_R;
+    private string? Telefono_R;
+    private string? Correo_R;
+
+    private string? Emisor;
+    private string? Documento_E;
+    private string? NumeroDoc_E;
+    private string? Direccion_E;
+    private string? Telefono_E;
+    private string? Correo_E;
+    private string? Asunto;
+    private string? TipoDocumento;
+    private string? UserPrompt;
+    private string? ResponseText;
+    private bool mostrarHtml = true;
+    private bool isLoading = false;
+    private bool cargando = false;
+
+
+    private IBrowserFile uploadedFile;
+    private string uploadedFileContent = string.Empty;
+    int intentos = 0;
+    int maxIntentos = 5;
+    int espera = 2000; // milisegundos
+    private string fileContent;
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private string inputFileKey = Guid.NewGuid().ToString();
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private List<string> opcionesGeneradas = new();
+    private List<string> opcionesSeleccionadas = new();
+    private bool cargantwo = false;
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private List<OpcionCheckbox> opcionesCheckbox = new();
+    private string contenidoAuxiliar = "";
+    private bool mostrarSugerencias = true;
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task EnviarYLimpiarDespues()
+    {
+        cargando = true;
+
+
+        // 1. Ejecuta tu función principal
+        await SendToGemini();
+
+
+        // 2. Luego limpia los campos (dejándolos visualmente en blanco)
+        Ciudad = "";
+        Receptor = "";
+        Documento_R = "";
+        NumeroDoc_R = "";
+        Direccion_R = "";
+        Telefono_R = "";
+        Correo_R = "";
+
+        Emisor = "";
+        Documento_E = "";
+        NumeroDoc_E = "";
+        Direccion_E = "";
+        Telefono_E = "";
+        Correo_E = "";
+
+        Asunto = "";
+        TipoDocumento = "";
+        UserPrompt = "";
+
+        uploadedFile = null;
+        uploadedFileContent = "";
+        // ResponseText NO se limpia si quieres mostrar el resultado
+
+        contenidoAuxiliar = "";
+
+        cargando = false;
+
+        // 3. Fuerza actualización de UI
+        StateHasChanged();
+
+
+    }
+
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private async Task EnviarYLimpiarDespues2()
+    {
+        cargantwo = true; // Activar el spinner
+
+        await SendResumenDesdeArchivo();
+
+        // 2. Luego limpia los campos (dejándolos visualmente en blanco)
+        Ciudad = "";
+        Receptor = "";
+        Documento_R = "";
+        NumeroDoc_R = "";
+        Direccion_R = "";
+        Telefono_R = "";
+        Correo_R = "";
+
+        Emisor = "";
+        Documento_E = "";
+        NumeroDoc_E = "";
+        Direccion_E = "";
+        Telefono_E = "";
+        Correo_E = "";
+
+        Asunto = "";
+        TipoDocumento = "";
+        UserPrompt = "";
+
+        uploadedFile = null;
+        uploadedFileContent = "";
+        // ResponseText NO se limpia si quieres mostrar el resultado
+
+        cargantwo = false;
+
+        // 3. Fuerza actualización de UI
+        StateHasChanged();
+    }
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+
+    private string LimpiarInstrucciones(string texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
+
+        // Dividir en líneas
+        var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+        var instrucciones = new[]
+        {
+        "usa etiquetas como",
+        "genera la respuesta como html",
+        "formatea como html",
+        "no uses markdown",
+        "responde en formato html",
+        "por favor responde en html",
+        "Instrucciones del usuario:",
+        "Archivo Cargado:"
+
+    };
+
+        // Filtrar líneas que parecen instrucciones
+        var contenidoFiltrado = lineas
+            .Where(linea => !instrucciones.Any(instr => linea.ToLower().Contains(instr)))
+            .ToList();
+
+        return string.Join("\n", contenidoFiltrado).Trim();
+    }
+
+    private string ExtraerContenidoHtml(string respuesta)
+    {
+        if (string.IsNullOrEmpty(respuesta)) return string.Empty;
+
+        var inicio = respuesta.IndexOf("<body>");
+        var fin = respuesta.IndexOf("</body>");
+        if (inicio != -1 && fin != -1)
+        {
+            return respuesta.Substring(inicio + 6, fin - inicio - 6); // 6 = length de "<body>"
+        }
+
+        return respuesta;
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- ////////////////////////////////////////////////AQUIII//////////////////////////////////// -->
+
+    public class OpcionCheckbox
+    {
+        public string Texto { get; set; }
+        public bool Seleccionada { get; set; }
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    void OnCheckboxChanged(string opcion, bool isChecked)
+    {
+        // Agrega o elimina la opción seleccionada de la lista
+        if (isChecked)
+        {
+            if (!opcionesSeleccionadas.Contains(opcion))
+                opcionesSeleccionadas.Add(opcion);
+        }
+        else
+        {
+            if (opcionesSeleccionadas.Contains(opcion))
+                opcionesSeleccionadas.Remove(opcion);
+        }
+
+        // Después de actualizar la selección, guardamos las opciones seleccionadas
+        GuardarSeleccionadas();
+    }
+
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private void GuardarSeleccionadas()
+    {
+        // Unimos las opciones seleccionadas en un solo string
+        var seleccionadas = opcionesSeleccionadas;
+
+        // Si hay opciones seleccionadas, formateamos el texto
+        if (seleccionadas.Any())
+        {
+            contenidoAuxiliar = "\n" + string.Join("\n", seleccionadas);
+        }
+        else
+        {
+            contenidoAuxiliar = "";
+        }
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// --> 
+    public static string EliminarDuplicadosConCheckboxes(string texto)
+    {
+        // Expresión regular para capturar solo las opciones numeradas dentro de <li> o <p>
+        var matches = Regex.Matches(texto, @"<li>\s*(\d+\.)\s(.*?)</li>|<p>\s*(\d+\.)\s(.*?)</p>", RegexOptions.IgnoreCase);
+
+        var únicas = new HashSet<string>();
+        var resultado = new List<string>();
+
+        // Extraer las opciones numeradas, eliminar duplicados y generar checkboxes
+        foreach (Match match in matches)
+        {
+            string opcion = match.Groups[2].Value.Trim();
+            if (!string.IsNullOrEmpty(opcion) && !únicas.Contains(opcion))
+            {
+                únicas.Add(opcion);
+
+                // Crear checkbox HTML para cada opción
+                string checkboxHtml = $"<input type='checkbox' id='{opcion.Replace(" ", "_")}' name='opcion' value='{opcion}'><label for='{opcion.Replace(" ", "_")}'> {opcion}</label><br>";
+                resultado.Add(checkboxHtml);
+            }
+        }
+
+        // Unir las opciones con checkboxes en un solo string HTML
+        return string.Join("\n", resultado);
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+
+        // Pequeño retraso para que Blazor tenga tiempo de renderizar
+        await Task.Delay(100);
+
+
+        var file = e.File;
+        var ext = Path.GetExtension(file.Name).ToLower();
+
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 10_000_000).CopyToAsync(ms);
+
+        if (ext == ".pdf")
+        {
+            fileContent = FileParser.ExtractTextFromPdf(ms);
+        }
+        else if (ext == ".docx")
+        {
+            fileContent = FileParser.ExtractTextFromDocx(ms);
+        }
+        else if (ext == ".txt")
+        {
+            ms.Position = 0;
+            using var reader = new StreamReader(ms);
+            fileContent = await reader.ReadToEndAsync();
+        }
+
+    }
+        <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task SendResumenDesdeArchivo()
+    {
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(fileContent))
+            {
+                ResponseText = "<p><strong>No se ha podido leer el archivo.</strong></p>";
+                return;
+            }
+
+            string promptResumen = $@"
+Este es el contenido de un archivo cargado. Por favor, analiza el texto y redacta <strong>exactamente cuatro recomendaciones distintas
+para continuar con el documento.
+
+Las recomendaciones deben redactarse exclusivamente en formato de enumeración ordinal o cardinal, no con viñetas. Cada recomendación debe estar
+claramente diferenciada dentro del texto. Además, cada una debe ser breve y directa (no más de 4 o 5 líneas).
+
+Usa etiquetas HTML como <p>, <strong> o <em>, pero <strong>no uses</strong> <ul>, <ol> ni <li>, y no uses Markdown.
+
+Contenido del documento:
+{fileContent}";
+
+
+            // Enviar la solicitud para obtener la respuesta
+            ResponseText = await ChatService.SendMessageAsync(promptResumen);
+            mostrarHtml = false;
+
+            string textoSinDuplicados = EliminarDuplicadosConCheckboxes(ResponseText);
+
+            // Extraer todas las frases entre <p> o <li> o líneas separadas manualmente
+            var matches = Regex.Matches(ResponseText, "<li>(.*?)</li>|<p>(.*?)</p>", RegexOptions.IgnoreCase);
+
+            // Unir todos los grupos y limpiar etiquetas HTML adicionales
+            opcionesGeneradas = matches
+                .Select(m => string.IsNullOrEmpty(m.Groups[1].Value) ? m.Groups[2].Value : m.Groups[1].Value)
+                .Select(o => Regex.Replace(o, "<.*?>", "").Trim()) // elimina etiquetas HTML
+                .Distinct() // evita duplicados
+                .ToList();
+
+
+        }
+        catch (Exception ex)
+        {
+            ResponseText = $"<p><strong>Ocurrió un error:</strong> {ex.Message}</p>";
+        }
+
+        finally
+        {
+            cargantwo = false;
+            // 🔄 Resetear el input después de generar las opciones y antes del siguiente render
+            inputFileKey = Guid.NewGuid().ToString();
+            mostrarSugerencias = true;
+
+        }
+
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- /////////////////////////////////////AQUIII/////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private string textoParcial = "";
+
+    private async Task SimularEscritura(string textoCompleto)
+    {
+        textoParcial = "";
+        mostrarHtml = true;
+
+        foreach (char letra in textoCompleto)
+        {
+            textoParcial += letra;
+            StateHasChanged();
+            await Task.Delay(1); // Puedes ajustar la velocidad aquí
+        }
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+
+    private async Task SendToGemini()
+    {
+        cargando = true;
+
+        var tieneArchivo = !string.IsNullOrWhiteSpace(fileContent);
+        var datosCompletos = !string.IsNullOrWhiteSpace(Ciudad)
+        || !string.IsNullOrWhiteSpace(Receptor)
+        || !string.IsNullOrWhiteSpace(Direccion_R)
+        || !string.IsNullOrWhiteSpace(Documento_R)
+        || !string.IsNullOrWhiteSpace(NumeroDoc_R)
+        || !string.IsNullOrWhiteSpace(Telefono_R)
+        || !string.IsNullOrWhiteSpace(Correo_R)
+        || !string.IsNullOrWhiteSpace(Emisor)
+        || !string.IsNullOrWhiteSpace(Direccion_E)
+        || !string.IsNullOrWhiteSpace(Documento_E)
+        || !string.IsNullOrWhiteSpace(NumeroDoc_E)
+        || !string.IsNullOrWhiteSpace(Telefono_E)
+        || !string.IsNullOrWhiteSpace(Correo_E)
+        || !string.IsNullOrWhiteSpace(Asunto);
+
+        string opcionesTexto = string.Join("\n", opcionesSeleccionadas);
+
+        string promptFinal;
+
+        if (datosCompletos)
+        {
+            promptFinal = $@"
+Redacta un documento formalsegun su tipo: {TipoDocumento} y teniendo en cuenta la informacion adicional:{UserPrompt} con la siguiente información:
+Ciudad: {Ciudad}
+
+Fecha: {DateTime.Now:dd 'de' MMMM 'del' yyyy}
+Nombre del receptor: {Receptor}
+Dirección receptor: {Direccion_R}
+Documento receptor: {Documento_R}
+Número Documento receptor: {NumeroDoc_R}
+Teléfono receptor: {Telefono_R}
+Correo receptor: {Correo_R}
+
+Nombre del emisor: {Emisor}
+Dirección emisor: {Direccion_E}
+Documento emisor: {Documento_E}
+Número Documento emisor: {NumeroDoc_E}
+Teléfono emisor: {Telefono_E}
+Correo emisor: {Correo_E}
+
+Asunto: {Asunto}
+
+{contenidoAuxiliar}
+
+contenido documento {fileContent}
+
+Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
+        }
+        else
+        {
+            // Si no hay datos completos, también puedes asignar un valor a promptFinal
+            var contenidoAdicional = "";
+
+            if (!string.IsNullOrWhiteSpace(UserPrompt))
+                contenidoAdicional += $"Instrucciones del usuario: {UserPrompt}\n";
+
+           // if (!string.IsNullOrWhiteSpace(UserPrompt))
+             //   contenidoAdicional += $"Archivo Cargado: {fileContent}\n";
+
+
+            promptFinal = $@"
+{contenidoAdicional}
+Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
+
+        }
+
+        if (!string.IsNullOrWhiteSpace(contenidoAuxiliar))        
+        {
+        var contenidoAdicional = "";
+        contenidoAdicional += $"Sugerencia del usuario: \n{contenidoAuxiliar}\n";
+
+            promptFinal = $@"
+        {contenidoAdicional}
+        Por favor genera el documento en base a la sugerencia seleccionada {contenidoAuxiliar} 
+        como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
+        }
+
+        
+        try
+        {
+            int intentos = 0;
+            int maxIntentos = 5;
+            int esperaMs = 2000; // 2 segundos
+
+            while (intentos < maxIntentos)
+            {
+                try
+                {
+                    ResponseText = await ChatService.SendMessageAsync(promptFinal);
+                    break;
+
+                }
+                catch (HttpRequestException ex)
+                {
+                    if (ex.Message.Contains("503"))
+                    {
+                        intentos++;
+                        if (intentos == maxIntentos)
+                        {
+                            ResponseText = "El servicio de IA está sobrecargado. Intenta nuevamente más tarde.";
+                            break;
+                        }
+
+                        await Task.Delay(esperaMs);
+                        esperaMs *= 2; // backoff exponencial
+                    }
+                    else
+                    {
+                        ResponseText = $"Se produjo un error inesperado: {ex.Message}";
+                        break;
+                    }
+                }
+            }
+            mostrarHtml = true;
+        }
+        catch (Exception ex)
+        {
+            ResponseText = $"<p><strong>Ocurrió un error:</strong> {ex.Message}</p>";
+        }
+        finally
+        {
+            cargando = false;
+            mostrarSugerencias = false;
+  
+        }
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+
+    private IJSObjectReference? moduloJS;
+    private bool jsListo = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Carga el módulo JS desde wwwroot/js/custom.js
+            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/custom.js");
+            jsListo = true;
+        }
+    }
+
+    private async Task DescargarDocSimple()
+    {
+        if (jsListo && moduloJS is not null)
+        {
+            await moduloJS.InvokeVoidAsync("descargarDocDesdeTextoPlano", ResponseText);
+        }
+    }
+}
+
+ 
