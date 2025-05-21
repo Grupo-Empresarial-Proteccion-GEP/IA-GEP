@@ -34,7 +34,12 @@ namespace QrBlazorServices
             builder.Services.AddScoped<ChatService>();
             
             builder.Services.AddScoped<GeminiService>();
-            
+
+            builder.Services.AddServerSideBlazor()
+                .AddCircuitOptions(options =>
+                {
+                    options.DetailedErrors = true;
+                });
 
 
 

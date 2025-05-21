@@ -1,0 +1,425 @@
+﻿@page "/generate"
+@using QRCoder
+@using System.Drawing
+@using QRCoder;
+@using System.Drawing;
+@using System.Drawing.Imaging;
+@using System.IO;
+@using System.Data.SqlClient;
+@inject HttpClient Http
+@using QrBlazorServices.Controllers
+@inject IJSRuntime JSRuntime
+
+@rendermode InteractiveServer
+
+
+<script src="js/Loader.js"></script>
+
+<h3>Generador de Contacto QR</h3>
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
+<div class="container d-flex justify-content-between align-items-start" style="min-height: 70vh;">
+    <!-- Bloque del formulario -->
+    <div class="col-md-5 d-flex flex-column justify-content-center">
+        <fieldset class="fieldset-custom">
+            <legend class="legend">Generador De VCARD Qr</legend>
+
+            <div class="form-group">
+
+                <label>Buscar usuario:</label>
+                <input class="form-control" @bind="nombreBuscado" placeholder="Escribe el documento" />
+
+                <label>Nombre completo:</label>
+                <input class="form-control @(nombreInvalido ? "is-invalid" : "")" @bind="Nombre" placeholder="Nombre completo" />
+
+                <label>Documento:</label>
+                <input class="form-control @(documentoInvalido ? "is-invalid" : "")" @bind="Documento" placeholder="Documento" />
+
+                <label>Cargo:</label>
+                <input class="form-control @(cargoInvalido ? "is-invalid" : "")" @bind="Cargo" placeholder="Cargo" />
+
+                <label>Teléfono:</label>
+                <input class="form-control @(telefonoInvalido ? "is-invalid" : "")" @bind="Telefono" placeholder="Teléfono" />
+
+                <label>Correo:</label>
+                <input class="form-control @(correoInvalido ? "is-invalid" : "")" @bind="Correo" placeholder="Correo" />
+
+
+                <label for="empresa" style="display: none;">Empresa:</label>
+                <input class="form-control" @bind="Empresa" placeholder="Empresa" style="display: none;" />
+
+
+
+                <label for="fileInput">Seleccionar Imagen:</label>
+                <InputFile id="fileInput" class="form-control" OnChange="OnInputFileChange" accept="image/*" />
+
+
+
+
+                <div class="d-flex">
+                    <button class="btn btn-primary mt-2 btn-custom" @onclick="GenerarYGuardar">Generar QR</button>
+                    <button class="btn btn-primary mt-2 btn-custom ms-2" @onclick="() => BuscarUsuarioPorNombre(nombreBuscado)">BUSCAR</button>
+                </div>
+            </div>
+
+        </fieldset>
+    </div>
+
+    <!-- Esta sección se muestra si hay un QR generado -->
+    @if (!string.IsNullOrEmpty(QRBase64))
+    {
+        <div class="col-md-5 d-flex flex-column justify-content-center" style="margin-left: 30px;">
+            <fieldset class="fieldset-custom">
+                <legend class="legend">VCARD QR</legend>
+
+                <!-- Contenedor centrado para la imagen QR -->
+                <div class="d-flex justify-content-center">
+                    <img src="data:image/png;base64,@QRBase64" class="form-control" alt="QR Code" style="width: 200px; height: 200px;" />
+                </div>
+
+                <!-- Contenedor centrado para el enlace de descarga -->
+                <div class="d-flex justify-content-center mt-3">
+                    <a href="data:image/png;base64,@QRBase64" download="@($"{Nombre.Replace(" ", "_")}_qr.png")" class="btn btn-primary mt-2 btn-custom">
+                        Descargar Código QR
+                    </a>
+                </div>
+
+                @if (!string.IsNullOrEmpty(QRBase64))
+                {
+                    <div id="carnetContainer"
+                         style="width: 8.6cm; height: 5.4cm;
+                        margin: 20px auto;
+                        position: relative;
+                        background-image: url('/images/carnet-template4.png');
+                        background-color: #000000; /* O el color que prefieras */
+
+                        background-size: 130% 107%;
+                        background-position: center;
+                        font-family: Arial, sans-serif;
+                        color: white; padding: 0cm;
+                        box-sizing: border-box;
+                        border-radius: 8px;
+                        border:none;">
+
+                        <!-- IMAGEN EN LA ESQUINA SUPERIOR DERECHA -->
+
+                        <!--<img src="/images/Logo.png"
+                             style="position: absolute;
+                                    top: 0.10cm;
+                                    right: 0.13cm;
+                                    width: 1.5cm;
+                                    height: auto;
+                                    object-fit: contain;" />-->
+
+                        <!img src="/images/Logo2.png"
+                             style="position: absolute;
+                                    top: 0.10cm;
+                                    right: 0.13cm;
+                                    width: 2.4cm;
+                                    height: 1.8cm;
+                object-fit: cover "/>
+
+                  
+
+                        <!-- FOTO DEL USUARIO AL CENTRO SUPERIOR -->
+                        <img src="@FotoBase64"
+                             style="position: absolute;
+                                    top: 0.15cm;
+                                    left: 49.5%;
+                                    transform: translateX(-150%);
+                                    width: 2.7cm;
+                                    height: 3.0cm;
+                                    object-fit: cover;
+                                    border-radius: 4px;
+                                     border: 2px solid rgb(255, 150, 0);" />
+
+
+                        <!-- DATOS DEL USUARIO DEBAJO DE LA FOTO -->
+                        <div style="position: absolute; top: 3.4cm; left: 0.19cm; right: 3.3cm;">
+                            <h4 style="margin: 0px; font-size: 9.5pt;">@Nombre</h4>
+                            <h4 style="margin: 0px; font-size: 9pt;">@Cargo</h4>
+                            <h4 style="margin: 0px; font-size: 9pt;">@telefonoFormateado</h4>
+                        </div>
+
+                        <!-- CÓDIGO QR MÁS GRANDE EN LA PARTE DERECHA -->
+                        <img src="data:image/png;base64,@QRBase64"
+                             style="position: absolute;
+                                    bottom: 0.15cm; right: 0.15cm;
+                                    width: 3.3cm;
+                                    height: 3.3cm;
+                                    object-fit: cover;
+                                    border-radius: 4px;
+                                    background-color: white;
+                                    border: 2px solid rgb(255, 150, 0);" />
+                    </div>
+
+                    <div class="d-flex justify-content-center mt-3">
+                        <button class="btn btn-success mt-2 btn-custom" @onclick="DescargarCarnet">DESCARGAR CARNET</button>
+                    </div>
+                }
+            </fieldset>
+        </div>
+    }
+</div>
+
+
+@if (!string.IsNullOrEmpty(mensajeResultado))
+{
+    <p>@mensajeResultado</p>
+}
+
+
+@if (cargando)
+{
+    <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
+        <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    </div>
+}
+
+
+
+
+
+
+
+
+
+@code {
+    private string FotoBase64 = ""; // Imagen del usuario codificada en base64
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file != null)
+        {
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream().ReadAsync(buffer);
+
+            FotoBase64 = $"data:{file.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        }
+    }
+}
+
+
+@code {
+
+
+    private UsuarioModel usuarioEncontrado;
+    private string nombreBuscado;
+    private string mensajeResultado;
+
+    private bool cargando = false;
+
+    private string Nombre;
+    private string Documento;
+    private string Cargo;
+    private string Correo;
+    private string Telefono;
+
+    string Empresa = "Grupo Empresarial Proteccion S.A.S.";
+    string Direccion = "Calle 72 No. 7-64 Piso 3 Bogota, Colombia";
+    string PaginaWeb = "https://www.grupoempresarialproteccion.com/";
+    string QRBase64 = "";
+    public string telefonoFormateado => FormatearTelefono(Telefono);
+
+
+    private bool nombreInvalido;
+    private bool documentoInvalido;
+    private bool cargoInvalido;
+    private bool telefonoInvalido;
+    private bool correoInvalido;
+
+
+
+
+    private string mensajeError;
+
+
+
+    private async Task GenerarYGuardar()
+    {
+        // Validación campo por campo
+        nombreInvalido = string.IsNullOrWhiteSpace(Nombre);
+        documentoInvalido = string.IsNullOrWhiteSpace(Documento);
+        cargoInvalido = string.IsNullOrWhiteSpace(Cargo);
+        telefonoInvalido = string.IsNullOrWhiteSpace(Telefono);
+        correoInvalido = string.IsNullOrWhiteSpace(Correo);
+
+        if (nombreInvalido || documentoInvalido || cargoInvalido || telefonoInvalido || correoInvalido)
+        {
+            mensajeError = "❌ TODOS LOS CAMPOS SON OBLIGATORIOS.";
+            return;
+        }
+
+        mensajeError = null;
+        cargando = true;
+        StateHasChanged();
+        await Task.Delay(100);
+
+        try
+        {
+            await GenerarQR();
+            await GuardarUsuario();
+        }
+        finally
+        {
+            cargando = false;
+            StateHasChanged();
+        }
+    }
+
+
+
+
+
+
+    private async Task GuardarUsuario()
+    {
+        var nuevoCarnet = new
+        {
+            Nombre,
+            Documento,
+            Cargo,
+            Correo,
+            Telefono
+        };
+
+        var response = await Http.PostAsJsonAsync("http://localhost:5122/api/Carnet", nuevoCarnet);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // mensajeResultado = "✅ DATOS GUARDADOS CON ÉXITO";
+        }
+        else
+        {
+            var errorDetail = await response.Content.ReadAsStringAsync();
+            mensajeResultado = $"❌ Error al guardar: {response.StatusCode} - {errorDetail}";
+        }
+    }
+
+
+
+
+    private string FormatearTelefono(string numero)
+    {
+        var soloNumeros = new string(numero.Where(char.IsDigit).ToArray());
+        if (soloNumeros.Length == 10)
+            return $"{soloNumeros.Substring(0, 3)} {soloNumeros.Substring(3, 3)} {soloNumeros.Substring(6, 4)}";
+
+        return numero;
+    }
+
+    [Inject] IJSRuntime JS { get; set; }
+
+    async Task GenerarQR()
+    {
+
+        cargando = true;
+
+        var telefonoLimpio = new string(Telefono.Where(char.IsDigit).ToArray());
+        var telefonoFormateado = FormatearTelefono(Telefono);
+
+        var vcard =
+            "BEGIN:VCARD\n" +
+            "VERSION:3.0\n" +
+            $"N:{Nombre}\n" +
+            $"FN:{Nombre}\n" +
+            $"ORG:{Empresa}\n" +
+            $"TITLE:{Cargo}\n" +
+            $"TEL;TYPE=CELL:{telefonoLimpio}\n" +
+            $"EMAIL:{Correo}\n" +
+            $"URL:{PaginaWeb}\n" +
+            $"ADR:;;{Direccion};;;;\n" +
+            "END:VCARD";
+
+
+
+
+        using var generator = new QRCodeGenerator();
+        var data = generator.CreateQrCode(vcard, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(data);
+
+
+
+        // Cambiar tamaño y colores
+        var bytes = qrCode.GetGraphic(
+            pixelsPerModule: 175,
+            darkColor: Color.Black,
+            lightColor: Color.WhiteSmoke,
+
+            drawQuietZones: false);
+
+        QRBase64 = Convert.ToBase64String(bytes);
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("loadCarnetScripts");
+        }
+    }
+
+    async Task DescargarCarnet()
+    {
+        await JS.InvokeVoidAsync("descargarCarnet", "carnetContainer", $"{Nombre.Replace(" ", "_")}_carnet");
+    }
+
+    async Task DescargarCarnetPDF()
+    {
+        await JS.InvokeVoidAsync("descargarCarnetComoPDF");
+    }
+
+
+
+
+    private async Task BuscarUsuarioPorNombre(string nombre)
+    {
+        usuarioEncontrado = null;
+        mensajeResultado = "";
+
+        try
+        {
+            var response = await Http.GetAsync($"http://localhost:5122/api/Carnet/{nombre}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                usuarioEncontrado = await response.Content.ReadFromJsonAsync<UsuarioModel>();
+                // mensajeResultado = "✅ USUARIO ENCONTRADO";
+
+                // Llenar campos del formulario
+                if (usuarioEncontrado != null)
+                {
+                    Nombre = usuarioEncontrado.Nombre;
+                    Documento = usuarioEncontrado.Documento;
+                    Cargo = usuarioEncontrado.Cargo;
+                    Correo = usuarioEncontrado.Correo;
+                    Telefono = usuarioEncontrado.Telefono;
+                }
+            }
+            else
+            {
+                mensajeResultado = "❌ USUARIO NO ENCONTRADO";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeResultado = $"❌ ERROR: {ex.Message}";
+        }
+    }
+
+
+
+}
+
+
+
+
+
+
