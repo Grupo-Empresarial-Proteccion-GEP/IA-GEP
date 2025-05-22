@@ -1,14 +1,15 @@
 ﻿@page "/generate"
 @using QRCoder
 @using System.Drawing
-@using QRCoder;
-@using System.Drawing;
 @using System.Drawing.Imaging;
 @using System.IO;
-@using System.Data.SqlClient;
-@inject HttpClient Http
+@using System.Data;
 @using QrBlazorServices.Controllers
+@using AccesoDatos
+
+@inject HttpClient Http
 @inject IJSRuntime JSRuntime
+@inject AccesoDatosSoapClient ServicioUsuario
 
 @rendermode InteractiveServer
 
@@ -20,6 +21,7 @@
 <head>
     <link href="css/Style.css" rel="stylesheet" />
 </head>
+<script src="js/Loader.js"></script>
 
 <div class="container d-flex justify-content-between align-items-start" style="min-height: 70vh;">
     <!-- Bloque del formulario -->
@@ -27,44 +29,41 @@
         <fieldset class="fieldset-custom">
             <legend class="legend">Generador De VCARD Qr</legend>
 
-            <div class="form-group">
+                <EditForm Model="@usuario" OnValidSubmit="GenerarYGuardar">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
 
-                <label>Buscar usuario:</label>
-                <input class="form-control" @bind="nombreBuscado" placeholder="Escribe el documento" />
+                <div class="form-group">
+                    <label>Buscar usuario:</label>
+                    <input class="form-control" @bind="nombreBuscado" placeholder="Escribe el documento" />
 
-                <label>Nombre completo:</label>
-                <input class="form-control @(nombreInvalido ? "is-invalid" : "")" @bind="Nombre" placeholder="Nombre completo" />
+                    <label>Nombre completo:</label>
+                    <input class="form-control @(nombreInvalido ? "is-invalid" : "")" @bind="usuario.Nombre" placeholder="Nombre completo" />
 
-                <label>Documento:</label>
-                <input class="form-control @(documentoInvalido ? "is-invalid" : "")" @bind="Documento" placeholder="Documento" />
+                    <label>Documento:</label>
+                    <input class="form-control @(documentoInvalido ? "is-invalid" : "")" @bind="usuario.Documento" placeholder="Documento" />
 
-                <label>Cargo:</label>
-                <input class="form-control @(cargoInvalido ? "is-invalid" : "")" @bind="Cargo" placeholder="Cargo" />
+                    <label>Cargo:</label>
+                    <input class="form-control @(cargoInvalido ? "is-invalid" : "")" @bind="usuario.Cargo" placeholder="Cargo" />
 
-                <label>Teléfono:</label>
-                <input class="form-control @(telefonoInvalido ? "is-invalid" : "")" @bind="Telefono" placeholder="Teléfono" />
+                    <label>Teléfono:</label>
+                    <input class="form-control @(telefonoInvalido ? "is-invalid" : "")" @bind="usuario.Telefono" placeholder="Teléfono" />
 
-                <label>Correo:</label>
-                <input class="form-control @(correoInvalido ? "is-invalid" : "")" @bind="Correo" placeholder="Correo" />
+                    <label>Correo:</label>
+                    <input class="form-control @(correoInvalido ? "is-invalid" : "")" @bind="usuario.Correo" placeholder="Correo" />
 
+                    <label for="empresa" style="display: none;">Empresa:</label>
+                    <input class="form-control" @bind="Empresa" placeholder="Empresa" style="display: none;" />
 
-                <label for="empresa" style="display: none;">Empresa:</label>
-                <input class="form-control" @bind="Empresa" placeholder="Empresa" style="display: none;" />
+                    <label for="fileInput">Seleccionar Imagen:</label>
+                    <InputFile id="fileInput" class="form-control" OnChange="OnInputFileChange" accept="image/*" />
 
-
-
-                <label for="fileInput">Seleccionar Imagen:</label>
-                <InputFile id="fileInput" class="form-control" OnChange="OnInputFileChange" accept="image/*" />
-
-
-
-
-                <div class="d-flex">
-                    <button class="btn btn-primary mt-2 btn-custom" @onclick="GenerarYGuardar">Generar QR</button>
-                    <button class="btn btn-primary mt-2 btn-custom ms-2" @onclick="() => BuscarUsuarioPorNombre(nombreBuscado)">BUSCAR</button>
+                    <div class="d-flex">
+                        <button class="btn btn-primary mt-2 btn-custom" type="submit">Generar QR</button>
+                        <button class="btn btn-primary mt-2 btn-custom ms-2" type="button" @onclick="BuscarUsuarioPorNombre">BUSCAR</button>
+                    </div>
                 </div>
-            </div>
-
+            </EditForm>
         </fieldset>
     </div>
 
@@ -82,7 +81,7 @@
 
                 <!-- Contenedor centrado para el enlace de descarga -->
                 <div class="d-flex justify-content-center mt-3">
-                    <a href="data:image/png;base64,@QRBase64" download="@($"{Nombre.Replace(" ", "_")}_qr.png")" class="btn btn-primary mt-2 btn-custom">
+                    <a href="data:image/png;base64,@QRBase64" download="@($"{usuario.Nombre.Replace(" ", "_")}_qr.png")" class="btn btn-primary mt-2 btn-custom">
                         Descargar Código QR
                     </a>
                 </div>
@@ -90,7 +89,7 @@
                 @if (!string.IsNullOrEmpty(QRBase64))
                 {
                     <div id="carnetContainer"
-                         style="width: 8.6cm; height: 5.4cm;
+                    style="width: 8.6cm; height: 5.4cm;
                         margin: 20px auto;
                         position: relative;
                         background-image: url('/images/carnet-template4.png');
@@ -107,26 +106,26 @@
                         <!-- IMAGEN EN LA ESQUINA SUPERIOR DERECHA -->
 
                         <!--<img src="/images/Logo.png"
-                             style="position: absolute;
-                                    top: 0.10cm;
-                                    right: 0.13cm;
-                                    width: 1.5cm;
-                                    height: auto;
-                                    object-fit: contain;" />-->
+                        style="position: absolute;
+                        top: 0.10cm;
+                        right: 0.13cm;
+                        width: 1.5cm;
+                        height: auto;
+                        object-fit: contain;" />-->
 
                         <!img src="/images/Logo2.png"
-                             style="position: absolute;
+                        style="position: absolute;
                                     top: 0.10cm;
                                     right: 0.13cm;
                                     width: 2.4cm;
                                     height: 1.8cm;
                 object-fit: cover "/>
 
-                  
+
 
                         <!-- FOTO DEL USUARIO AL CENTRO SUPERIOR -->
                         <img src="@FotoBase64"
-                             style="position: absolute;
+                        style="position: absolute;
                                     top: 0.15cm;
                                     left: 49.5%;
                                     transform: translateX(-150%);
@@ -139,14 +138,14 @@
 
                         <!-- DATOS DEL USUARIO DEBAJO DE LA FOTO -->
                         <div style="position: absolute; top: 3.4cm; left: 0.19cm; right: 3.3cm;">
-                            <h4 style="margin: 0px; font-size: 9.5pt;">@Nombre</h4>
-                            <h4 style="margin: 0px; font-size: 9pt;">@Cargo</h4>
+                            <h4 style="margin: 0px; font-size: 9.5pt;">@usuario.Nombre</h4>
+                            <h4 style="margin: 0px; font-size: 9pt;">@usuario.Cargo</h4>
                             <h4 style="margin: 0px; font-size: 9pt;">@telefonoFormateado</h4>
                         </div>
 
                         <!-- CÓDIGO QR MÁS GRANDE EN LA PARTE DERECHA -->
                         <img src="data:image/png;base64,@QRBase64"
-                             style="position: absolute;
+                        style="position: absolute;
                                     bottom: 0.15cm; right: 0.15cm;
                                     width: 3.3cm;
                                     height: 3.3cm;
@@ -165,12 +164,10 @@
     }
 </div>
 
-
 @if (!string.IsNullOrEmpty(mensajeResultado))
 {
     <p>@mensajeResultado</p>
 }
-
 
 @if (cargando)
 {
@@ -179,14 +176,6 @@
         <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
     </div>
 }
-
-
-
-
-
-
-
-
 
 @code {
     private string FotoBase64 = ""; // Imagen del usuario codificada en base64
@@ -205,50 +194,55 @@
     }
 }
 
-
 @code {
 
-
-    private UsuarioModel usuarioEncontrado;
     private string nombreBuscado;
     private string mensajeResultado;
+    private string mensajeError;
+    private string mensaje;
 
-    private bool cargando = false;
+    private UsuarioModel usuarioEncontrado;
+    private Usuario usuario = new Usuario();
 
-    private string Nombre;
-    private string Documento;
-    private string Cargo;
-    private string Correo;
-    private string Telefono;
+    public string telefonoFormateado => FormatearTelefono(usuario.Telefono);
 
+    string QRBase64 = "";
     string Empresa = "Grupo Empresarial Proteccion S.A.S.";
     string Direccion = "Calle 72 No. 7-64 Piso 3 Bogota, Colombia";
     string PaginaWeb = "https://www.grupoempresarialproteccion.com/";
-    string QRBase64 = "";
-    public string telefonoFormateado => FormatearTelefono(Telefono);
 
-
+    private bool cargando = false;
     private bool nombreInvalido;
     private bool documentoInvalido;
     private bool cargoInvalido;
     private bool telefonoInvalido;
     private bool correoInvalido;
 
+    private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
 
+    [Inject] IJSRuntime JS { get; set; }
 
+    private string FormatearTelefono(string numero)
+    {
+        if (string.IsNullOrWhiteSpace(numero))
+            return string.Empty;
 
-    private string mensajeError;
+        var soloNumeros = new string(numero.Where(char.IsDigit).ToArray());
 
+        if (soloNumeros.Length == 10)
+            return $"{soloNumeros.Substring(0, 3)} {soloNumeros.Substring(3, 3)} {soloNumeros.Substring(6, 4)}";
 
+        return numero;
+    }
 
     private async Task GenerarYGuardar()
     {
-        // Validación campo por campo
-        nombreInvalido = string.IsNullOrWhiteSpace(Nombre);
-        documentoInvalido = string.IsNullOrWhiteSpace(Documento);
-        cargoInvalido = string.IsNullOrWhiteSpace(Cargo);
-        telefonoInvalido = string.IsNullOrWhiteSpace(Telefono);
-        correoInvalido = string.IsNullOrWhiteSpace(Correo);
+        // Validación
+        nombreInvalido = string.IsNullOrWhiteSpace(usuario.Nombre);
+        documentoInvalido = string.IsNullOrWhiteSpace(usuario.Documento);
+        cargoInvalido = string.IsNullOrWhiteSpace(usuario.Cargo);
+        telefonoInvalido = string.IsNullOrWhiteSpace(usuario.Telefono);
+        correoInvalido = string.IsNullOrWhiteSpace(usuario.Correo);
 
         if (nombreInvalido || documentoInvalido || cargoInvalido || telefonoInvalido || correoInvalido)
         {
@@ -258,81 +252,44 @@
 
         mensajeError = null;
         cargando = true;
-        StateHasChanged();
-        await Task.Delay(100);
+
+
+        // Formateo y actualización del DOM
+
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(150); // Deja tiempo para que el DOM se actualice
 
         try
         {
-            await GenerarQR();
+            await GenerarQR(); // Aquí el texto ya estará visible en pantalla
             await GuardarUsuario();
         }
         finally
         {
             cargando = false;
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
         }
+
     }
-
-
-
-
-
-
-    private async Task GuardarUsuario()
-    {
-        var nuevoCarnet = new
-        {
-            Nombre,
-            Documento,
-            Cargo,
-            Correo,
-            Telefono
-        };
-
-        var response = await Http.PostAsJsonAsync("http://localhost:5122/api/Carnet", nuevoCarnet);
-
-        if (response.IsSuccessStatusCode)
-        {
-            // mensajeResultado = "✅ DATOS GUARDADOS CON ÉXITO";
-        }
-        else
-        {
-            var errorDetail = await response.Content.ReadAsStringAsync();
-            mensajeResultado = $"❌ Error al guardar: {response.StatusCode} - {errorDetail}";
-        }
-    }
-
-
-
-
-    private string FormatearTelefono(string numero)
-    {
-        var soloNumeros = new string(numero.Where(char.IsDigit).ToArray());
-        if (soloNumeros.Length == 10)
-            return $"{soloNumeros.Substring(0, 3)} {soloNumeros.Substring(3, 3)} {soloNumeros.Substring(6, 4)}";
-
-        return numero;
-    }
-
-    [Inject] IJSRuntime JS { get; set; }
 
     async Task GenerarQR()
     {
 
         cargando = true;
 
-        var telefonoLimpio = new string(Telefono.Where(char.IsDigit).ToArray());
-        var telefonoFormateado = FormatearTelefono(Telefono);
+        var telefono = usuario?.Telefono ?? string.Empty;
+        var telefonoLimpio = new string(telefono.Where(char.IsDigit).ToArray());
+        var telefonoFormateado = FormatearTelefono(telefono);
 
         var vcard =
             "BEGIN:VCARD\n" +
             "VERSION:3.0\n" +
-            $"N:{Nombre}\n" +
-            $"FN:{Nombre}\n" +
+            $"N:{usuario.Nombre}\n" +
+            $"FN:{usuario.Nombre}\n" +
             $"ORG:{Empresa}\n" +
-            $"TITLE:{Cargo}\n" +
+            $"TITLE:{usuario.Cargo}\n" +
             $"TEL;TYPE=CELL:{telefonoLimpio}\n" +
-            $"EMAIL:{Correo}\n" +
+            $"EMAIL:{usuario.Correo}\n" +
             $"URL:{PaginaWeb}\n" +
             $"ADR:;;{Direccion};;;;\n" +
             "END:VCARD";
@@ -357,7 +314,6 @@
         QRBase64 = Convert.ToBase64String(bytes);
     }
 
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -368,7 +324,7 @@
 
     async Task DescargarCarnet()
     {
-        await JS.InvokeVoidAsync("descargarCarnet", "carnetContainer", $"{Nombre.Replace(" ", "_")}_carnet");
+        await JS.InvokeVoidAsync("descargarCarnet", "carnetContainer", $"{usuario.Nombre.Replace(" ", "_")}_carnet");
     }
 
     async Task DescargarCarnetPDF()
@@ -376,47 +332,137 @@
         await JS.InvokeVoidAsync("descargarCarnetComoPDF");
     }
 
-
-
-
-    private async Task BuscarUsuarioPorNombre(string nombre)
+    private async Task BuscarUsuarioPorNombre()
     {
-        usuarioEncontrado = null;
-        mensajeResultado = "";
-
         try
         {
-            var response = await Http.GetAsync($"http://localhost:5122/api/Carnet/{nombre}");
-
-            if (response.IsSuccessStatusCode)
+            if (string.IsNullOrWhiteSpace(nombreBuscado))
             {
-                usuarioEncontrado = await response.Content.ReadFromJsonAsync<UsuarioModel>();
-                // mensajeResultado = "✅ USUARIO ENCONTRADO";
+                mensaje = "Por favor ingrese un documento para buscar.";
+                return;
+            }
 
-                // Llenar campos del formulario
-                if (usuarioEncontrado != null)
-                {
-                    Nombre = usuarioEncontrado.Nombre;
-                    Documento = usuarioEncontrado.Documento;
-                    Cargo = usuarioEncontrado.Cargo;
-                    Correo = usuarioEncontrado.Correo;
-                    Telefono = usuarioEncontrado.Telefono;
-                }
+            string documento = nombreBuscado.Replace("'", "''");
+            string condicion = $"Documento = '{documento}'";
+
+            string campos = "Id, Documento, Nombre, Cargo, Correo, Telefono";
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Carnet2", campos, condicion, 18);
+
+            if (resultado != null && resultado.Rows.Count > 0)
+            {
+                var fila = resultado.Rows[0];
+
+                
+                usuario.Documento = fila["Documento"].ToString();
+                usuario.Nombre = fila["Nombre"].ToString();
+                usuario.Cargo = fila["Cargo"].ToString();
+                usuario.Correo = fila["Correo"].ToString();
+                usuario.Telefono = fila["Telefono"].ToString();
+
+                mensaje = "Usuario encontrado.";
             }
             else
             {
-                mensajeResultado = "❌ USUARIO NO ENCONTRADO";
+                mensaje = "No se encontró ningún usuario con ese documento.";
+                usuario = new Usuario(); // Limpiar usuario
             }
         }
         catch (Exception ex)
         {
-            mensajeResultado = $"❌ ERROR: {ex.Message}";
+            mensaje = $"Error al buscar usuario: {ex.Message}";
         }
     }
 
+    private async Task GuardarUsuario()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(usuario.Documento))
+            {
+                mensaje = "El documento no puede estar vacío.";
+                return;
+            }
+
+            string documento = usuario.Documento.Replace("'", "''");
+            string condicion = $"Documento = '{documento}'";
+
+            string campos = "Id, Documento, Nombre, Cargo, Correo, Telefono";
+
+            // Traemos la fila existente para actualizar
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Carnet2", campos, condicion, 18);
+
+            if (resultado != null && resultado.Rows.Count > 0)
+            {
+                resultado.TableName = "Carnet2";  // Muy importante asignar el nombre correcto
+
+                var fila = resultado.Rows[0];
+
+                fila.BeginEdit();
+                fila["Nombre"] = usuario.Nombre ?? "";
+                fila["Cargo"] = usuario.Cargo ?? "";
+                fila["Correo"] = usuario.Correo ?? "";
+                fila["Telefono"] = usuario.Telefono ?? "";
+                fila.EndEdit();
+
+                Console.WriteLine($"Estado de la fila antes de actualizar: {fila.RowState}");
+
+                string respuesta = await _servicioUsuario.ActualizarFilasAsync(resultado, 18);
+
+                Console.WriteLine($"Respuesta del servidor al actualizar: {respuesta}");
+
+                mensaje = "Usuario actualizado correctamente.";
+            }
 
 
-}
+            else
+            {
+                // El usuario no existe, insertamos
+                DataTable tablaUsuario = new DataTable("Usuarios");
+                tablaUsuario.Columns.Add("Id", typeof(int));
+                tablaUsuario.Columns.Add("Nombre", typeof(string));
+                tablaUsuario.Columns.Add("Documento", typeof(string));
+                tablaUsuario.Columns.Add("Cargo", typeof(string));
+                tablaUsuario.Columns.Add("Correo", typeof(string));
+                tablaUsuario.Columns.Add("Telefono", typeof(string));
+
+                DataRow nuevaFila = tablaUsuario.NewRow();
+                nuevaFila["Id"] = 0;
+                nuevaFila["Nombre"] = usuario.Nombre ?? "";
+                nuevaFila["Documento"] = usuario.Documento ?? "";
+                nuevaFila["Cargo"] = usuario.Cargo ?? "";
+                nuevaFila["Correo"] = usuario.Correo ?? "";
+                nuevaFila["Telefono"] = usuario.Telefono ?? "";
+
+                tablaUsuario.Rows.Add(nuevaFila);
+                await _servicioUsuario.InsertarTablaAsync(tablaUsuario, "Carnet2", 18);
+                mensaje = "Usuario guardado correctamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error: {ex.Message}";
+        }
+    }
+
+    // Método para convertir DataTable a XML con esquema
+    private string DataTableToXml(DataTable dt)
+    {
+        using var sw = new StringWriter();
+        dt.WriteXml(sw, XmlWriteMode.WriteSchema);
+        return sw.ToString();
+    }
+
+    public class Usuario
+        {
+            public string Nombre { get; set; } = string.Empty;
+            public string Documento { get; set; } = string.Empty;
+            public string Cargo { get; set; } = string.Empty;
+            public string Correo { get; set; } = string.Empty;
+            public string Telefono { get; set; } = string.Empty;
+        }
+
+    }
+
 
 
 
