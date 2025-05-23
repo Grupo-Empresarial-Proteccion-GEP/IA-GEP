@@ -1,19 +1,17 @@
 ﻿@page "/login"
-@using GeminiBlazor.Services
-@inject AuthService AuthService
+@using AccesoDatos
+@using System.Data
 @inject NavigationManager Navigation
-@using System.ComponentModel.DataAnnotations
-@using Microsoft.AspNetCore.Components.Forms
-@using GeminiBlazor.Pages
+@inject AccesoDatosSoapClient ServicioUsuario
+@rendermode InteractiveServer
 
-<EditForm Model="@loginModel" OnValidSubmit="IniciarSesion">
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
+<EditForm Model="@usuarioLogin" OnValidSubmit="IniciarSesion">
     <DataAnnotationsValidator />
     <ValidationSummary />
-
-    <head>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
-        <link href="css/Style.css" rel="stylesheet" />
-    </head>
 
     <div class="container" style="min-height: 70vh;">
         <div class="form-container">
@@ -22,65 +20,116 @@
 
                 <div class="form-group">
                     <label for="NombreUsuario">Nombre de Usuario:</label>
-                    <InputText id="NombreUsuario" @bind-Value="loginModel.NombreUsuario" class="form-control" placeholder="Nombre de Usuario" />
+                    <InputText id="NombreUsuario" @bind-Value="usuarioLogin.NombreUsuario" class="form-control" placeholder="Nombre de Usuario" />
                 </div>
 
                 <div class="form-group">
                     <label for="Clave">Clave:</label>
-                    <InputText id="Clave" @bind-Value="loginModel.Clave" type="password" class="form-control" placeholder="Clave" />
+                    <InputText id="Clave" @bind-Value="usuarioLogin.Clave" type="password" class="form-control" placeholder="Clave" />
+                </div>
+
+                <div class="d-flex">
+                    <button class="btn btn-primary mt-2 btn-custom" type="submit">Iniciar sesión</button>
+                    <button class="btn btn-primary mt-2 btn-custom ms-2" type="button" @onclick="ReguitroModule">Registrar usuario</button>
                 </div>
 
 
-                <div class="form-group d-flex" style="gap: 20px;">
-                    <button type="submit" class="btn-custom">Iniciar sesión</button>
-                    <button @onclick="ReguitroModule" class="btn-custom" type="button">Registrar usuario</button>
-                </div>
+                @if (!string.IsNullOrWhiteSpace(mensaje))
+                {
+                    <div class="alert alert-info mt-3">@mensaje</div>
+                }
 
             </fieldset>
         </div>
     </div>
-
-
-
-
 </EditForm>
 
-
-
-@if (loginError)
-{
-    <div style="color:red;">Credenciales incorrectas. Intenta de nuevo.</div>
-}
-
 @code {
-    private LoginModel loginModel = new LoginModel();
-    private bool loginError = false;
+    // Cliente SOAP para llamar a los métodos del backend
+    private AccesoDatosSoapClient _servicioUsuario = new AccesoDatosSoapClient(
+        AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
 
-    private async Task IniciarSesion()
+    private UsuarioLogin usuarioLogin = new();
+    private string mensaje = "";
+
+    // Modelo para el formulario de login
+    public class UsuarioLogin
     {
-        var success = await AuthService.LoginAsync(loginModel.NombreUsuario, loginModel.Clave);
-        if (success)
-        {
-            // Si el login es exitoso, redirigimos al formulario
-            Navigation.NavigateTo("/GR");  // Cambia "/formulario" por la ruta de tu formulario
-        }
-        else
-        {
-            loginError = true;
-        }
+        public string NombreUsuario { get; set; } = string.Empty;
+        public string Clave { get; set; } = string.Empty;
     }
 
-    public class LoginModel
-    {
-        public string NombreUsuario { get; set; }
-        public string Clave { get; set; }
-    }
-
+    // Ir al módulo de registro
     private async Task ReguitroModule()
     {
+        Navigation.NavigateTo("/agregar");
+    }
 
-        // Si el login es exitoso, redirigimos al formulario
-        Navigation.NavigateTo("/registro");  // Cambia "/formulario" por la ruta de tu formulario
+    // Iniciar sesión al enviar el formulario
+    private async Task IniciarSesion()
+    {
+        await AutenticarUsuario();
 
+        if (mensaje.StartsWith("Bienvenido"))
+        {
+            Navigation.NavigateTo("/GR"); // Redirige si fue exitoso
+        }
+    }
+
+    // Función que autentica el usuario contra la base de datos
+    private async Task AutenticarUsuario()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(usuarioLogin.NombreUsuario) || string.IsNullOrWhiteSpace(usuarioLogin.Clave))
+            {
+                mensaje = "El usuario y la clave son obligatorios.";
+                return;
+            }
+
+            string nombreUsuario = usuarioLogin.NombreUsuario.Replace("'", "''");
+            string condicion = $"NombreUsuario = '{nombreUsuario}'";
+            string campos = "Id, Documento, Clave, NombreUsuario, Area, Cargo";
+
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Usuarios", campos, condicion, 18);
+
+            if (resultado != null && resultado.Rows.Count > 0)
+            {
+                var fila = resultado.Rows[0];
+                string claveHashAlmacenada = fila["Clave"].ToString() ?? "";
+
+                if (VerifyPassword(usuarioLogin.Clave, claveHashAlmacenada))
+                {
+                    mensaje = $"Bienvenido, {fila["NombreUsuario"]}";
+                    // Aquí puedes guardar el usuario en sesión si lo deseas
+                }
+                else
+                {
+                    mensaje = "Contraseña incorrecta.";
+                }
+            }
+            else
+            {
+                mensaje = "Usuario no encontrado.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error al autenticar: {ex.Message}";
+        }
+    }
+
+    // Encriptar la contraseña con SHA256
+    private string HashPassword(string password)
+    {
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+        return Convert.ToBase64String(bytes);
+    }
+
+    // Verificar si la contraseña coincide con el hash
+    private bool VerifyPassword(string inputPassword, string storedHash)
+    {
+        return HashPassword(inputPassword) == storedHash;
     }
 }

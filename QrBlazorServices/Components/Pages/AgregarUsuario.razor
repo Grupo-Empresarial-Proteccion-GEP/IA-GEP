@@ -1,23 +1,24 @@
 ﻿@page "/agregar"
 @using AccesoDatos
-@inject AccesoDatosSoapClient ServicioUsuario
 @using System.Data;
+@inject AccesoDatosSoapClient ServicioUsuario
 @rendermode InteractiveServer
+@inject NavigationManager Navigation
 
 
     <head>
         <link href="css/Style.css" rel="stylesheet" />
     </head>
 
+<EditForm Model="@usuario" OnSubmit="GuardarUsuario" FormName="formAgregarUsuario">
+
+    <DataAnnotationsValidator />
+    <ValidationSummary />
     <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
         <div class="col-md-6">
             <fieldset class="fieldset-custom">
                 <legend class="legend">Registro de Usuario</legend>
 
-<EditForm Model="@usuario" OnSubmit="GuardarUsuario" FormName="formAgregarUsuario">
-
-    <DataAnnotationsValidator />
-    <ValidationSummary />
 
                 <div class="form-group">
                     <label for="NombreUsuario">Nombre de Usuario:</label>
@@ -44,25 +45,22 @@
                     <InputText id="Clave" @bind-Value="usuario.Clave" type="password" class="form-control" placeholder="Clave" />
                 </div>
 
-                <div class="form-group d-flex" style="gap: 10px;">
-                    <button type="submit" class="btn btn-success mt-2 btn-custom">Registrar usuario</button>
-              
+                <div class="d-flex">
+                    <button class="btn btn-success mt-2 btn-custom" type="submit">Registrar usuario</button>
+                    <button class="btn btn-primary mt-2 btn-custom ms-2" type="button" @onclick="ReguitroModule">Inicio de sesión</button>
                 </div>
 
-                    
-</EditForm>
+               
              
         </fieldset>
         </div>
     </div>
+</EditForm>
     
-
 @if (mensaje != null)
 {
     <div class="alert alert-success">@mensaje</div>
 }
-
-
 
 @code {
     private Usuario usuario = new Usuario();
@@ -70,7 +68,6 @@
 
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(
         AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
-
 
     private string HashPassword(string password)
     {
@@ -108,7 +105,6 @@
             ? ""
             : HashPassword(usuario.Clave);
 
-
             tablaUsuario.Rows.Add(fila);
 
             await _servicioUsuario.InsertarTablaAsync(tablaUsuario, "Usuarios", 18);
@@ -122,7 +118,6 @@
             mensaje = $"Error: {ex.Message}";
         }
     }
-
 
     // Método para convertir DataTable a XML con esquema
     private string DataTableToXml(DataTable dt)
@@ -141,4 +136,9 @@
         public string Clave { get; set; } = string.Empty;
     }
 
+    // Ir al módulo de registro
+    private async Task ReguitroModule()
+    {
+        Navigation.NavigateTo("/login");
+    }
 }
