@@ -38,8 +38,10 @@ main {
 
 @media (max-width: 640.98px) {
     .top-row {
-        justify-content: space-between;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1); /* o border-top */
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
     }
+
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         margin-left: 0;
