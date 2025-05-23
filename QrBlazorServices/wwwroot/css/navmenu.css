@@ -51,7 +51,7 @@
 
     .nav-link.active {
         font-weight: bold;
-        background-color: #e0e0e0;
+        background-color: black;
     }
 .top-row {
     border: none !important;
