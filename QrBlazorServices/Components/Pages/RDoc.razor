@@ -1,0 +1,158 @@
+﻿@page "/doc"
+@inject GeminiService GeminiService
+@using static System.Net.WebRequestMethods;
+@inject HttpClient Http
+@using System.Text.Json
+@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
+@using Microsoft.AspNetCore.Hosting
+@using QrBlazorServices.Helpers
+@inject ChatService ChatService
+@using System.Text.RegularExpressions;
+@rendermode InteractiveServer
+
+
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+<EditForm Model="@this" >
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+
+         <!-- Fila 5: Versión y Atributos extendido -->
+            <div class="row">
+
+            <div class="col-md-6">
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Versiones de Documento y Atributos</legend>
+                    <div class="form-group">
+                        <label for="DocumentoTituloV2">Título del Documento</label>
+                        <InputText id="DocumentoTituloV2" @bind-Value="TituloDelDocumento" class="form-control" placeholder="Título del Documento" />
+                    </div>
+                    <div class="form-group">
+                        <label for="NumeroVersionV2">Número de Versión</label>
+                        <InputText id="NumeroVersionV2" @bind-Value="NumeroVersion" class="form-control" placeholder="Número de Versión del Documento" />
+                    </div>
+                    <legend class="legend">Atributos</legend>
+                    <div class="form-group">
+                        <label for="Atributos_1_V">Atributos 1</label>
+                        <InputText id="Atributos_1_V" @bind-Value="Nombre1" class="form-control" placeholder="Atributos 1" />
+                    </div>
+                    <div class="form-group">
+                        <label for="Atributos_2_V">Atributos 2</label>
+                        <InputText id="Atributos_2_V" @bind-Value="Nombre2" class="form-control" placeholder="Atributos 2" />
+                    </div>
+                    <legend class="legend">Versiones Atributos</legend>
+                    <div class="form-group">
+                        <label for="VAtributos_1">Valor Atributos 1</label>
+                        <InputText id="VAtributos_1" @bind-Value="VNombre1" class="form-control" placeholder="Valor Atributos 1" />
+                    </div>
+                    <div class="form-group">
+                        <label for="VAtributos_2">Valor Atributos 2</label>
+                        <InputText id="VAtributos_2" @bind-Value="VNombre2" class="form-control" placeholder="Valor Atributos 2" />
+                    </div>
+
+                </fieldset>
+                        <fieldset class="fieldset-custom">
+                            <legend class="legend">Versión del Documento</legend>
+                            <div class="form-group">
+                                <label for="DocumentoTitulo">Título del Documento</label>
+                                <InputText id="DocumentoTitulo" @bind-Value="DocumentoTitulo" class="form-control" placeholder="Título del Documento" />
+                            </div>
+                            <div class="form-group">
+                                <label for="NumeroVersion">Número de Versión</label>
+                                <InputText id="NumeroVersion" @bind-Value="NumeroVersion" class="form-control" placeholder="Número de Versión del Documento" />
+                            </div>
+                            <div class="form-group">
+                                <label for="RutaPDF">Ubicación del Documento</label>
+                                <InputText id="RutaPDF" @bind-Value="RutaPDF" class="form-control" placeholder="Ubicación del Documento" />
+                            </div>
+                            <div class="form-group">
+                                <label for="DocumentoUs">Documento Usuario</label>
+                                <InputText id="DocumentoUs" @bind-Value="DocumentoUsuario" class="form-control" placeholder="Documento Usuario" />
+                            </div>
+                        </fieldset>
+                </div>
+                <!-- Fila 3: Categoria del Documento y Versión del Documento -->
+             
+                    <div class="col-md-6">
+                        <fieldset class="fieldset-custom">
+                            <legend class="legend">Categoria del Documento</legend>
+                            <div class="form-group">
+                                <label for="NombreDelDocumento">Nombre del Documento</label>
+                                <InputText id="NombreDelDocumento" @bind-Value="NombreDelDocumento" class="form-control" placeholder="Nombre del Documento" />
+                            </div>
+                            <div class="form-group">
+                                <label for="DescripcionDelDocumento">Descripcion del Documento</label>
+                                <InputText id="DescripcionDelDocumento" @bind-Value="DescripcionDelDocumento" class="form-control" placeholder="Descripcion del Documento" />
+                            </div>
+                        </fieldset>
+
+                    <fieldset class="fieldset-custom">
+                        <legend class="legend">Usuario</legend>
+                        <div class="form-group">
+                            <label for="Documento">Documento Usuario</label>
+                            <InputText id="Documento" @bind-Value="DocumentoUsuario" class="form-control" placeholder="Documento Usuario" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Cargo">Cargo</label>
+                            <InputText id="Cargo" @bind-Value="Cargo" class="form-control" placeholder="Cargo" />
+                        </div>
+                    </fieldset>
+         
+                    <fieldset class="fieldset-custom">
+                        <legend class="legend">Categoria Documento Padre</legend>
+                        <div class="form-group">
+                            <label for="CategoriaPadreNombre">Categoria Documento Padre</label>
+                            <InputText id="CategoriaPadreNombre" @bind-Value="CategoriaPadreNombre" class="form-control" placeholder="Categoria Documento Padre" />
+                        </div>
+                    </fieldset>
+              
+
+                <fieldset class="fieldset-custom">
+                    <legend class="legend">Categoria Documento Hijo</legend>
+                    <div class="form-group">
+                        <label for="CatHi">Categoria Documento Hijo</label>
+                        <InputText id="CatHi" @bind-Value="CategoriaDocumentoHijo" class="form-control" placeholder="Categoria Documento Hijo" />
+                    </div>
+                    <div class="form-group">
+                        <label for="CategoriaPadreSelect">Categoria Documento Padre</label>
+                        <select id="CategoriaPadreSelect" @bind="CategoriaPadreNombre" class="form-control">
+                            <option value="">Seleccione</option>
+                            <option value="CEDULA DE CIUDADANÍA">Cedula De Ciudadanía</option>
+                            <option value="TARJETA DE IDENTIDAD">Tarjeta De Identidad</option>
+                        </select>
+                    </div>
+                </fieldset>
+
+                    <button class="btn btn-primary mt-2 btn-custom" type="submit">Agregar Usuario</button>
+            </div>
+                </div>
+        </div>
+    </div>
+
+  
+ 
+  
+</EditForm>
+
+@code {
+
+
+    private string Nombre1;
+    private string Nombre2;
+    private string VNombre1;
+    private string VNombre2;
+    private string NumeroVersion;
+    private string TituloDelDocumento;
+    private string DocumentoUsuario;
+    private string RutaPDF;
+    private string DocumentoTitulo;
+    private string DescripcionDelDocumento;
+    private string NombreDelDocumento;
+    private string CategoriaPadreNombre;
+    private string CategoriaDocumentoHijo;
+    private string Cargo;
+
+}

@@ -1,42 +1,35 @@
-﻿using System.Net.Http.Json;
+﻿using System.Net.Http.Headers;
+using System.Net.Http.Json;
 
-public class GeminiService
+public class GeminiService // Sigue llamándose así para no romper el resto de tu código
 {
     private readonly HttpClient _httpClient;
-    private readonly string _apiKey = "AIzaSyDarNXl-QbTg8qWV4CTE5t8EPa0u7EwAdw";
+// private readonly string _apiKey = ""; // OpenAI Key
 
     public GeminiService(HttpClient httpClient)
     {
         _httpClient = httpClient;
+        _httpClient.BaseAddress = new Uri("https://api.openai.com/v1/");
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
     }
 
     public async Task<string> SendPromptAsync(string userInput)
     {
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={_apiKey}";
-
         var requestBody = new
         {
-            contents = new[]
+            model = "gpt-4o", // O usa "gpt-3.5-turbo" si no tienes acceso
+            messages = new[]
             {
-                new
-                {
-                    parts = new[]
-                    {
-                        new
-                        {
-                            text = userInput
-                        }
-                    }
-                }
+                new { role = "user", content = userInput }
             }
         };
 
-        var response = await _httpClient.PostAsJsonAsync(url, requestBody);
+        var response = await _httpClient.PostAsJsonAsync("chat/completions", requestBody);
 
         if (response.IsSuccessStatusCode)
         {
-            var responseJson = await response.Content.ReadFromJsonAsync<GeminiResponse>();
-            return responseJson?.candidates?.FirstOrDefault()?.content?.parts?.FirstOrDefault()?.text ?? "No hay respuesta.";
+            var responseJson = await response.Content.ReadFromJsonAsync<OpenAIResponse>();
+            return responseJson?.choices?.FirstOrDefault()?.message?.content ?? "No hay respuesta.";
         }
         else
         {
@@ -44,24 +37,23 @@ public class GeminiService
             return $"Error: {error}";
         }
     }
-}
 
-public class GeminiResponse
-{
-    public Candidate[] candidates { get; set; }
-}
+    // Solo necesitas esta clase para deserializar la respuesta de OpenAI
+    public class OpenAIResponse
+    {
+        public Choice[] choices { get; set; }
+    }
 
-public class Candidate
-{
-    public Content content { get; set; }
-}
+    public class Choice
+    {
+        public Message message { get; set; }
+    }
 
-public class Content
-{
-    public Part[] parts { get; set; }
+    public class Message
+    {
+        public string role { get; set; }
+        public string content { get; set; }
+    }
 }
-
-public class Part
-{
-    public string text { get; set; }
-}
+////
+///

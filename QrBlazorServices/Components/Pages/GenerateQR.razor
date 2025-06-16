@@ -88,81 +88,76 @@
 
                 @if (!string.IsNullOrEmpty(QRBase64))
                 {
-                    
-                    <div id="carnetContainer"
-                    style="width: 8.6cm; height: 5.4cm;
-                        margin: 20px auto;
-                        position: relative;
-                        background-image: url('/images/carnet-template4.png');
-                        background-color: #000000; /* O el color que prefieras */
 
-                        background-size: 130% 107%;
-                        background-position: center;
-                        font-family: Arial, sans-serif;
-                        color: white; padding: 0cm;
-                        box-sizing: border-box;
-                        border-radius: 8px;
-                        border:none;">
+                    <div id="carnetContainer"
+                         style="width: 8.6cm; height: 5.4cm;
+        margin: 20px auto;
+        position: relative;
+        background-image: url('/images/carnet-template4.png');
+        background-color: #000000; /* O el color que prefieras */
+
+        background-size: 130% 107%;
+        background-position: center;
+        font-family: Arial, sans-serif;
+        color: white; padding: 0cm;
+        box-sizing: border-box;
+        border-radius: 8px;
+        border:none;">
 
                         <!-- IMAGEN EN LA ESQUINA SUPERIOR DERECHA -->
 
-                        <!--<img src="/images/Logo.png"
-                        style="position: absolute;
-                        top: 0.10cm;
-                        right: 0.13cm;
-                        width: 1.5cm;
-                        height: auto;
-                        object-fit: contain;" />-->
 
-                        <!img src="/images/Logo2.png"
-                        style="position: absolute;
-                                    top: 0.10cm;
-                                    right: 0.13cm;
-                                    width: 2.6cm;
-                                    height: 1.8cm;
-                                    object-fit: contain "/>
+                        <img src="/images/Logo2.png"
+                             style="position: absolute; top:
+                    3.2cm; left: 0.19cm; right: 3.3cm;
+                    width: 3.0cm;
+                    height: 2.0cm;
+                    object-fit: contain
+                    " />
 
 
 
                         <!-- FOTO DEL USUARIO AL CENTRO SUPERIOR -->
                         <img src="@FotoBase64"
-                        style="position: absolute;
-                                    top: 0.15cm;
-                                    left: 49.5%;
-                                    transform: translateX(-150%);
-                                    width: 2.7cm;
-                                    height: 3.0cm;
-                                    object-fit: cover;
-                                    border-radius: 4px;
-                                     border: 2px solid rgb(255, 150, 0);" />
+                             style="position: absolute;
+                  top: 0.15cm;
+                  left: 48%;
+                  transform: translateX(-150%);
+                  width: 2.5cm;
+                  height: 2.7cm;
+                  object-fit: cover;
+                  border-radius: 4px;
+                   border: 2px solid rgb(255, 150, 0);" />
 
 
                         <!-- DATOS DEL USUARIO DEBAJO DE LA FOTO -->
-                        <div style="position: absolute; top: 3.4cm; left: 0.19cm; right: 3.3cm;">
+                        <div style="position: absolute; top: 4.2cm; left: 4.5cm;">
                             <h4 style="margin: 0px; font-size: 9.5pt;">@usuario.Nombre</h4>
                             <h4 style="margin: 0px; font-size: 9pt;">@usuario.Cargo</h4>
-                            <h4 style="margin: 0px; font-size: 9pt;">@telefonoFormateado</h4>
+
+
+
 
                             <!--  <h4 style="margin: 0px; font-size: 9pt;">@Empresa</h4> -->
                         </div>
 
                         <!-- CÓDIGO QR MÁS GRANDE EN LA PARTE DERECHA -->
                         <img src="data:image/png;base64,@QRBase64"
-                        style="position: absolute;
-                                    bottom: 0.15cm; right: 0.15cm;
-                                    width: 3.3cm;
-                                    height: 3.3cm;
-                                    object-fit: cover;
-                                    border-radius: 4px;
-                                    background-color: white;
-                                    border: 2px solid rgb(255, 150, 0);" />
+                             style="position: absolute;
+                    bottom: 1.4cm; right: 0.9cm;
+                    width: 3.5cm;
+                    height: 3.5cm;
+                    object-fit: cover;
+                    border-radius: 4px;
+                    background-color: white;
+                    border: 2.5px solid rgb(255, 255, 255);" />
                     </div>
-
+                    
 
                                    @* Carnet 2 - idéntico o con cambios mínimos *@
 
 
-                    <!--         <div class="d-flex flex-column align-items-center gap-3 mt-4">
+                    <!--<div class="d-flex flex-column align-items-center gap-3 mt-4">
 
 
                             <div id="carnetContainer2"
@@ -390,7 +385,6 @@
      //   await JS.InvokeVoidAsync("descargarCarnet", "carnetContainer2", $"{usuario.Nombre.Replace(" ", "_")}_carnet");
     }
 
-
     async Task DescargarCarnetPDF2()
     {
         await JS.InvokeVoidAsync("descargarCarnetComoPDF2");
@@ -508,7 +502,6 @@
         }
     }
 
-    // Método para convertir DataTable a XML con esquema
     private string DataTableToXml(DataTable dt)
     {
         using var sw = new StringWriter();

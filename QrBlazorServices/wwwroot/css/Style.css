@@ -45,11 +45,15 @@ body {
     border-radius: 10px;
     font-weight: bold;
     font-size: 1rem;
-    display: inline-block;
-    margin-bottom: 5px;
+    display: block;
+    margin-bottom: 5px; /* Más espacio */
     max-width: 100%;
     word-wrap: break-word;
+    margin-top: 10px;
 }
+
+
+
 /* Estilo de los inputs y botones (uniformidad en altura) */
 .form-control,
 .btn-custom {
