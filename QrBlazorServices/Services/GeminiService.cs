@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 public class GeminiService // Sigue llamándose así para no romper el resto de tu código
 {
     private readonly HttpClient _httpClient;
-    private readonly string _apiKey = "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"; // OpenAI Key
+    private readonly string _apiKey = "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"; // OpenAI Key
 
     public GeminiService(HttpClient httpClient)
     {
@@ -17,7 +17,7 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
     {
         var requestBody = new
         {
-            model = "gpt-4o", // O usa "gpt-3.5-turbo" si no tienes acceso
+            model = "gpt-3.5-turbo", // Cambia por "gpt-3.5-turbo" si es necesario
             messages = new[]
             {
                 new { role = "user", content = userInput }
@@ -29,7 +29,13 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
         if (response.IsSuccessStatusCode)
         {
             var responseJson = await response.Content.ReadFromJsonAsync<OpenAIResponse>();
-            return responseJson?.choices?.FirstOrDefault()?.message?.content ?? "No hay respuesta.";
+            var message = responseJson?.choices?.FirstOrDefault()?.message?.content ?? "No hay respuesta.";
+
+            var promptTokens = responseJson?.usage?.prompt_tokens ?? 0;
+            var completionTokens = responseJson?.usage?.completion_tokens ?? 0;
+            var totalTokens = responseJson?.usage?.total_tokens ?? 0;
+
+            return $"{message}\n\n🧾 Tokens usados:\n- Prompt: {promptTokens}\n- Respuesta: {completionTokens}\n- Total: {totalTokens}";
         }
         else
         {
@@ -38,10 +44,11 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
         }
     }
 
-    // Solo necesitas esta clase para deserializar la respuesta de OpenAI
+    // Clases para deserializar la respuesta de OpenAI
     public class OpenAIResponse
     {
         public Choice[] choices { get; set; }
+        public Usage usage { get; set; }
     }
 
     public class Choice
@@ -53,5 +60,12 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
     {
         public string role { get; set; }
         public string content { get; set; }
+    }
+
+    public class Usage
+    {
+        public int prompt_tokens { get; set; }
+        public int completion_tokens { get; set; }
+        public int total_tokens { get; set; }
     }
 }
