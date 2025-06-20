@@ -1,8 +1,10 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Data;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 public class GeminiService // Sigue llamándose así para no romper el resto de tu código
 {
+
     private string claveAPI = string.Empty;
     private string mensajeClave = string.Empty;
 
@@ -74,8 +76,11 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
             var promptTokens = responseJson?.usage?.prompt_tokens ?? 0;
             var completionTokens = responseJson?.usage?.completion_tokens ?? 0;
             var totalTokens = responseJson?.usage?.total_tokens ?? 0;
+            await GuardarConsumoTokens(responseJson);
+
 
             return $"{message}\n\n🧾 Tokens usados:\n- Prompt: {promptTokens}\n- Respuesta: {completionTokens}\n- Total: {totalTokens}";
+
         }
         else
         {
@@ -83,6 +88,42 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
             return $"Error: {error}";
         }
     }
+   private async Task GuardarConsumoTokens(OpenAIResponse respuesta)
+{
+    try
+    {
+        if (respuesta?.usage == null)
+        {
+            Console.WriteLine("La respuesta no contiene datos de uso.");
+            return;
+        }
+
+        DataTable tabla = new DataTable("ConsumoTokens");
+        tabla.Columns.Add("Id", typeof(int));
+        tabla.Columns.Add("PromptTokens", typeof(int));
+        tabla.Columns.Add("CompletionTokens", typeof(int));
+        tabla.Columns.Add("TotalTokens", typeof(int));
+
+        DataRow fila = tabla.NewRow();
+        fila["Id"] = 0;
+        fila["PromptTokens"] = respuesta.usage.prompt_tokens;
+        fila["CompletionTokens"] = respuesta.usage.completion_tokens;
+        fila["TotalTokens"] = respuesta.usage.total_tokens;
+
+        tabla.Rows.Add(fila);
+
+        await _servicioUsuario.InsertarTablaAsync(tabla, "ConsumoTokens", 18); // Asegúrate de que el ID sea correcto
+        Console.WriteLine("✅ Tokens guardados.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Error al guardar tokens: {ex.Message}");
+    }
+}
+
+
+
+
 
     // Clases para deserializar la respuesta de OpenAI
     public class OpenAIResponse
@@ -109,3 +150,18 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
         public int total_tokens { get; set; }
     }
 }
+
+public class ConsumoTokens
+{
+    public int Id { get; set; }
+    public string Usuario { get; set; }
+    public DateTime FechaHora { get; set; }
+    public int PromptTokens { get; set; }
+    public int CompletionTokens { get; set; }
+    public int TotalTokens { get; set; }
+    public decimal CostoUSD { get; set; }
+    public string TextoSolicitado { get; set; }
+    public string Modelo { get; set; }
+}
+
+
