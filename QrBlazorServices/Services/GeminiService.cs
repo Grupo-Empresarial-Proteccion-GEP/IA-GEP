@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 public class GeminiService // Sigue llamándose así para no romper el resto de tu código
 {
     private readonly HttpClient _httpClient;
-    private readonly string _apiKey = "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"; // OpenAI Key
+    //private readonly string _apiKey = "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"; // OpenAI Key
 
     public GeminiService(HttpClient httpClient)
     {
