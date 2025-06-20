@@ -3,21 +3,61 @@ using System.Net.Http.Json;
 
 public class GeminiService // Sigue llamándose así para no romper el resto de tu código
 {
+    private string claveAPI = string.Empty;
+    private string mensajeClave = string.Empty;
+
+    private readonly AccesoDatos.AccesoDatosSoapClient _servicioUsuario =
+        new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
+
     private readonly HttpClient _httpClient;
-    //private readonly string _apiKey = "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"; // OpenAI Key
 
     public GeminiService(HttpClient httpClient)
     {
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri("https://api.openai.com/v1/");
-      //  _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+    }
+
+    private async Task ObtenerClaveAPI()
+    {
+        try
+        {
+            string campos = "ApiKey";
+            string condicion = "1 = 1";
+            int limite = 18;
+
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("API", campos, condicion, limite);
+
+            if (resultado != null && resultado.Rows.Count > 0)
+            {
+                claveAPI = resultado.Rows[0]["ApiKey"].ToString().Trim();
+
+                mensajeClave = "Clave API encontrada correctamente.";
+            }
+            else
+            {
+                mensajeClave = "No se encontró ninguna clave API en la tabla.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeClave = $"Error al obtener la clave API: {ex.Message}";
+        }
     }
 
     public async Task<string> SendPromptAsync(string userInput)
     {
+        // Obtener la clave desde la BD antes de hacer la solicitud
+        await ObtenerClaveAPI();
+
+        if (string.IsNullOrWhiteSpace(claveAPI))
+            return $"No se pudo obtener la clave API. {mensajeClave}";
+
+        // Agregar el header de autenticación
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", claveAPI);
+
         var requestBody = new
         {
-            model = "GPT-4o", // Cambia por "gpt-3.5-turbo" si es necesario
+            model = "gpt-4o", // Cambia por "gpt-3.5-turbo" si es necesario
             messages = new[]
             {
                 new { role = "user", content = userInput }
