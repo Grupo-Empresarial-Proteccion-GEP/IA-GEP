@@ -12,8 +12,6 @@
 @rendermode InteractiveServer
 
 
-
-
     <head>
         <link href="css/Style.css" rel="stylesheet" />
     </head>
@@ -240,20 +238,22 @@
 
 @if (cargantwo)
 {
-    <div class="container mt-4">
-    <div style="text-align:center; margin-top: 20px;">
-        <div class="spinner"></div>
-        <p><em>CARGANDO, POR FAVOR ESPERA...</em></p>
-    </div>
-    </div>
+    {
+        <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
+            <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+        </div>
+    }
 }
 
 @if (cargando)
 {
-    <div style="text-align:center; margin-top: 20px;">
-        <div class="spinner"></div>
-        <p><em>CARGANDO, POR FAVOR ESPERA...</em></p>
-    </div>
+    
+        <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
+            <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+        </div>
+    
 }
 else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
 {
