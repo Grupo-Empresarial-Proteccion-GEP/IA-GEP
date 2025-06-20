@@ -10,14 +10,14 @@ public class GeminiService // Sigue llamándose así para no romper el resto de 
     {
         _httpClient = httpClient;
         _httpClient.BaseAddress = new Uri("https://api.openai.com/v1/");
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+      //  _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
     }
 
     public async Task<string> SendPromptAsync(string userInput)
     {
         var requestBody = new
         {
-            model = "gpt-3.5-turbo", // Cambia por "gpt-3.5-turbo" si es necesario
+            model = "GPT-4o", // Cambia por "gpt-3.5-turbo" si es necesario
             messages = new[]
             {
                 new { role = "user", content = userInput }
