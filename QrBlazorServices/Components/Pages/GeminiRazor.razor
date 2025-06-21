@@ -12,170 +12,176 @@
 @using System.Text.RegularExpressions;
 @rendermode InteractiveServer
 
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
 
-    <head>
-        <link href="css/Style.css" rel="stylesheet" />
-    </head>
+<EditForm Model="@this" OnValidSubmit="SendToGemini">
+    <div class="api-form container py-4">
 
-    <EditForm Model="@this" OnValidSubmit="SendToGemini">
-        <div class="api-form container py-4">
+        <!-- TÍTULO -->
+        <div class="text-center mb-5">
+            <h2 class="display-6">📄 Generador Inteligente de Documentos</h2>
+            <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
+        </div>
 
-            <!-- TÍTULO -->
-            <div class="text-center mb-5">
-                <h2 class="display-6">📄 Generador Inteligente de Documentos</h2>
-                <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
-            </div>
+        <!-- CARD GENERAL -->
+        <div class="card p-4 shadow-sm rounded-4 bg-light">
 
-            <!-- CARD GENERAL -->
-            <div class="card p-4 shadow-sm rounded-4 bg-light">
-
-                <!-- Fila 1 -->
-                <div class="row g-4">
-                    <!-- Receptor -->
-                    <div class="col-md-6">
-                        <fieldset class="fieldset-custom">
-                            <legend class="legend">👤 Receptor</legend>
-                            <div class="form-group">
-                                <label for="Receptor">Nombre</label>
-                                <InputText id="Receptor" @bind-Value="Receptor" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Documento_R">Tipo de documento</label>
-                                <select id="Documento_R" @bind="Documento_R" class="form-control">
-                                    <option value="">Seleccione</option>
-                                    <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
-                                    <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                    <option value="PEP">PEP</option>
-                                    <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                    <option value="NIT">NIT</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="NumeroDoc_R">Número de documento</label>
-                                <InputText id="NumeroDoc_R" @bind-Value="NumeroDoc_R" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Direccion_R">Dirección</label>
-                                <InputText id="Direccion_R" @bind-Value="Direccion_R" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Telefono_R">Teléfono</label>
-                                <InputText id="Telefono_R" @bind-Value="Telefono_R" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Correo_R">Correo</label>
-                                <InputText id="Correo_R" @bind-Value="Correo_R" class="form-control" />
-                            </div>
-                        </fieldset>
-                    </div>
-
-                    <!-- Emisor -->
-                    <div class="col-md-6">
-                        <fieldset class="fieldset-custom">
-                            <legend class="legend">🏢 Emisor</legend>
-                            <div class="form-group">
-                                <label for="Emisor">Nombre</label>
-                                <InputText id="Emisor" @bind-Value="Emisor" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Documento_E">Tipo de documento</label>
-                                <select id="Documento_E" @bind="Documento_E" class="form-control">
-                                    <option value="">Seleccione</option>
-                                    <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
-                                    <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                    <option value="PEP">PEP</option>
-                                    <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                    <option value="NIT">NIT</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="NumeroDoc_E">Número de documento</label>
-                                <InputText id="NumeroDoc_E" @bind-Value="NumeroDoc_E" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Direccion_E">Dirección</label>
-                                <InputText id="Direccion_E" @bind-Value="Direccion_E" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Telefono_E">Teléfono</label>
-                                <InputText id="Telefono_E" @bind-Value="Telefono_E" class="form-control" />
-                            </div>
-                            <div class="form-group">
-                                <label for="Correo_E">Correo</label>
-                                <InputText id="Correo_E" @bind-Value="Correo_E" class="form-control" />
-                            </div>
-                        </fieldset>
-                    </div>
+            <!-- Fila 1: Receptor y Emisor -->
+            <div class="row g-4">
+                <!-- Receptor -->
+                <div class="col-md-6">
+                    <fieldset class="fieldset-custom">
+                        <legend class="legend">👤 Receptor</legend>
+                        <div class="form-group">
+                            <label for="Receptor">Nombre</label>
+                            <InputText id="Receptor" @bind-Value="Receptor" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Documento_R">Tipo de documento</label>
+                            <select id="Documento_R" @bind="Documento_R" class="form-control">
+                                <option value="">Seleccione</option>
+                                <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
+                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
+                                <option value="PEP">PEP</option>
+                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
+                                <option value="NIT">NIT</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="NumeroDoc_R">Número de documento</label>
+                            <InputText id="NumeroDoc_R" @bind-Value="NumeroDoc_R" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Direccion_R">Dirección</label>
+                            <InputText id="Direccion_R" @bind-Value="Direccion_R" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Telefono_R">Teléfono</label>
+                            <InputText id="Telefono_R" @bind-Value="Telefono_R" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Correo_R">Correo</label>
+                            <InputText id="Correo_R" @bind-Value="Correo_R" class="form-control" />
+                        </div>
+                    </fieldset>
                 </div>
 
-                <!-- Fila 2 -->
-                <div class="row g-4 mt-4">
-                    <div class="col-md-6">
-                        <fieldset class="fieldset-custom">
-                            <legend class="legend">📌 Información del Documento</legend>
-                            <div class="form-group">
-                                <label for="TipoDocumento">Tipo</label>
-                                <select id="TipoDocumento" @bind="TipoDocumento" class="form-control">
-                                    <option value="">Seleccione</option>
-                                    <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
-                                    <option value="CARTA LABORAL">Carta Laboral</option>
-                                    <option value="CONSTANCIA">Constancia</option>
-                                    <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
-                                    <option value="SOLICITUD GENERAL">Solicitud General</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="Ciudad">Ciudad</label>
-                                <InputText id="Ciudad" @bind-Value="Ciudad" class="form-control" />
-                            </div>
+                <!-- Emisor -->
+                <div class="col-md-6">
+                    <fieldset class="fieldset-custom">
+                        <legend class="legend">🏢 Emisor</legend>
+                        <div class="form-group">
+                            <label for="Emisor">Nombre</label>
+                            <InputText id="Emisor" @bind-Value="Emisor" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Documento_E">Tipo de documento</label>
+                            <select id="Documento_E" @bind="Documento_E" class="form-control">
+                                <option value="">Seleccione</option>
+                                <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
+                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
+                                <option value="PEP">PEP</option>
+                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
+                                <option value="NIT">NIT</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="NumeroDoc_E">Número de documento</label>
+                            <InputText id="NumeroDoc_E" @bind-Value="NumeroDoc_E" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Direccion_E">Dirección</label>
+                            <InputText id="Direccion_E" @bind-Value="Direccion_E" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Telefono_E">Teléfono</label>
+                            <InputText id="Telefono_E" @bind-Value="Telefono_E" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label for="Correo_E">Correo</label>
+                            <InputText id="Correo_E" @bind-Value="Correo_E" class="form-control" />
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
 
+            <!-- Fila 2: Información del Documento + Selección IA -->
+
+                <!-- Información del Documento -->
+                <div class="col-md-12">
+                    <fieldset class="fieldset-custom">
+                        <legend class="legend">📌 Información del Documento</legend>
+                        <div class="form-group">
+                            <label for="TipoDocumento">Tipo</label>
+                            <select id="TipoDocumento" @bind="TipoDocumento" class="form-control">
+                                <option value="">Seleccione</option>
+                                <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
+                                <option value="CARTA LABORAL">Carta Laboral</option>
+                                <option value="CONSTANCIA">Constancia</option>
+                                <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
+                                <option value="SOLICITUD GENERAL">Solicitud General</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="Ciudad">Ciudad</label>
+                            <InputText id="Ciudad" @bind-Value="Ciudad" class="form-control" />
+                        </div>
                         <div class="form-group">
                             <label for="Asunto">Asunto</label>
                             <InputText id="Asunto" @bind-Value="Asunto" class="form-control" />
                         </div>
-
-                        </fieldset>
-                    </div>
-
-                    <!-- TextArea bien presentado -->
-                    <div class="col-md-6">
-                        <fieldset class="fieldset-custom">
-                            <legend class="legend">🧠 Descripción para la IA</legend>
- 
-                            <div class="form-group">
-                                <label for="UserPrompt">Descripción detallada (opcional)</label>
-                                <InputTextArea id="UserPrompt" @bind-Value="UserPrompt" class="form-control"
-                                               placeholder="Describe claramente qué quieres generar o analizar..."
-                                               style="min-height: 200px; resize: vertical;" />
-                            </div>
-                        </fieldset>
-                    </div>
+                         <legend class="legend">🤖 Selección de IA</legend>
+                        <div class="form-group">
+                            <label for="SelectorIA">IA a utilizar</label>
+                            <select id="SelectorIA" @onchange="e => CambiarIA(e.Value?.ToString())" class="form-select">
+                                <option value="openai">OpenAI (GPT)</option>
+                                <option value="gemini">Gemini (Google)</option>
+                            </select>
+                        </div>
+                    </fieldset>
                 </div>
 
-                <!-- Fila 3: Subida de archivo y botones -->
-                <div class="row mt-4">
-                    <div class="col-md-12">
-                        <fieldset class="fieldset-custom">
-                            <legend class="legend">📎 Adjuntar archivo</legend>
-                            <div class="form-group mb-3">
-                                <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control" disabled="@cargantwo" />
-                            </div>
+            <!-- Fila 3: TextArea -->
+                
+                <div class="col-md-12">
+                    <fieldset class="fieldset-custom">
+                        <legend class="legend">🧠 Descripción para la IA</legend>
+                        <div class="form-group">
+                            <label for="UserPrompt">Descripción detallada (opcional)</label>
+                            <InputTextArea id="UserPrompt" @bind-Value="UserPrompt" class="form-control"
+                                           placeholder="Describe claramente qué quieres generar o analizar..."
+                                           style="min-height: 400px; resize: vertical;" />
+                        </div>
+                    </fieldset>
+                </div>
 
-                        <div class="d-flex"  style="gap: 20px;">                            
+				
+            <!-- Fila 4: Adjuntar archivo + Botones -->
+                
+                <div class="col-md-12">
+                    <fieldset class="fieldset-custom">
+                        <legend class="legend">📎 Adjuntar archivo</legend>
+                        <div class="form-group mb-3">
+                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control" disabled="@cargantwo" />
+                        </div>
+
+                        <div class="d-flex" style="gap: 20px;">
                             <button @onclick="EnviarYLimpiarDespues" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargando">
-                                    @(cargando ? "Generando documento..." : "Generar Documento con IA")
-                                </button>
+                                @(cargando ? "Generando documento..." : "Generar Documento con IA")
+                            </button>
                             <button @onclick="EnviarYLimpiarDespues2" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargantwo">
-                                    @(cargantwo ? "Analizando..." : "Analizar Documento")
-                                </button>
-                            </div>
-
-                        </fieldset>
-                    </div>
+                                @(cargantwo ? "Analizando..." : "Analizar Documento")
+                            </button>
+                        </div>
+                    </fieldset>
                 </div>
             </div>
         </div>
+  
 
+</EditForm>
 
 
 
@@ -215,14 +221,8 @@
     }
 
 
-    <select @onchange="e => CambiarIA(e.Value?.ToString())" class="form-select">
-        <option value="openai">OpenAI (GPT)</option>
-        <option value="gemini">Gemini (Google)</option>
-    </select>
 
 
-
-</EditForm>
 
 @code {
     private string userInput = "";

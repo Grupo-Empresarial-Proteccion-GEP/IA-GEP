@@ -17,7 +17,7 @@ body {
 /* Contenedor principal */
 .container {
     width: 100%;
-    max-width: 1200px;
+    max-width: auto;
     margin: 40px auto;
     padding: 40px;
     border-radius: 10px;

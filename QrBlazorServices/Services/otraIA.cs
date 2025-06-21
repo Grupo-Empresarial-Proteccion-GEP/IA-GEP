@@ -1,54 +1,89 @@
 ﻿using System.Data;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 
 public class otraIA : ILanguageModelService
 {
-        
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey = "AIzaSyDarNXl-QbTg8qWV4CTE5t8EPa0u7EwAdw";
+    private string claveAPI = string.Empty;
+    private string mensajeClave = string.Empty;
 
-        public otraIA(HttpClient httpClient)
+    private readonly HttpClient _httpClient;
+
+    // Servicio SOAP para obtener claves desde la base de datos
+    private readonly AccesoDatos.AccesoDatosSoapClient _servicioUsuario =
+        new AccesoDatos.AccesoDatosSoapClient(
+            AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12
+        );
+
+    public otraIA(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    private async Task ObtenerClaveAPI()
+    {
+        try
         {
-            _httpClient = httpClient;
-        }
+            string campos = "ApiKey";
+            string condicion = "Id = 3"; // ← Filtramos por ID de la API de Google
+            int limite = 18;
 
-        public async Task<string> SendPromptAsync(string userInput)
-        {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={_apiKey}";
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("API", campos, condicion, limite);
 
-            var requestBody = new
+            if (resultado != null && resultado.Rows.Count > 0)
             {
-                contents = new[]
-                {
+                claveAPI = resultado.Rows[0]["ApiKey"].ToString().Trim();
+                mensajeClave = "Clave API obtenida correctamente.";
+            }
+            else
+            {
+                mensajeClave = "No se encontró clave API con Id = 2.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeClave = $"Error al obtener la clave API: {ex.Message}";
+        }
+    }
+
+    public async Task<string> SendPromptAsync(string userInput)
+    {
+        await ObtenerClaveAPI();
+
+        if (string.IsNullOrWhiteSpace(claveAPI))
+            return $"No se pudo obtener la clave API. {mensajeClave}";
+
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={claveAPI}";
+
+        var requestBody = new
+        {
+            contents = new[]
+            {
                 new
                 {
                     parts = new[]
                     {
-                        new
-                        {
-                            text = userInput
-                        }
+                        new { text = userInput }
                     }
                 }
             }
-            };
+        };
 
-            var response = await _httpClient.PostAsJsonAsync(url, requestBody);
+        var response = await _httpClient.PostAsJsonAsync(url, requestBody);
 
-            if (response.IsSuccessStatusCode)
-            {
-                var responseJson = await response.Content.ReadFromJsonAsync<GeminiResponse>();
-                return responseJson?.candidates?.FirstOrDefault()?.content?.parts?.FirstOrDefault()?.text ?? "No hay respuesta.";
-            }
-            else
-            {
-                var error = await response.Content.ReadAsStringAsync();
-                return $"Error: {error}";
-            }
+        if (response.IsSuccessStatusCode)
+        {
+            var responseJson = await response.Content.ReadFromJsonAsync<GeminiResponse>();
+            return responseJson?.candidates?.FirstOrDefault()?.content?.parts?.FirstOrDefault()?.text ?? "No hay respuesta.";
+        }
+        else
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            return $"Error: {error}";
         }
     }
 
+    // Clases de respuesta
     public class GeminiResponse
     {
         public Candidate[] candidates { get; set; }
@@ -68,4 +103,4 @@ public class otraIA : ILanguageModelService
     {
         public string text { get; set; }
     }
-
+}
