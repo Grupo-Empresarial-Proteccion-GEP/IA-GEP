@@ -1,11 +1,16 @@
 ﻿public class ChatService
 {
     private readonly List<ChatMessage> _chatHistory = new();
-    private readonly GeminiService _geminiService;
+    private ILanguageModelService _currentIA;
 
-    public ChatService(GeminiService geminiService)
+    public ChatService(ILanguageModelService defaultIA)
     {
-        _geminiService = geminiService;
+        _currentIA = defaultIA;
+    }
+
+    public void SetIA(ILanguageModelService newIA)
+    {
+        _currentIA = newIA;
     }
 
     public IReadOnlyList<ChatMessage> ChatHistory => _chatHistory;
@@ -18,7 +23,7 @@
             msg.Role == "user" ? $"Usuario: {msg.Content}" : $"Asistente: {msg.Content}"
         ));
 
-        var respuesta = await _geminiService.SendPromptAsync(fullPrompt);
+        var respuesta = await _currentIA.SendPromptAsync(fullPrompt);
 
         _chatHistory.Add(new ChatMessage { Role = "assistant", Content = respuesta });
 

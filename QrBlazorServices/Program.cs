@@ -30,10 +30,16 @@ namespace QrBlazorServices
     new AccesoDatos.AccesoDatosSoapClient(
         AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12));
 
-            // Registrar servicios
+            builder.Services.AddScoped<GeminiService>();     // OpenAI
+            builder.Services.AddScoped<otraIA>();             // Google Gemini
+
+            // Indicar cuál IA usar por defecto (por ejemplo GeminiService)
+            builder.Services.AddScoped<ILanguageModelService>(provider =>
+                provider.GetRequiredService<GeminiService>());
+
+            // ChatService ahora podrá inyectar ILanguageModelService correctamente
             builder.Services.AddScoped<ChatService>();
-            
-            builder.Services.AddScoped<GeminiService>();
+
 
             builder.Services.AddServerSideBlazor()
                 .AddCircuitOptions(options =>

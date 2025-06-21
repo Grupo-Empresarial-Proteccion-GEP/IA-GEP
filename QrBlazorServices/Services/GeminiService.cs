@@ -2,7 +2,8 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
-public class GeminiService // Sigue llamándose así para no romper el resto de tu código
+public class GeminiService : ILanguageModelService
+// Sigue llamándose así para no romper el resto de tu código
 {
 
     private string claveAPI = string.Empty;

@@ -1,7 +1,9 @@
-﻿namespace QrBlazorServices.Services
+﻿using System.Data;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+
+public class otraIA : ILanguageModelService
 {
-    public class otraIA
-    {
         
         private readonly HttpClient _httpClient;
         private readonly string _apiKey = "AIzaSyDarNXl-QbTg8qWV4CTE5t8EPa0u7EwAdw";
@@ -66,5 +68,4 @@
     {
         public string text { get; set; }
     }
-}
 

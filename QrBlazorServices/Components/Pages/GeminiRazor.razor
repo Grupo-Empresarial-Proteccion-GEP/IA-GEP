@@ -8,6 +8,7 @@
 @using Microsoft.AspNetCore.Hosting
 @using QrBlazorServices.Helpers
 @inject ChatService ChatService
+@inject otraIA otraIA 
 @using System.Text.RegularExpressions;
 @rendermode InteractiveServer
 
@@ -214,6 +215,11 @@
     }
 
 
+    <select @onchange="e => CambiarIA(e.Value?.ToString())" class="form-select">
+        <option value="openai">OpenAI (GPT)</option>
+        <option value="gemini">Gemini (Google)</option>
+    </select>
+
 
 
 </EditForm>
@@ -399,7 +405,22 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
     int espera = 2000; // milisegundos
 
 
-    
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private string selectedIA = "openai";
+
+    private void CambiarIA(string nuevaIA)
+    {
+        selectedIA = nuevaIA;
+
+        if (nuevaIA == "openai")
+            ChatService.SetIA(GeminiService);
+        else if (nuevaIA == "gemini")
+            ChatService.SetIA(otraIA);
+    }
+
+
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     
