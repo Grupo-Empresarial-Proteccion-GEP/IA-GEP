@@ -13,218 +13,249 @@
 @rendermode InteractiveServer
 
 <head>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Tu estilo personalizado -->
     <link href="css/Style.css" rel="stylesheet" />
 </head>
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
-    <div class="api-form container py-4">
-
-        <!-- TÍTULO -->
-        <div class="text-center mb-5">
-            <h2 class="display-6">📄 Generador Inteligente de Documentos</h2>
-            <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
-        </div>
-
-        <!-- CARD GENERAL -->
-        <div class="card p-4 shadow-sm rounded-4 bg-light">
-
-            <!-- Fila 1: Receptor y Emisor -->
-            <div class="row g-4">
-                <!-- Receptor -->
-                <div class="col-md-6">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">👤 Receptor</legend>
-                        <div class="form-group">
-                            <label for="Receptor">Nombre</label>
-                            <InputText id="Receptor" @bind-Value="Receptor" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Documento_R">Tipo de documento</label>
-                            <select id="Documento_R" @bind="Documento_R" class="form-control">
-                                <option value="">Seleccione</option>
-                                <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
-                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                <option value="PEP">PEP</option>
-                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                <option value="NIT">NIT</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="NumeroDoc_R">Número de documento</label>
-                            <InputText id="NumeroDoc_R" @bind-Value="NumeroDoc_R" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Direccion_R">Dirección</label>
-                            <InputText id="Direccion_R" @bind-Value="Direccion_R" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Telefono_R">Teléfono</label>
-                            <InputText id="Telefono_R" @bind-Value="Telefono_R" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Correo_R">Correo</label>
-                            <InputText id="Correo_R" @bind-Value="Correo_R" class="form-control" />
-                        </div>
-                    </fieldset>
-                </div>
-
-                <!-- Emisor -->
-                <div class="col-md-6">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">🏢 Emisor</legend>
-                        <div class="form-group">
-                            <label for="Emisor">Nombre</label>
-                            <InputText id="Emisor" @bind-Value="Emisor" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Documento_E">Tipo de documento</label>
-                            <select id="Documento_E" @bind="Documento_E" class="form-control">
-                                <option value="">Seleccione</option>
-                                <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
-                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                <option value="PEP">PEP</option>
-                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                <option value="NIT">NIT</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="NumeroDoc_E">Número de documento</label>
-                            <InputText id="NumeroDoc_E" @bind-Value="NumeroDoc_E" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Direccion_E">Dirección</label>
-                            <InputText id="Direccion_E" @bind-Value="Direccion_E" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Telefono_E">Teléfono</label>
-                            <InputText id="Telefono_E" @bind-Value="Telefono_E" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Correo_E">Correo</label>
-                            <InputText id="Correo_E" @bind-Value="Correo_E" class="form-control" />
-                        </div>
-                    </fieldset>
-                </div>
+    <div style="background-color: #f5f5f5;"> </div>         
+            <!-- TÍTULO -->
+            <div class="text-center mb-4">
+                <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
+                <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
             </div>
 
-            <!-- Fila 2: Información del Documento + Selección IA -->
-                <!-- Información del Documento -->
-                <div class="col-md-12">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">📌 Información del Documento</legend>
-                        <div class="form-group">
-                            <label for="TipoDocumento">Tipo</label>
-                            <select id="TipoDocumento" @bind="TipoDocumento" class="form-control">
-                                <option value="">Seleccione</option>
-                                <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
-                                <option value="CARTA LABORAL">Carta Laboral</option>
-                                <option value="CONSTANCIA">Constancia</option>
-                                <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
-                                <option value="SOLICITUD GENERAL">Solicitud General</option>
+        <!-- CONTENEDOR GENERAL EN DOS COLUMNAS -->
+        <div class="row gy-4">
+            <!-- COLUMNA IZQUIERDA -->
+            <div class="col-lg-6">
+                <!-- Receptor y Emisor -->
+                <div class="row gy-3">
+                    <!-- Receptor -->
+                    <div class="col-md-6">
+                        <fieldset class="fieldset-custom">
+                            <legend class="legend">👤 Receptor</legend>
+                            <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
+                            <select class="form-control mb-2" @bind="Documento_R">
+                                <option value="">Tipo de documento</option>
+                                <option value="CEDULA DE CIUDADANÍa">Cédula de Ciudadanía</option>
+                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
+                                <option value="PEP">PEP</option>
+                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
+                                <option value="NIT">NIT</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="Ciudad">Ciudad</label>
-                            <InputText id="Ciudad" @bind-Value="Ciudad" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Asunto">Asunto</label>
-                            <InputText id="Asunto" @bind-Value="Asunto" class="form-control" />
-                        </div>
-                         <legend class="legend">🤖 Selección de IA</legend>
-                        <div class="form-group">
-                            <label for="SelectorIA">IA a utilizar</label>
-                            <select id="SelectorIA" @onchange="e => CambiarIA(e.Value?.ToString())" class="form-select">
-                                <option value="openai">OpenAI (GPT)</option>
-                                <option value="gemini">Gemini (Google)</option>
+                            <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_R" />
+                            <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_R" />
+                            <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_R" />
+                            <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_R" />
+                        </fieldset>
+                    </div>
+
+                    <!-- Emisor -->
+                    <div class="col-md-6">
+                        <fieldset class="fieldset-custom">
+                            <legend class="legend">🏢 Emisor</legend>
+                            <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Emisor" />
+                            <select class="form-control mb-2" @bind="Documento_E">
+                                <option value="">Tipo de documento</option>
+                                <option value="CEDULA DE CIUDADANÍa">Cédula de Ciudadanía</option>
+                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
+                                <option value="PEP">PEP</option>
+                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
+                                <option value="NIT">NIT</option>
                             </select>
-                        </div>
-                    </fieldset>
+                            <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_E" />
+                            <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_E" />
+                            <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_E" />
+                            <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_E" />
+                        </fieldset>
+                    </div>
                 </div>
 
-            <!-- Fila 3: TextArea -->
-                
-                <div class="col-md-12">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">🧠 Descripción para la IA</legend>
-                        <div class="form-group">
-                            <label for="UserPrompt">Descripción detallada (opcional)</label>
-                            <InputTextArea id="UserPrompt" @bind-Value="UserPrompt" class="form-control"
-                                           placeholder="Describe claramente qué quieres generar o analizar..."
-                                           style="min-height: 400px; resize: vertical;" />
-                        </div>
-                    </fieldset>
-                </div>
+                <!-- Info Documento -->
+                <fieldset class="fieldset-custom mt-3">
+                    <legend class="legend">📄 Información del Documento</legend>
+                    <select class="form-control mb-2" @bind="TipoDocumento">
+                        <option value="">Tipo</option>
+                        <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
+                        <option value="CARTA LABORAL">Carta Laboral</option>
+                        <option value="CONSTANCIA">Constancia</option>
+                        <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
+                        <option value="SOLICITUD GENERAL">Solicitud General</option>
+                    </select>
+                    <InputText class="form-control mb-2" placeholder="Ciudad" @bind-Value="Ciudad" />
+                    <InputText class="form-control mb-2" placeholder="Asunto" @bind-Value="Asunto" />
 
-				
-            <!-- Fila 4: Adjuntar archivo + Botones -->
-                
-                <div class="col-md-12">
-                    <fieldset class="fieldset-custom">
+                </fieldset>
+
+                <!-- Descripción -->
+                <fieldset class="fieldset-custom mt-3">
+                    <legend class="legend">🤖 Selección de IA</legend>
+                    <select class="form-select mb-3" @onchange="e => CambiarIA(e.Value?.ToString())">
+                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="gemini">Gemini (Google)</option>
+                    </select>
+
+                    <legend class="legend">✍️ Descripción para la IA</legend>
+                    <InputTextArea class="form-control" style="min-height: 250px;" placeholder="Describe claramente qué quieres generar o analizar..." @bind-Value="UserPrompt" />
+                </fieldset>
+            </div>
+
+
+            <div class="col-lg-6 d-flex flex-column fieldset-custom">
+                <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
+
+                    <legend class="legend">🪪 Resultado</legend>
+
+                    <!-- Contenedor principal de la respuesta -->
+                    <div class="form-control mb-3 flex-grow-1" style="min-height: 300px; overflow-y: auto;">
+                        @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
+                        {
+                            <legend class="legend">Sugerencias Generadas</legend>
+                            <p><strong>Selecciona la(s) sugerencia(s):</strong></p>
+                            <ul class="list-unstyled">
+                                @foreach (var opcion in opcionesGeneradas)
+                                {
+                                    <li class="form-check">
+                                        <input class="form-check-input" type="checkbox"
+                                               @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
+                                        <label class="form-check-label">@opcion</label>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(ResponseText))
+                        {
+                            @((MarkupString)ResponseText)
+                        }
+                        else
+                        {
+                            <p class="text-muted">Aún no hay contenido generado.</p>
+                        }
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="form-group d-flex mt-3 gap-3">
+                        <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">
+                            Descargar como Word
+                        </button>
+
+                        <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">
+                            Mostrar Historial
+                        </button>
+                    </div>
+                    <!-- Historial -->
+                    <div id="historial-container" class="historial mt-3" style="@HistorialStyle">
+                        <h5>Historial de Chat:</h5>
+                        <div style="max-height: 200px; overflow-y: auto;">
+                            @foreach (var mensaje in ChatService.ChatHistory)
+                            {
+                                <div class="p-3 border rounded bg-light shadow-sm mb-2">
+                                    @if (mensaje.Role == "user")
+                                    {
+                                        <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
+                                        <p>@LimpiarInstrucciones(mensaje.Content)</p>
+                                    }
+                                    else if (mensaje.Role == "assistant")
+                                    {
+                                        <p class="fw-bold text-success">🤖 Asistente:</p>
+                                        @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- 📎 Adjuntar archivo -->
+                    <div class="mt-4">    </div>
                         <legend class="legend">📎 Adjuntar archivo</legend>
-                        <div class="form-group mb-3">
-                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control" disabled="@cargantwo" />
-                        </div>
-
-                        <div class="d-flex" style="gap: 20px;">
-                            <button @onclick="EnviarYLimpiarDespues" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargando">
-                                @(cargando ? "Generando documento..." : "Generar Documento con IA")
+                        <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">
+                                @(cargando ? "Generando..." : "Generar Documento IA")
                             </button>
-                            <button @onclick="EnviarYLimpiarDespues2" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargantwo">
+                            <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">
                                 @(cargantwo ? "Analizando..." : "Analizar Documento")
                             </button>
                         </div>
                     </fieldset>
-                </div>
+
             </div>
-        </div>
+                </div>
+   
+        
 
 
+ 
 </EditForm>
 
-
-
-
-
-
-
-    @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
-    {
-
-         <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-12">
-                <fieldset class="fieldset-custom">
-                    <legend class="legend">Sugerencias Generadas</legend>
-                    <div class="form-group">
-                        <p><strong>Selecciona la(s) sugerencia(s) que prefieras:</strong></p>
-                        <ul class="list-unstyled">
-                            @foreach (var opcion in opcionesGeneradas)
-                            {
-                                  <div class="container mt-4">
-                                              <li class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                    @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
-                                    <label class="form-check-label">
-                                        @opcion
-                                    </label>
-                                </li>
-                        </div>
-                            }
-                        </ul>
-                    </div>
-                </fieldset>
+@if (showModal)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                 background-color: rgba(0, 0, 0, 0.5); display: flex;
+                 justify-content: center; align-items: center; z-index: 9999;">
+        <div style="background: white; padding: 20px; border-radius: 10px; width: 80%; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 10px #000;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>📚 Historial de Chat</h5>
+                <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
             </div>
+
+            @if (ChatService.ChatHistory?.Any() == true)
+            {
+                @foreach (var mensaje in ChatService.ChatHistory)
+                {
+                    <div class="p-3 border rounded bg-light shadow-sm mb-3">
+                        @if (mensaje.Role == "user")
+                        {
+                            <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
+                            <p>@LimpiarInstrucciones(mensaje.Content)</p>
+                        }
+                        else if (mensaje.Role == "assistant")
+                        {
+                            <p class="fw-bold text-success">🤖 Asistente:</p>
+                            @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted">No hay historial disponible.</p>
+            }
         </div>
-        </div>
-    }
+    </div>
+}
+@code {
+    private bool showModal = false;
+}
 
 
 
+
+@if (cargantwo)
+{
+    <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
+        <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    </div>
+}
+
+@if (cargando)
+{
+    <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
+        <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    </div>
+}
 
 
 @code {
     private string userInput = "";
+    private bool isHistorialVisible = false;
+    private string HistorialStyle => isHistorialVisible ? "display: block;" : "display: none;";
 
     private async Task EnviarMensaje()
     {
@@ -239,82 +270,6 @@
     {
         if (e.Key == "Enter") await EnviarMensaje();
     }
-}
-
-@if (cargantwo)
-{
-    {
-        <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
-            <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
-        </div>
-    }
-}
-
-@if (cargando)
-{
-    
-        <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
-            <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
-        </div>
-    
-}
-else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
-{
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-12">
-                <fieldset class="fieldset-custom">
-                    <legend class="legend">Detalles de la Respuesta</legend>
-                    <div class="form-group">
-                        <p><strong>Respuesta generada:</strong></p>
-                        <div class="resultado-html form-control mb-3"
-                             style="height: 500px; overflow: auto; white-space: normal; word-wrap: break-word;">
-                            @((MarkupString)ResponseText)
-                        </div>
-
-                    </div>
-
-                    <div class="form-group d-flex" style="gap: 20px;">
-                        <button @onclick="DescargarDocSimple" class="btn btn-primary mt-2 btn-custom" type="button">
-                            Descargar como Word
-                        </button>
-                        <button @onclick="ToggleHistorialVisibility" class="btn btn-primary mt-2 btn-custom" type="button">
-                            Mostrar/Ocultar Historial
-                        </button>
-                    </div>
-
-
-                    <div id="historial-container" class="historial" style="@HistorialStyle">
-                        <h3>Historial de Chat:</h3>
-                        <div>
-                            @foreach (var mensaje in ChatService.ChatHistory)
-                            {
-                                <div class="p-4 border rounded bg-white shadow mb-4">
-                                    @if (mensaje.Role == "user")
-                                    {
-                                        <p class="font-semibold text-blue-600">🧑‍💻 Tú:</p>
-                                        <p>@LimpiarInstrucciones(mensaje.Content)</p>
-                                    }
-                                    else if (mensaje.Role == "assistant")
-                                    {
-                                        <p class="font-semibold text-green-600">🤖 Asistente:</p>
-                                        @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
-                                    }
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </fieldset>
-            </div>
-        </div>
-    </div>
-}
-
-@code {
-    private bool isHistorialVisible = false;
-    private string HistorialStyle => isHistorialVisible ? "display: block;" : "display: none;";
 
     private void ToggleHistorialVisibility()
     {
@@ -322,38 +277,14 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
     }
 }
 
-<!-- @if (!string.IsNullOrEmpty(ResponseText))
-{
-    <hr />
-    <h3>Respuesta de Gemini</h3>
-    <div style="border:1px solid black; padding:10px;" @onclick="ToggleHtml">
-        @if (mostrarHtml)
-        {
-            @((MarkupString)ResponseText)
-        }
-        else
-        {
-            <pre>@ResponseText</pre>
-        }
-    </div>
-} 
-}
-@if (!string.IsNullOrEmpty(fileContent))
-{
-    <p>Contenido del archivo:</p>
-    <pre>@fileContent</pre>
-}-->
-
-<!-- //////////////////////////////////////////////////////////////////////////////////// -->
-<!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
-    @foreach (var item in opcionesCheckbox)
+@foreach (var item in opcionesCheckbox)
 {
     <div>
         <input type="checkbox" @bind="item.Seleccionada" />
         @item.Texto
     </div>
 }
+
 
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
