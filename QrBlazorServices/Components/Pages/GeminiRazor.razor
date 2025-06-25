@@ -28,33 +28,45 @@
 
         <div class="text-center mb-4">
             <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
-            <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
         </div>
 
-        <!-- CONTENEDOR GENERAL EN DOS COLUMNAS -->
-        <div class="row gy-4">
-            <!-- COLUMNA IZQUIERDA -->
-            <div class="col-lg-6">
-                <!-- Receptor y Emisor -->
-                <div class="row gy-3">
-                    <!-- Receptor -->
-                    <div class="col-md-6">
-                        <fieldset class="fieldset-custom">
+
+                <!-- CONTENEDOR GENERAL EN DOS COLUMNAS -->
+                <div class="row gy-4">
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="col-lg-6">
+                        <!-- Busqueda De Doc -->
+                        <fieldset class="fieldset-custom mb-3">
+                            <!-- Se agregó 'mb-4' para separación -->
+                            <legend class="legend"> <!--📄--> Buscar Usuario </legend>
+                            <div class="d-flex mb-3 gap-2">
+                                <InputText @bind-Value="nombreBuscado" class="form-control" placeholder="Buscar por documento" />
+                                <button class="btn-custom btn-secondary" @onclick="BuscarClientePorDocumento" type="button" disabled="@buscandoCliente">
+                                    @(buscandoCliente ? "Buscando..." : "Buscar")
+                                </button>
+                            </div>
+                        </fieldset>
+
+                        <!-- Receptor y Emisor -->
+                        <div class="row gy-3">
+                            <!-- Receptor -->
+                            <div class="col-md-6">
+                                <fieldset class="fieldset-custom">
                                     <legend class="legend"><!--👤--> Receptor</legend>
-                            <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
-                            <select class="form-control mb-2" @bind="Documento_R">
+                                    <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
+                                    <select class="form-control mb-2" @bind="Documento_R">
                                         <option value="">Tipo de documento</option>
                                         <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
                                         <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
                                         <option value="PEP">PEP</option>
                                         <option value="Permiso por Protección Temporal">Permiso Temporal</option>
                                         <option value="NIT">NIT</option>
-                            </select>
-                            <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_R" />
-                            <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_R" />
-                            <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_R" />
-                            <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_R" />
-                        </fieldset>
+                                    </select>
+                                    <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_R" />
+                                    <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_R" />
+                                    <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_R" />
+                                    <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_R" />
+                                </fieldset>
                     </div>
 
                     <!-- Emisor -->
@@ -80,17 +92,7 @@
                 </div>
 
                 <!-- Info Documento -->
-                <fieldset class="fieldset-custom mt-3">
-
-                            <legend class="legend"> <!--📄--> Buscar Usuario </legend>
-                            <div class="d-flex mb-3 gap-2">
-                                <InputText @bind-Value="nombreBuscado" class="form-control" placeholder="Buscar por documento" />
-                                <button class="btn-custom btn-secondary" @onclick="BuscarClientePorDocumento" type="button" disabled="@buscandoCliente">
-                                    @(buscandoCliente ? "Buscando..." : "Buscar")
-                                </button>
-                            </div>
-
-
+                            <fieldset class="fieldset-custom mt-3">
                             <legend class="legend"> <!--📄--> Información del Documento </legend>
                     <select class="form-control mb-2" @bind="TipoDocumento">
                         <option value="">Tipo</option>
@@ -201,11 +203,6 @@
         </div>
     </div>
     </div>
-
-
-   <button class="btn btn-secondary" @onclick="BuscarClientePorDocumento" type="button" disabled="@buscandoCliente">
-        @(buscandoCliente ? "Buscando..." : "Buscar")
-    </button>
 
 
 @if (!string.IsNullOrEmpty(mensaje))
