@@ -29,7 +29,7 @@ body {
 
 .scale-wrapper {
     transform-origin: top center;
-    transform: scale(0.75); /* puedes ajustar entre 0.6 y 0.9 */
+    transform: scale(0.70); /* puedes ajustar entre 0.6 y 0.9 */
 }
 
 

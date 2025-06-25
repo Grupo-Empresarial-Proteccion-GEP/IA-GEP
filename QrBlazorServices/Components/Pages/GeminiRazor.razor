@@ -43,12 +43,12 @@
                                     <legend class="legend"><!--👤--> Receptor</legend>
                             <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
                             <select class="form-control mb-2" @bind="Documento_R">
-                                <option value="">Tipo de documento</option>
-                                <option value="CEDULA DE CIUDADANÍa">Cédula de Ciudadanía</option>
-                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                <option value="PEP">PEP</option>
-                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                <option value="NIT">NIT</option>
+                                        <option value="">Tipo de documento</option>
+                                        <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                                        <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                                        <option value="PEP">PEP</option>
+                                        <option value="Permiso por Protección Temporal">Permiso Temporal</option>
+                                        <option value="NIT">NIT</option>
                             </select>
                             <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_R" />
                             <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_R" />
@@ -62,14 +62,15 @@
                         <fieldset class="fieldset-custom">
                                     <legend class="legend"> <!--🏢--> Emisor   </legend>
                             <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Emisor" />
-                            <select class="form-control mb-2" @bind="Documento_E">
-                                <option value="">Tipo de documento</option>
-                                <option value="CEDULA DE CIUDADANÍa">Cédula de Ciudadanía</option>
-                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                <option value="PEP">PEP</option>
-                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                <option value="NIT">NIT</option>
-                            </select>
+                                    <select class="form-control mb-2" @bind="Documento_E">
+                                        <option value="">Tipo de documento</option>
+                                        <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                                        <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                                        <option value="PEP">PEP</option>
+                                        <option value="Permiso por Protección Temporal">Permiso Temporal</option>
+                                        <option value="NIT">NIT</option>
+                                    </select>
+
                             <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_E" />
                             <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_E" />
                             <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_E" />
@@ -80,6 +81,16 @@
 
                 <!-- Info Documento -->
                 <fieldset class="fieldset-custom mt-3">
+
+                            <legend class="legend"> <!--📄--> Buscar Usuario </legend>
+                            <div class="d-flex mb-3 gap-2">
+                                <InputText @bind-Value="nombreBuscado" class="form-control" placeholder="Buscar por documento" />
+                                <button class="btn-custom btn-secondary" @onclick="BuscarClientePorDocumento" type="button" disabled="@buscandoCliente">
+                                    @(buscandoCliente ? "Buscando..." : "Buscar")
+                                </button>
+                            </div>
+
+
                             <legend class="legend"> <!--📄--> Información del Documento </legend>
                     <select class="form-control mb-2" @bind="TipoDocumento">
                         <option value="">Tipo</option>
@@ -91,7 +102,6 @@
                     </select>
                     <InputText class="form-control mb-2" placeholder="Ciudad" @bind-Value="Ciudad" />
                     <InputText class="form-control mb-2" placeholder="Asunto" @bind-Value="Asunto" />
-
                 </fieldset>
 
                 <!-- Descripción -->
@@ -193,6 +203,15 @@
     </div>
 
 
+   <button class="btn btn-secondary" @onclick="BuscarClientePorDocumento" type="button" disabled="@buscandoCliente">
+        @(buscandoCliente ? "Buscando..." : "Buscar")
+    </button>
+
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-info">@mensaje</div>
+}
  
 </EditForm>
 
@@ -294,6 +313,7 @@
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
 @code {
+    private string? Documento;
 
     private string? Ciudad;
     private string? Receptor;
@@ -337,6 +357,10 @@
     int intentos = 0;
     int maxIntentos = 5;
     int espera = 2000; // milisegundos
+
+    private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
+
+
 
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
@@ -831,6 +855,60 @@ Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul
             await moduloJS.InvokeVoidAsync("descargarDocDesdeTextoPlano", ResponseText);
         }
     }
-}
 
- 
+
+<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    string nombreBuscado; // input para búsqueda
+    string mensaje; // para mostrar mensajes al usuario
+    bool buscandoCliente = false;
+
+
+    private async Task BuscarClientePorDocumento()
+    {
+        buscandoCliente = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(nombreBuscado))
+            {
+                mensaje = "Por favor ingrese un número de documento para buscar.";
+                return;
+            }
+
+            string documento = nombreBuscado.Replace("'", "''");
+            string condicion = $"NumeroDeDocumento = '{documento}'";
+            string campos = "Nombre, TipoDeDocumento, NumeroDeDocumento, Direccion, Telefono, Correo";
+
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Clientes", campos, condicion, 18);
+
+            if (resultado != null && resultado.Rows.Count > 0)
+            {
+                var fila = resultado.Rows[0];
+
+                Emisor = fila["Nombre"].ToString();
+                Documento_E = fila["TipoDeDocumento"].ToString();
+                NumeroDoc_E = fila["NumeroDeDocumento"].ToString();
+                Direccion_E = fila["Direccion"].ToString();
+                Telefono_E = fila["Telefono"].ToString();
+                Correo_E = fila["Correo"].ToString();
+
+                mensaje = "Cliente encontrado.";
+            }
+            else
+            {
+                mensaje = "No se encontró ningún cliente con ese documento.";
+                Emisor = Documento_E = NumeroDoc_E = Direccion_E = Telefono_E = Correo_E = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error al buscar cliente: {ex.Message}";
+        }
+        finally
+        {
+            buscandoCliente = false;
+        }
+    }
+
+}
