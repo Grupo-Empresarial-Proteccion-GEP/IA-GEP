@@ -21,12 +21,15 @@
 </head>
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
-    <div style="background-color: #f5f5f5;"> </div>         
-            <!-- TÍTULO -->
-            <div class="text-center mb-4">
-                <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
-                <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
-            </div>
+
+<div style="background-color: #f5f5f5;">
+    <div class="scale-wrapper">
+        <div class="container-fluid card p-4">
+
+        <div class="text-center mb-4">
+            <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
+            <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
+        </div>
 
         <!-- CONTENEDOR GENERAL EN DOS COLUMNAS -->
         <div class="row gy-4">
@@ -37,7 +40,7 @@
                     <!-- Receptor -->
                     <div class="col-md-6">
                         <fieldset class="fieldset-custom">
-                            <legend class="legend">👤 Receptor</legend>
+                                    <legend class="legend"><!--👤--> Receptor</legend>
                             <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
                             <select class="form-control mb-2" @bind="Documento_R">
                                 <option value="">Tipo de documento</option>
@@ -57,7 +60,7 @@
                     <!-- Emisor -->
                     <div class="col-md-6">
                         <fieldset class="fieldset-custom">
-                            <legend class="legend">🏢 Emisor</legend>
+                                    <legend class="legend"> <!--🏢--> Emisor   </legend>
                             <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Emisor" />
                             <select class="form-control mb-2" @bind="Documento_E">
                                 <option value="">Tipo de documento</option>
@@ -77,7 +80,7 @@
 
                 <!-- Info Documento -->
                 <fieldset class="fieldset-custom mt-3">
-                    <legend class="legend">📄 Información del Documento</legend>
+                            <legend class="legend"> <!--📄--> Información del Documento </legend>
                     <select class="form-control mb-2" @bind="TipoDocumento">
                         <option value="">Tipo</option>
                         <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
@@ -93,14 +96,14 @@
 
                 <!-- Descripción -->
                 <fieldset class="fieldset-custom mt-3">
-                    <legend class="legend">🤖 Selección de IA</legend>
+                    <legend class="legend"><!--🤖--> Selección de IA</legend>
                     <select class="form-select mb-3" @onchange="e => CambiarIA(e.Value?.ToString())">
                     <option value="openai">OpenAI (GPT)</option>
                     <option value="gemini">Gemini (Google)</option>
                     </select>
 
-                    <legend class="legend">✍️ Descripción para la IA</legend>
-                    <InputTextArea class="form-control" style="min-height: 250px;" placeholder="Describe claramente qué quieres generar o analizar..." @bind-Value="UserPrompt" />
+                    <legend class="legend"><!--✍️--> Descripción para la IA</legend>
+                    <InputTextArea class="form-control" style="min-height: 180px;" placeholder="Describe claramente qué quieres generar o analizar..." @bind-Value="UserPrompt" />
                 </fieldset>
             </div>
 
@@ -108,7 +111,7 @@
             <div class="col-lg-6 d-flex flex-column fieldset-custom">
                 <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
 
-                    <legend class="legend">🪪 Resultado</legend>
+                    <legend class="legend"><!--🪪--> Resultado</legend>
 
                     <!-- Contenedor principal de la respuesta -->
                     <div class="form-control mb-3 flex-grow-1" style="min-height: 300px; overflow-y: auto;">
@@ -171,7 +174,7 @@
 
                     <!-- 📎 Adjuntar archivo -->
                     <div class="mt-4">    </div>
-                        <legend class="legend">📎 Adjuntar archivo</legend>
+                        <legend class="legend"><!--📎--> Adjuntar archivo</legend>
                         <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
                         <div class="d-flex gap-2">
                             <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">
@@ -185,8 +188,9 @@
 
             </div>
                 </div>
-   
-        
+        </div>
+    </div>
+    </div>
 
 
  
@@ -199,7 +203,7 @@
                  justify-content: center; align-items: center; z-index: 9999;">
         <div style="background: white; padding: 20px; border-radius: 10px; width: 80%; max-height: 80vh; overflow-y: auto; box-shadow: 0 0 10px #000;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>📚 Historial de Chat</h5>
+                <h5><!--📚--> Historial de Chat </h5>
                 <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
             </div>
 
