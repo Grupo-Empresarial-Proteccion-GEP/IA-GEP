@@ -730,31 +730,31 @@ Contenido del documento:
         if (datosCompletos)
         {
             promptFinal = $@"
-Redacta un documento formalsegun su tipo: {TipoDocumento} y teniendo en cuenta la informacion adicional:{UserPrompt} con la siguiente información:
-Ciudad: {Ciudad}
+        Redacta un documento formalsegun su tipo: {TipoDocumento} y teniendo en cuenta la informacion adicional:{UserPrompt} con la siguiente información:
+        Ciudad: {Ciudad}
 
-Fecha: {DateTime.Now:dd 'de' MMMM 'del' yyyy}
-Nombre del receptor: {Receptor}
-Dirección receptor: {Direccion_R}
-Documento receptor: {Documento_R}
-Número Documento receptor: {NumeroDoc_R}
-Teléfono receptor: {Telefono_R}
-Correo receptor: {Correo_R}
+        Fecha: {DateTime.Now:dd 'de' MMMM 'del' yyyy}
+        Nombre del receptor: {Receptor}
+        Dirección receptor: {Direccion_R}
+        Documento receptor: {Documento_R}
+        Número Documento receptor: {NumeroDoc_R}
+        Teléfono receptor: {Telefono_R}
+        Correo receptor: {Correo_R}
 
-Nombre del emisor: {Emisor}
-Dirección emisor: {Direccion_E}
-Documento emisor: {Documento_E}
-Número Documento emisor: {NumeroDoc_E}
-Teléfono emisor: {Telefono_E}
-Correo emisor: {Correo_E}
+        Nombre del emisor: {Emisor}
+        Dirección emisor: {Direccion_E}
+        Documento emisor: {Documento_E}
+        Número Documento emisor: {NumeroDoc_E}
+        Teléfono emisor: {Telefono_E}
+        Correo emisor: {Correo_E}
 
-Asunto: {Asunto}
+        Asunto: {Asunto}
 
-{contenidoAuxiliar}
+        {contenidoAuxiliar}
 
-contenido documento {fileContent}
+        contenido documento {fileContent}
 
-Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
+        Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
         }
         else
         {
@@ -769,8 +769,8 @@ Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul
 
 
             promptFinal = $@"
-{contenidoAdicional}
-Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
+        {contenidoAdicional}
+        Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
 
         }
 
@@ -857,8 +857,8 @@ Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul
     }
 
 
-<!-- //////////////////////////////////////////////////////////////////////////////////// -->
-<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     string nombreBuscado; // input para búsqueda
     string mensaje; // para mostrar mensajes al usuario
     bool buscandoCliente = false;
