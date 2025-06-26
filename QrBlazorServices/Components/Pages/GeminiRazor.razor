@@ -310,8 +310,6 @@
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
 @code {
-    private string? Documento;
-
     private string? Ciudad;
     private string? Receptor;
     private string? Documento_R;
@@ -329,10 +327,17 @@
     private string? TipoDocumento;
     private string? UserPrompt;
     private string? ResponseText;
-    private string fileContent;
+    private string? fileContent;
     private string contenidoAuxiliar = "";
     private string textoParcial = "";
     
+    private bool mostrarHtml = true;
+    private bool isLoading = false;
+    private bool cargando = false;
+    private bool cargantwo = false;
+    private bool mostrarSugerencias = true;
+    private bool jsListo = false;
+   
     private IBrowserFile uploadedFile;
     private IJSObjectReference? moduloJS;
 
@@ -343,13 +348,10 @@
     private List<string> opcionesSeleccionadas = new();
     private List<OpcionCheckbox> opcionesCheckbox = new();
 
-    private bool mostrarHtml = true;
-    private bool isLoading = false;
-    private bool cargando = false;
-    private bool cargantwo = false;
-    private bool mostrarSugerencias = true;
-    private bool jsListo = false;
 
+    string nombreBuscado; // input para búsqueda
+    string mensaje; // para mostrar mensajes al usuario
+    bool buscandoCliente = false;
 
     int intentos = 0;
     int maxIntentos = 5;
@@ -811,10 +813,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    string nombreBuscado; // input para búsqueda
-    string mensaje; // para mostrar mensajes al usuario
-    bool buscandoCliente = false;
-
 
     private async Task BuscarClientePorDocumento()
     {

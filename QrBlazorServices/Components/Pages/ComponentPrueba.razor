@@ -1,4 +1,4 @@
-﻿@page "/Prueba"
+﻿ @page "/Prueba"
 @using System.Data
 
 <h3>ComponentPrueba</h3>
@@ -33,6 +33,7 @@ else
 }
 
 @code {
+
     private static AccesoDatos.AccesoDatosSoap _accesoDatos =
         new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
 
@@ -57,3 +58,4 @@ else
         }
     }
 }
+
