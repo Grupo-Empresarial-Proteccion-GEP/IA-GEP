@@ -662,8 +662,7 @@
         }
         catch (Exception ex)
         {
-            ResponseText = $"<p><em><strong>Respuesta generada por: {NombreIAActual}</strong></em></p>" + ResponseText;
-
+            ResponseText = $"<p><strong>Ocurrió un error:</strong> {ex.Message}</p>";
         }
         finally
         {
