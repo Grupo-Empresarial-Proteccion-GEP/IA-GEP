@@ -205,10 +205,7 @@
     </div>
 
 
-@if (!string.IsNullOrEmpty(mensaje))
-{
-    <div class="alert alert-info">@mensaje</div>
-}
+
  
 </EditForm>
 
@@ -227,7 +224,7 @@
             {
                 @foreach (var mensaje in ChatService.ChatHistory)
                 {
-                    <div class="p-3 border rounded bg-light shadow-sm mb-3">
+                    <div class="p-3 border rounded bg-light shadow-sm mb-2">
                         @if (mensaje.Role == "user")
                         {
                             <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
@@ -236,7 +233,11 @@
                         else if (mensaje.Role == "assistant")
                         {
                             <p class="fw-bold text-success">🤖 Asistente:</p>
-                            @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+
+                            <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
+                                @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+                                <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
+                            </div>
                         }
                     </div>
                 }
@@ -461,6 +462,15 @@
 
         // 3. Fuerza actualización de UI
         StateHasChanged();
+    }
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private void SeleccionarRespuesta(string contenido)
+    {
+        ResponseText = contenido;
+        mostrarSugerencias = false;
+        StateHasChanged(); // Fuerza render si es necesario
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
