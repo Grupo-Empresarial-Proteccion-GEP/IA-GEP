@@ -325,9 +325,7 @@
     private bool mostrarSugerencias = true;
     private bool jsListo = false;
 
-    private bool mostrarHistorial = true;
-
-   
+    private bool mostrarHistorial = true;  
     private IBrowserFile uploadedFile;
     private IJSObjectReference? moduloJS;
 
@@ -366,8 +364,7 @@
         else if (nuevaIA == "gemini")
             ChatService.SetIA(otraIA);
     }
-
-
+        
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     
@@ -665,7 +662,8 @@
         }
         catch (Exception ex)
         {
-            ResponseText = $"<p><strong>Ocurrió un error:</strong> {ex.Message}</p>";
+            ResponseText = $"<p><em><strong>Respuesta generada por: {NombreIAActual}</strong></em></p>" + ResponseText;
+
         }
         finally
         {
