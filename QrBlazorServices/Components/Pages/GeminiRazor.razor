@@ -92,8 +92,8 @@
                 </div>
 
                 <!-- Info Documento -->
-                            <fieldset class="fieldset-custom mt-3">
-                            <legend class="legend"> <!--📄--> Información del Documento </legend>
+                        <fieldset class="fieldset-custom mt-3">
+                        <legend class="legend"> <!--📄--> Información del Documento </legend>
                     <select class="form-control mb-2" @bind="TipoDocumento">
                         <option value="">Tipo</option>
                         <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
@@ -119,7 +119,6 @@
                 </fieldset>
             </div>
 
-
             <div class="col-lg-6 d-flex flex-column fieldset-custom">
                 <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
 
@@ -136,7 +135,7 @@
                                 {
                                     <li class="form-check">
                                         <input class="form-check-input" type="checkbox"
-                                               @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
+                                               @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))"/>
                                         <label class="form-check-label">@opcion</label>
                                     </li>
                                 }
@@ -154,19 +153,14 @@
 
                     <!-- Botones -->
                     <div class="form-group d-flex mt-3 gap-3">
-                        <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">
-                            Descargar como Word
-                        </button>
-
-                        <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">
-                            Mostrar Historial
-                        </button>
+                         <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">Descargar como Word</button>
+                         <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">Mostrar Historial</button>
                     </div>
+
                     <!-- Historial -->
                     <div id="historial-container" class="historial mt-3" style="@HistorialStyle">
                         <h5>Historial de Chat:</h5>
                         <div style="max-height: 200px; overflow-y: auto;">
-                           
                         </div>
                     </div>
 
@@ -175,24 +169,16 @@
                         <legend class="legend"><!--📎--> Adjuntar archivo</legend>
                         <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
                         <div class="d-flex gap-2">
-                            <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">
-                                @(cargando ? "Generando..." : "Generar Documento IA")
-                            </button>
-                            <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">
-                                @(cargantwo ? "Analizando..." : "Analizar Documento")
-                            </button>
+                            <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
+                            <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
                         </div>
                     </fieldset>
-
+                 </div>
             </div>
-                </div>
         </div>
-    </div>
-    </div>
+     </div>
+ </div>
 
-
-
- 
 </EditForm>
 
 @if (showModal)
@@ -240,8 +226,6 @@
     private bool showModal = false;
 }
 
-
-
 @if (cargantwo)
 {
     <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
@@ -257,7 +241,6 @@
         <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
     </div>
 }
-
 
 @code {
     private string userInput = "";
@@ -297,6 +280,7 @@
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
 @code {
+
     private string? Ciudad;
     private string? Receptor;
     private string? Documento_R;
@@ -347,9 +331,6 @@
 
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
 
-
-
-
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
@@ -372,10 +353,8 @@
     {
         cargando = true;
 
-
         // 1. Ejecuta tu función principal
         await SendToGemini();
-
 
         // 2. Luego limpia los campos (dejándolos visualmente en blanco)
         Ciudad = "";
@@ -407,7 +386,6 @@
 
         // 3. Fuerza actualización de UI
         StateHasChanged();
-
 
     }
 
@@ -449,6 +427,7 @@
         // 3. Fuerza actualización de UI
         StateHasChanged();
     }
+
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
    
@@ -482,8 +461,6 @@
 
     };
 
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
         // Filtrar líneas que parecen instrucciones
         var contenidoFiltrado = lineas
@@ -492,6 +469,9 @@
 
         return string.Join("\n", contenidoFiltrado).Trim();
     }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
     private string ExtraerContenidoHtml(string respuesta)
     {
@@ -620,6 +600,7 @@
         
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
     private async Task SendResumenDesdeArchivo()
     {
         try
@@ -672,8 +653,6 @@
         }
     }
 
-
-
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
@@ -692,6 +671,7 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
     private async Task SendToGemini()
     {
         cargando = true;
@@ -784,7 +764,6 @@
         }
     }
 
-
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
@@ -798,6 +777,9 @@
         }
     }
 
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
     private async Task DescargarDocSimple()
     {
         if (jsListo && moduloJS is not null)
@@ -805,7 +787,6 @@
             await moduloJS.InvokeVoidAsync("descargarDocDesdeTextoPlano", ResponseText);
         }
     }
-
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
