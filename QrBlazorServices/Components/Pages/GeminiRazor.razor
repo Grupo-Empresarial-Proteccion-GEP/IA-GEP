@@ -622,10 +622,8 @@
         
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task SendResumenDesdeArchivo()
     {
-
         try
         {
             if (string.IsNullOrWhiteSpace(fileContent))
@@ -634,52 +632,49 @@
                 return;
             }
 
-            string promptResumen = $@"
-Este es el contenido de un archivo cargado. Por favor, analiza el texto y redacta <strong>exactamente cuatro recomendaciones distintas
-para continuar con el documento.
+            // Traer la plantilla desde la tabla Prompts
+            string condicion = "Nombre = 'ResumenDesdeArchivo'";
+            string campos = "Plantilla";
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Prompts", campos, condicion, 18);
 
-Las recomendaciones deben redactarse exclusivamente en formato de enumeración ordinal o cardinal, no con viñetas. Cada recomendación debe estar
-claramente diferenciada dentro del texto. Además, cada una debe ser breve y directa (no más de 4 o 5 líneas).
+            if (resultado == null || resultado.Rows.Count == 0)
+            {
+                ResponseText = "<p><strong>No se encontró el prompt configurado.</strong></p>";
+                return;
+            }
 
-Usa etiquetas HTML como <p>, <strong> o <em>, pero <strong>no uses</strong> <ul>, <ol> ni <li>, y no uses Markdown.
+            // Obtener la plantilla y reemplazar el marcador
+            string plantillaPrompt = resultado.Rows[0]["Plantilla"].ToString();
+            string promptFinal = plantillaPrompt.Replace("{fileContent}", fileContent);
 
-Contenido del documento:
-{fileContent}";
-
-
-            // Enviar la solicitud para obtener la respuesta
-            ResponseText = await ChatService.SendMessageAsync(promptResumen);
+            // Enviar a IA
+            ResponseText = await ChatService.SendMessageAsync(promptFinal);
             mostrarHtml = false;
 
+            // Procesar respuesta
             string textoSinDuplicados = EliminarDuplicadosConCheckboxes(ResponseText);
 
-            // Extraer todas las frases entre <p> o <li> o líneas separadas manualmente
             var matches = Regex.Matches(ResponseText, "<li>(.*?)</li>|<p>(.*?)</p>", RegexOptions.IgnoreCase);
 
-            // Unir todos los grupos y limpiar etiquetas HTML adicionales
             opcionesGeneradas = matches
                 .Select(m => string.IsNullOrEmpty(m.Groups[1].Value) ? m.Groups[2].Value : m.Groups[1].Value)
-                .Select(o => Regex.Replace(o, "<.*?>", "").Trim()) // elimina etiquetas HTML
-                .Distinct() // evita duplicados
+                .Select(o => Regex.Replace(o, "<.*?>", "").Trim())
+                .Distinct()
                 .ToList();
-
-
         }
         catch (Exception ex)
         {
             ResponseText = $"<p><strong>Ocurrió un error:</strong> {ex.Message}</p>";
         }
-
         finally
         {
             cargantwo = false;
-            // 🔄 Resetear el input después de generar las opciones y antes del siguiente render
             inputFileKey = Guid.NewGuid().ToString();
             mostrarSugerencias = true;
-
         }
-
     }
+
+
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
@@ -699,95 +694,55 @@ Contenido del documento:
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task SendToGemini()
     {
         cargando = true;
 
-        var tieneArchivo = !string.IsNullOrWhiteSpace(fileContent);
-        var datosCompletos = !string.IsNullOrWhiteSpace(Ciudad)
-        || !string.IsNullOrWhiteSpace(Receptor)
-        || !string.IsNullOrWhiteSpace(Direccion_R)
-        || !string.IsNullOrWhiteSpace(Documento_R)
-        || !string.IsNullOrWhiteSpace(NumeroDoc_R)
-        || !string.IsNullOrWhiteSpace(Telefono_R)
-        || !string.IsNullOrWhiteSpace(Correo_R)
-        || !string.IsNullOrWhiteSpace(Emisor)
-        || !string.IsNullOrWhiteSpace(Direccion_E)
-        || !string.IsNullOrWhiteSpace(Documento_E)
-        || !string.IsNullOrWhiteSpace(NumeroDoc_E)
-        || !string.IsNullOrWhiteSpace(Telefono_E)
-        || !string.IsNullOrWhiteSpace(Correo_E)
-        || !string.IsNullOrWhiteSpace(Asunto);
-
-        string opcionesTexto = string.Join("\n", opcionesSeleccionadas);
-
-        string promptFinal;
-
-        if (datosCompletos)
-        {
-            promptFinal = $@"
-        Redacta un documento formalsegun su tipo: {TipoDocumento} y teniendo en cuenta la informacion adicional:{UserPrompt} con la siguiente información:
-        Ciudad: {Ciudad}
-
-        Fecha: {DateTime.Now:dd 'de' MMMM 'del' yyyy}
-        Nombre del receptor: {Receptor}
-        Dirección receptor: {Direccion_R}
-        Documento receptor: {Documento_R}
-        Número Documento receptor: {NumeroDoc_R}
-        Teléfono receptor: {Telefono_R}
-        Correo receptor: {Correo_R}
-
-        Nombre del emisor: {Emisor}
-        Dirección emisor: {Direccion_E}
-        Documento emisor: {Documento_E}
-        Número Documento emisor: {NumeroDoc_E}
-        Teléfono emisor: {Telefono_E}
-        Correo emisor: {Correo_E}
-
-        Asunto: {Asunto}
-
-        {contenidoAuxiliar}
-
-        contenido documento {fileContent}
-
-        Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
-        }
-        else
-        {
-            // Si no hay datos completos, también puedes asignar un valor a promptFinal
-            var contenidoAdicional = "";
-
-            if (!string.IsNullOrWhiteSpace(UserPrompt))
-                contenidoAdicional += $"Instrucciones del usuario: {UserPrompt}\n";
-
-           // if (!string.IsNullOrWhiteSpace(UserPrompt))
-             //   contenidoAdicional += $"Archivo Cargado: {fileContent}\n";
-
-
-            promptFinal = $@"
-        {contenidoAdicional}
-        Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
-
-        }
-
-        if (!string.IsNullOrWhiteSpace(contenidoAuxiliar))        
-        {
-        var contenidoAdicional = "";
-        contenidoAdicional += $"Sugerencia del usuario: \n{contenidoAuxiliar}\n";
-
-            promptFinal = $@"
-        {contenidoAdicional}
-        Por favor genera el documento en base a la sugerencia seleccionada {contenidoAuxiliar} 
-        como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
-        }
-
-        
         try
         {
+            string condicion = "Nombre = 'GenerarDocumentoFormal'";
+            string campos = "Plantilla";
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Prompts", campos, condicion, 18);
+
+            if (resultado == null || resultado.Rows.Count == 0)
+            {
+                ResponseText = "<p><strong>No se encontró el prompt configurado.</strong></p>";
+                return;
+            }
+
+            string plantillaPrompt = resultado.Rows[0]["Plantilla"].ToString();
+
+            string promptFinal = plantillaPrompt
+                .Replace("{TipoDocumento}", TipoDocumento)
+                .Replace("{UserPrompt}", UserPrompt ?? "")
+                .Replace("{Ciudad}", Ciudad ?? "")
+                .Replace("{Fecha}", DateTime.Now.ToString("dd 'de' MMMM 'del' yyyy"))
+                .Replace("{Receptor}", Receptor ?? "")
+                .Replace("{Direccion_R}", Direccion_R ?? "")
+                .Replace("{Documento_R}", Documento_R ?? "")
+                .Replace("{NumeroDoc_R}", NumeroDoc_R ?? "")
+                .Replace("{Telefono_R}", Telefono_R ?? "")
+                .Replace("{Correo_R}", Correo_R ?? "")
+                .Replace("{Emisor}", Emisor ?? "")
+                .Replace("{Direccion_E}", Direccion_E ?? "")
+                .Replace("{Documento_E}", Documento_E ?? "")
+                .Replace("{NumeroDoc_E}", NumeroDoc_E ?? "")
+                .Replace("{Telefono_E}", Telefono_E ?? "")
+                .Replace("{Correo_E}", Correo_E ?? "")
+                .Replace("{Asunto}", Asunto ?? "")
+                .Replace("{contenidoAuxiliar}", contenidoAuxiliar ?? "")
+                .Replace("{fileContent}", fileContent ?? "");
+
+            // Si el usuario no llenó nada, usar prompt alterno
+            if (string.IsNullOrWhiteSpace(Ciudad + Emisor + Receptor + fileContent))
+            {
+                promptFinal = $"Instrucciones del usuario: {UserPrompt}\n\nPor favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
+            }
+
+            // Enviar a IA con reintentos
             int intentos = 0;
             int maxIntentos = 5;
-            int esperaMs = 2000; // 2 segundos
+            int esperaMs = 2000;
 
             while (intentos < maxIntentos)
             {
@@ -795,7 +750,6 @@ Contenido del documento:
                 {
                     ResponseText = await ChatService.SendMessageAsync(promptFinal);
                     break;
-
                 }
                 catch (HttpRequestException ex)
                 {
@@ -809,7 +763,7 @@ Contenido del documento:
                         }
 
                         await Task.Delay(esperaMs);
-                        esperaMs *= 2; // backoff exponencial
+                        esperaMs *= 2;
                     }
                     else
                     {
@@ -818,6 +772,7 @@ Contenido del documento:
                     }
                 }
             }
+
             mostrarHtml = true;
         }
         catch (Exception ex)
@@ -828,9 +783,9 @@ Contenido del documento:
         {
             cargando = false;
             mostrarSugerencias = false;
-  
         }
     }
+
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
