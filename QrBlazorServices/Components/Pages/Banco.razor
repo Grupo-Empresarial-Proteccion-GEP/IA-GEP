@@ -1,0 +1,157 @@
+﻿@page "/Banco"
+@using AccesoDatos
+@using System.Data
+@inject AccesoDatosSoapClient ServicioUsuario
+@rendermode InteractiveServer
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
+<div class="container mt-4">
+    <h5 class="text-center mb-4">🧠 Visor de Sesiones de Conversación</h5>
+
+    @if (mensajeError != null)
+    {
+        <div class="alert alert-danger">@mensajeError</div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <h6>📋 Sesiones</h6>
+            <table class="table table-sm table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Asunto</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    @foreach (DataRow fila in sesiones.Rows)
+                    {
+                        var id = Convert.ToInt32(fila["Id"]);
+                        <tr style="cursor:pointer"
+                            @onclick="() => SeleccionarSesion(id)"
+                            class="@(id == sesionSeleccionadaId ? "table-primary" : "")">
+                            <td>@fila["Usuario"]</td>
+                            <td>@Convert.ToDateTime(fila["FechaInicio"]).ToString("g")</td>
+                            <td>@fila["TipoDocumento"]</td>
+                            <td>@fila["Asunto"]</td>
+                        </tr>
+                    }
+
+
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-md-6">
+            <h6>💬 Historial de Conversación</h6>
+
+            @if (historial != null && historial.Rows.Count > 0)
+            {
+                <div class="border rounded p-2" style="max-height: 700px; overflow-y: auto;">
+                    @if (historial != null && historial.Rows.Count > 0)
+                    {
+                        <div class="chat-container p-3" style="max-height: 500px; overflow-y: auto;">
+                            @foreach (DataRow row in historial.Rows)
+                            {
+                                var rol = row["Rol"].ToString()?.ToLower();
+                                var contenidoOriginal = row["Contenido"].ToString();
+                                var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
+
+                                // Frases a eliminar
+                                var frasesAEliminar = new[]
+                                {
+                    "Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.",
+                    "Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>. No uses Markdown."
+                    };
+
+                                var contenidoLimpio = contenidoOriginal;
+                                if (rol == "user")
+                                {
+                                    foreach (var frase in frasesAEliminar)
+                                    {
+                                        contenidoLimpio = contenidoLimpio.Replace(frase, "").Trim();
+                                    }
+                                }
+
+                                var isUser = rol == "user";
+
+                                <div class="d-flex mb-4 @(isUser ? "justify-content-start" : "justify-content-end")">
+                                    <div class="chat-bubble p-3" style="
+                    background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
+                    border-radius: 1rem;
+                    max-width: 75%;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                    position: relative;
+                    word-wrap: break-word;
+                    white-space: normal;
+                                ">
+                                        <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.5rem;">
+                                            <strong>@rol</strong> • @fecha
+                                        </div>
+                                        <div>@((MarkupString)contenidoLimpio)</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                </div>
+            
+
+            }
+            else if (sesionSeleccionadaId != 0)
+            {
+                <p class="text-muted">No hay historial para esta sesión.</p>
+            }
+        </div>
+    </div>
+
+                </div>
+
+@code {
+    private DataTable sesiones = new();
+    private DataTable historial = new();
+    private int sesionSeleccionadaId = 0;
+    private string? mensajeError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarSesiones();
+    }
+
+    private async Task CargarSesiones()
+    {
+        try
+        {
+            sesiones = await ServicioUsuario.TraerTablaParametrosAsync("SesionesConversacion", "Id, Usuario, FechaInicio, TipoDocumento, Asunto", "1=1", 18);
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar sesiones: {ex.Message}";
+        }
+    }
+
+    private async Task SeleccionarSesion(int id)
+    {
+        sesionSeleccionadaId = id;
+        try
+        {
+            historial = await ServicioUsuario.TraerTablaParametrosAsync(
+                "HistorialConversaciones",
+                "Fecha, Rol, Contenido",
+                $"SesionId = {id}",
+                18
+            );
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar historial: {ex.Message}";
+        }
+    }
+}

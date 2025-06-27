@@ -8,27 +8,30 @@
 @using Microsoft.AspNetCore.Hosting
 @using QrBlazorServices.Helpers
 @inject ChatService ChatService
-@inject otraIA otraIA 
+@inject otraIA otraIA
 @using System.Text.RegularExpressions;
 @rendermode InteractiveServer
+@using System.Data;
+@using System.Text
+
 
 <head>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-
+   
     <!-- Tu estilo personalizado -->
     <link href="css/Style.css" rel="stylesheet" />
 </head>
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
 
-<div style="background-color: #f5f5f5;">
-    <div class="scale-wrapper">
-        <div class="container-fluid card p-4">
+    <div style="background-color: #f5f5f5;">
+        <div class="scale-wrapper">
+            <div class="container-fluid card p-4">
 
-        <div class="text-center mb-4">
-            <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
-        </div>
+                <div class="text-center mb-4">
+                    <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
+                </div>
 
 
                 <!-- CONTENEDOR GENERAL EN DOS COLUMNAS -->
@@ -67,13 +70,13 @@
                                     <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_R" />
                                     <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_R" />
                                 </fieldset>
-                    </div>
+                            </div>
 
-                    <!-- Emisor -->
-                    <div class="col-md-6">
-                        <fieldset class="fieldset-custom">
+                            <!-- Emisor -->
+                            <div class="col-md-6">
+                                <fieldset class="fieldset-custom">
                                     <legend class="legend"> <!--🏢--> Emisor   </legend>
-                            <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Emisor" />
+                                    <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Emisor" />
                                     <select class="form-control mb-2" @bind="Documento_E">
                                         <option value="">Tipo de documento</option>
                                         <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
@@ -83,101 +86,101 @@
                                         <option value="NIT">NIT</option>
                                     </select>
 
-                            <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_E" />
-                            <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_E" />
-                            <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_E" />
-                            <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_E" />
+                                    <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_E" />
+                                    <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_E" />
+                                    <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_E" />
+                                    <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_E" />
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <!-- Info Documento -->
+                        <fieldset class="fieldset-custom mt-3">
+                            <legend class="legend"> <!--📄--> Información del Documento </legend>
+                            <select class="form-control mb-2" @bind="TipoDocumento">
+                                <option value="">Tipo</option>
+                                <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
+                                <option value="CARTA LABORAL">Carta Laboral</option>
+                                <option value="CONSTANCIA">Constancia</option>
+                                <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
+                                <option value="SOLICITUD GENERAL">Solicitud General</option>
+                            </select>
+                            <InputText class="form-control mb-2" placeholder="Ciudad" @bind-Value="Ciudad" />
+                            <InputText class="form-control mb-2" placeholder="Asunto" @bind-Value="Asunto" />
+                        </fieldset>
+
+                        <!-- Descripción -->
+                        <fieldset class="fieldset-custom mt-3">
+                            <legend class="legend"><!--🤖--> Selección de IA</legend>
+                            <select class="form-select mb-3" @onchange="e => CambiarIA(e.Value?.ToString())">
+                                <option value="openai">OpenAI (GPT)</option>
+                                <option value="gemini">Gemini (Google)</option>
+                            </select>
+
+                            <legend class="legend"><!--✍️--> Descripción para la IA</legend>
+                            <InputTextArea class="form-control" style="min-height: 180px;" placeholder="Describe claramente qué quieres generar o analizar..." @bind-Value="UserPrompt" />
+                        </fieldset>
+                    </div>
+
+                    <div class="col-lg-6 d-flex flex-column fieldset-custom">
+                        <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
+
+                            <legend class="legend"><!--🪪--> Resultado</legend>
+
+                            <!-- Contenedor principal de la respuesta -->
+                            <div class="form-control mb-3 flex-grow-1" style="min-height: 200px; overflow-y: auto;">
+                                @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
+                                {
+                                    <legend class="legend">Sugerencias Generadas</legend>
+                                    <p><strong>Selecciona la(s) sugerencia(s):</strong></p>
+                                    <ul class="list-unstyled">
+                                        @foreach (var opcion in opcionesGeneradas)
+                                        {
+                                            <li class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
+                                                <label class="form-check-label">@opcion</label>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(ResponseText))
+                                {
+                                    @((MarkupString)ResponseText)
+                                }
+                                else
+                                {
+                                    <p class="text-muted">Aún no hay contenido generado.</p>
+                                }
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="form-group d-flex mt-3 gap-3">
+                                <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">Descargar como Word</button>
+                                <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">Mostrar Historial</button>
+                            </div>
+
+                            <!-- Historial -->
+                            <div id="historial-container" class="historial mt-3" style="@HistorialStyle">
+                                <h5>Historial de Chat:</h5>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                </div>
+                            </div>
+
+                            <!-- 📎 Adjuntar archivo -->
+                            <div class="mt-4">    </div>
+                            <legend class="legend"><!--📎--> Adjuntar archivo</legend>
+                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
+                                <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
+                            </div>
                         </fieldset>
                     </div>
                 </div>
-
-                <!-- Info Documento -->
-                        <fieldset class="fieldset-custom mt-3">
-                        <legend class="legend"> <!--📄--> Información del Documento </legend>
-                    <select class="form-control mb-2" @bind="TipoDocumento">
-                        <option value="">Tipo</option>
-                        <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
-                        <option value="CARTA LABORAL">Carta Laboral</option>
-                        <option value="CONSTANCIA">Constancia</option>
-                        <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
-                        <option value="SOLICITUD GENERAL">Solicitud General</option>
-                    </select>
-                    <InputText class="form-control mb-2" placeholder="Ciudad" @bind-Value="Ciudad" />
-                    <InputText class="form-control mb-2" placeholder="Asunto" @bind-Value="Asunto" />
-                </fieldset>
-
-                <!-- Descripción -->
-                <fieldset class="fieldset-custom mt-3">
-                    <legend class="legend"><!--🤖--> Selección de IA</legend>
-                    <select class="form-select mb-3" @onchange="e => CambiarIA(e.Value?.ToString())">
-                    <option value="openai">OpenAI (GPT)</option>
-                    <option value="gemini">Gemini (Google)</option>
-                    </select>
-
-                    <legend class="legend"><!--✍️--> Descripción para la IA</legend>
-                    <InputTextArea class="form-control" style="min-height: 180px;" placeholder="Describe claramente qué quieres generar o analizar..." @bind-Value="UserPrompt" />
-                </fieldset>
-            </div>
-
-            <div class="col-lg-6 d-flex flex-column fieldset-custom">
-                <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
-
-                    <legend class="legend"><!--🪪--> Resultado</legend>
-
-                    <!-- Contenedor principal de la respuesta -->
-                    <div class="form-control mb-3 flex-grow-1" style="min-height: 200px; overflow-y: auto;">
-                        @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
-                        {
-                            <legend class="legend">Sugerencias Generadas</legend>
-                            <p><strong>Selecciona la(s) sugerencia(s):</strong></p>
-                            <ul class="list-unstyled">
-                                @foreach (var opcion in opcionesGeneradas)
-                                {
-                                    <li class="form-check">
-                                        <input class="form-check-input" type="checkbox"
-                                               @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))"/>
-                                        <label class="form-check-label">@opcion</label>
-                                    </li>
-                                }
-                            </ul>
-                        }
-                        else if (!string.IsNullOrWhiteSpace(ResponseText))
-                        {
-                            @((MarkupString)ResponseText)
-                        }
-                        else
-                        {
-                            <p class="text-muted">Aún no hay contenido generado.</p>
-                        }
-                    </div>
-
-                    <!-- Botones -->
-                    <div class="form-group d-flex mt-3 gap-3">
-                         <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">Descargar como Word</button>
-                         <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">Mostrar Historial</button>
-                    </div>
-
-                    <!-- Historial -->
-                    <div id="historial-container" class="historial mt-3" style="@HistorialStyle">
-                        <h5>Historial de Chat:</h5>
-                        <div style="max-height: 200px; overflow-y: auto;">
-                        </div>
-                    </div>
-
-                    <!-- 📎 Adjuntar archivo -->
-                    <div class="mt-4">    </div>
-                        <legend class="legend"><!--📎--> Adjuntar archivo</legend>
-                        <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
-                            <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
-                        </div>
-                    </fieldset>
-                 </div>
             </div>
         </div>
-     </div>
- </div>
+    </div>
 
 </EditForm>
 
@@ -278,7 +281,6 @@
 
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
 @code {
 
     private string? Ciudad;
@@ -301,7 +303,9 @@
     private string? fileContent;
     private string contenidoAuxiliar = "";
     private string textoParcial = "";
-    
+
+    public string UsuarioActual { get; set; } = "Invitado";
+
     private bool mostrarHtml = true;
     private bool isLoading = false;
     private bool cargando = false;
@@ -309,13 +313,13 @@
     private bool mostrarSugerencias = true;
     private bool jsListo = false;
 
-    private bool mostrarHistorial = true;  
+    private bool mostrarHistorial = true;
     private IBrowserFile uploadedFile;
     private IJSObjectReference? moduloJS;
 
     private string inputFileKey = Guid.NewGuid().ToString();
     private string uploadedFileContent = string.Empty;
-    
+
     private List<string> opcionesGeneradas = new();
     private List<string> opcionesSeleccionadas = new();
     private List<OpcionCheckbox> opcionesCheckbox = new();
@@ -333,7 +337,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private string selectedIA = "openai";
 
     private void CambiarIA(string nuevaIA)
@@ -345,10 +348,9 @@
         else if (nuevaIA == "gemini")
             ChatService.SetIA(otraIA);
     }
-        
+
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    
     private async Task EnviarYLimpiarDespues()
     {
         cargando = true;
@@ -391,7 +393,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task EnviarYLimpiarDespues2()
     {
         cargantwo = true; // Activar el spinner
@@ -430,7 +431,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-   
     private void SeleccionarRespuesta(string contenido)
     {
         ResponseText = contenido;
@@ -440,7 +440,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    
     private string LimpiarInstrucciones(string texto)
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
@@ -472,7 +471,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private string ExtraerContenidoHtml(string respuesta)
     {
         if (string.IsNullOrEmpty(respuesta)) return string.Empty;
@@ -489,7 +487,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     public class OpcionCheckbox
     {
         public string Texto { get; set; }
@@ -498,7 +495,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     void OnCheckboxChanged(string opcion, bool isChecked)
     {
         // Agrega o elimina la opción seleccionada de la lista
@@ -519,7 +515,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private void GuardarSeleccionadas()
     {
         // Unimos las opciones seleccionadas en un solo string
@@ -537,8 +532,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// --> 
-
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     public static string EliminarDuplicadosConCheckboxes(string texto)
     {
         // Expresión regular para capturar solo las opciones numeradas dentro de <li> o <p>
@@ -567,7 +561,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
 
@@ -597,10 +590,9 @@
         }
 
     }
-        
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     private async Task SendResumenDesdeArchivo()
     {
         try
@@ -655,7 +647,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task SimularEscritura(string textoCompleto)
     {
         textoParcial = "";
@@ -671,13 +662,13 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task SendToGemini()
     {
         cargando = true;
 
         try
         {
+            // 1. Obtener la plantilla
             string condicion = "Nombre = 'GenerarDocumentoFormal'";
             string campos = "Plantilla";
             var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Prompts", campos, condicion, 18);
@@ -690,6 +681,7 @@
 
             string plantillaPrompt = resultado.Rows[0]["Plantilla"].ToString();
 
+            // 2. Construir el prompt
             string promptFinal = plantillaPrompt
                 .Replace("{TipoDocumento}", TipoDocumento)
                 .Replace("{UserPrompt}", UserPrompt ?? "")
@@ -711,13 +703,33 @@
                 .Replace("{contenidoAuxiliar}", contenidoAuxiliar ?? "")
                 .Replace("{fileContent}", fileContent ?? "");
 
-            // Si el usuario no llenó nada, usar prompt alterno
+            // 3. Obtener retroalimentación de respuestas anteriores
+            var respuestasPrevias = await ObtenerRespuestasAnterioresAsync(TipoDocumento);
+
+            if (respuestasPrevias.Any())
+            {
+                var contextoBuilder = new StringBuilder();
+                contextoBuilder.AppendLine("Ten en cuenta estas respuestas anteriores para mantener coherencia:\n");
+
+                foreach (var r in respuestasPrevias)
+                {
+                    contextoBuilder.AppendLine($"<blockquote>{r}</blockquote>\n");
+                }
+
+                promptFinal = contextoBuilder.ToString() + "\n\n" + promptFinal;
+            }
+
+            // 4. Si no hay datos suficientes, usar prompt básico
             if (string.IsNullOrWhiteSpace(Ciudad + Emisor + Receptor + fileContent))
             {
                 promptFinal = $"Instrucciones del usuario: {UserPrompt}\n\nPor favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
             }
 
-            // Enviar a IA con reintentos
+            // 5. Guardar sesión y mensajes
+            int sesionId = await GuardarSesionConversacionAsync(TipoDocumento, Asunto);
+            await GuardarMensajeConversacionAsync(sesionId, "user", promptFinal);
+
+            // 6. Enviar a IA con reintentos
             int intentos = 0;
             int maxIntentos = 5;
             int esperaMs = 2000;
@@ -727,6 +739,7 @@
                 try
                 {
                     ResponseText = await ChatService.SendMessageAsync(promptFinal);
+                    await GuardarMensajeConversacionAsync(sesionId, "assistant", ResponseText);
                     break;
                 }
                 catch (HttpRequestException ex)
@@ -766,7 +779,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -779,7 +791,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task DescargarDocSimple()
     {
         if (jsListo && moduloJS is not null)
@@ -790,7 +801,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task BuscarClientePorDocumento()
     {
         buscandoCliente = true;
@@ -840,5 +850,73 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private async Task<int> GuardarSesionConversacionAsync(string tipoDocumento, string asunto)
+    {
+        DataTable tabla = new DataTable("SesionesConversacion");
+        tabla.Columns.Add("Id", typeof(int));
+        tabla.Columns.Add("Usuario", typeof(string));
+        tabla.Columns.Add("FechaInicio", typeof(DateTime));
+        tabla.Columns.Add("TipoDocumento", typeof(string));
+        tabla.Columns.Add("Asunto", typeof(string));
+
+        var fila = tabla.NewRow();
+        fila["Id"] = 0;
+        fila["Usuario"] = DBNull.Value; // ← Usuario no necesario
+        fila["FechaInicio"] = DateTime.Now;
+        fila["TipoDocumento"] = tipoDocumento ?? "";
+        fila["Asunto"] = asunto ?? "";
+
+        tabla.Rows.Add(fila);
+
+        string id = await _servicioUsuario.InsertarFilaDevuelveConsecutivoAsync(tabla, "SesionesConversacion", 18);
+        return int.TryParse(id, out int sesionId) ? sesionId : 0;
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private async Task GuardarMensajeConversacionAsync(int sesionId, string rol, string contenido)
+    {
+        DataTable tablaHistorial = new DataTable("HistorialConversaciones");
+        tablaHistorial.Columns.Add("Id", typeof(int));
+        tablaHistorial.Columns.Add("SesionId", typeof(int));
+        tablaHistorial.Columns.Add("Fecha", typeof(DateTime));
+        tablaHistorial.Columns.Add("Rol", typeof(string));
+        tablaHistorial.Columns.Add("Contenido", typeof(string));
+
+        DataRow fila = tablaHistorial.NewRow();
+        fila["Id"] = 0;
+        fila["SesionId"] = sesionId;
+        fila["Fecha"] = DateTime.Now;
+        fila["Rol"] = rol ?? "";
+        fila["Contenido"] = contenido ?? "";
+
+        tablaHistorial.Rows.Add(fila);
+
+        await _servicioUsuario.InsertarTablaAsync(tablaHistorial, "HistorialConversaciones", 18);
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private async Task<List<string>> ObtenerRespuestasAnterioresAsync(string tipoDoc)
+    {
+        string consulta = $@"
+        SELECT TOP 3 Contenido FROM HistorialConversaciones
+        WHERE Rol = 'assistant'
+        AND SesionId IN (
+            SELECT Id FROM SesionesConversacion
+            WHERE TipoDocumento = '{tipoDoc}'
+        )
+        ORDER BY Fecha DESC";
+
+        var tabla = await _servicioUsuario.TraerConsultaAsync(consulta, 18);
+        var respuestas = new List<string>();
+
+        foreach (DataRow row in tabla.Rows)
+        {
+            respuestas.Add(row["Contenido"].ToString());
+        }
+
+        return respuestas;
+    }
 
 }
