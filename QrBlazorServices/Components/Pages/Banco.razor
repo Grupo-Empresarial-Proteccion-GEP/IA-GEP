@@ -8,117 +8,113 @@
     <link href="css/Style.css" rel="stylesheet" />
 </head>
 
-<div class="container mt-4">
-    <h5 class="text-center mb-4">🧠 Visor de Sesiones de Conversación</h5>
+<div class="container d-flex justify-content-center align-items-start mt-4" style="min-height: 90vh;">
+    <div class="col-md-11">
+        <fieldset class="fieldset-custom">
+            <legend class="legend text-center mb-4">🧠 Visor de Banco de Conversaciones</legend>
 
-    @if (mensajeError != null)
-    {
-        <div class="alert alert-danger">@mensajeError</div>
-    }
+            <div class="row justify-content-center px-3" style="gap: 1rem;">
+                <!-- Contenedor de SESIONES -->
+                <div class="col-md-5">
+                    <div class="border rounded p-4 shadow-sm">
+                        <legend class="legend text-center mb-3">📋 Sesiones</legend>
 
-    <div class="row">
-        <div class="col-md-6">
-            <h6>📋 Sesiones</h6>
-            <table class="table table-sm table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Usuario</th>
-                        <th>Fecha</th>
-                        <th>Tipo</th>
-                        <th>Asunto</th>
-                    </tr>
-                </thead>
-                <tbody>
+                        <InputText @bind-Value="filtroUsuario" class="form-control mb-2" placeholder="🔍 Filtrar por usuario" />
+                        <InputText @bind-Value="filtroTipoDocumento" class="form-control mb-3" placeholder="📄 Filtrar por tipo de documento" />
 
-                    @foreach (DataRow fila in sesiones.Rows)
-                    {
-                        var id = Convert.ToInt32(fila["Id"]);
-                        <tr style="cursor:pointer"
-                            @onclick="() => SeleccionarSesion(id)"
-                            class="@(id == sesionSeleccionadaId ? "table-primary" : "")">
-                            <td>@fila["Usuario"]</td>
-                            <td>@Convert.ToDateTime(fila["FechaInicio"]).ToString("g")</td>
-                            <td>@fila["TipoDocumento"]</td>
-                            <td>@fila["Asunto"]</td>
-                        </tr>
-                    }
-
-
-                </tbody>
-            </table>
-        </div>
-
-        <div class="col-md-6">
-            <h6>💬 Historial de Conversación</h6>
-
-            @if (historial != null && historial.Rows.Count > 0)
-            {
-                <div class="border rounded p-2" style="max-height: 700px; overflow-y: auto;">
-                    @if (historial != null && historial.Rows.Count > 0)
-                    {
-                        <div class="chat-container p-3" style="max-height: 500px; overflow-y: auto;">
-                            @foreach (DataRow row in historial.Rows)
-                            {
-                                var rol = row["Rol"].ToString()?.ToLower();
-                                var contenidoOriginal = row["Contenido"].ToString();
-                                var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
-
-                                // Frases a eliminar
-                                var frasesAEliminar = new[]
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Asunto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (DataRow fila in sesiones.Rows.Cast<DataRow>()
+                                .Where(f =>
+                                f["Usuario"].ToString().Contains(filtroUsuario, StringComparison.OrdinalIgnoreCase) &&
+                                f["TipoDocumento"].ToString().Contains(filtroTipoDocumento, StringComparison.OrdinalIgnoreCase)))
                                 {
-                    "Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.",
-                    "Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>. No uses Markdown."
-                    };
-
-                                var contenidoLimpio = contenidoOriginal;
-                                if (rol == "user")
-                                {
-                                    foreach (var frase in frasesAEliminar)
-                                    {
-                                        contenidoLimpio = contenidoLimpio.Replace(frase, "").Trim();
-                                    }
+                                    var id = Convert.ToInt32(fila["Id"]);
+                                    <tr style="cursor:pointer"
+                                        @onclick="() => SeleccionarSesion(id)"
+                                        class="@(id == sesionSeleccionadaId ? "table-primary" : "")">
+                                        <td>@fila["Usuario"]</td>
+                                        <td>@Convert.ToDateTime(fila["FechaInicio"]).ToString("g")</td>
+                                        <td>@fila["TipoDocumento"]</td>
+                                        <td>@fila["Asunto"]</td>
+                                    </tr>
                                 }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                                var isUser = rol == "user";
+                <!-- Contenedor del CHAT -->
+                <div class="col-md-6">
+                    <div class="border rounded p-4 shadow-sm">
+                        <legend class="legend text-center mb-3">💬 Historial de Conversación</legend>
 
-                                <div class="d-flex mb-4 @(isUser ? "justify-content-start" : "justify-content-end")">
-                                    <div class="chat-bubble p-3" style="
-                    background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
-                    border-radius: 1rem;
-                    max-width: 75%;
-                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                    position: relative;
-                    word-wrap: break-word;
-                    white-space: normal;
-                                ">
-                                        <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.5rem;">
-                                            <strong>@rol</strong> • @fecha
+                        @if (historial != null && historial.Rows.Count > 0)
+                        {
+                            <div class="chat-container p-3" style=" height: 500px; overflow-y: auto; background-color: white; border: 1px solid #dee2e6;border-radius: 12px;">
+
+                                @foreach (DataRow row in historial.Rows)
+                                {
+                                    var rol = row["Rol"].ToString()?.ToLower();
+                                    var contenidoOriginal = row["Contenido"].ToString();
+                                    var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
+
+                                    var frasesAEliminar = new[]
+                                    {
+                            "Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.",
+                            "Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>. No uses Markdown."
+                            };
+
+                                    var contenidoLimpio = rol == "user"
+                                    ? frasesAEliminar.Aggregate(contenidoOriginal, (c, frase) => c.Replace(frase, "").Trim())
+                                    : contenidoOriginal;
+
+                                    var isUser = rol == "user";
+
+                                    <div class="d-flex mb-4 @(isUser ? "justify-content-start" : "justify-content-end")">
+                                        <div class="chat-bubble p-3" style="
+                                            background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
+                                            border-radius: 1rem;
+                                            max-width: 75%;
+                                            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                                            word-wrap: break-word;
+                                            white-space: normal;">
+                                            <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.5rem;">
+                                                <strong>@rol</strong> • @fecha
+                                            </div>
+                                            <div>@((MarkupString)contenidoLimpio)</div>
                                         </div>
-                                        <div>@((MarkupString)contenidoLimpio)</div>
                                     </div>
-                                </div>
-                            }
-                        </div>
-                    }
-
+                                }
+                            </div>
+                        }
+                        else if (sesionSeleccionadaId != 0)
+                        {
+                            <p class="text-muted">No hay historial para esta sesión.</p>
+                        }
+                    </div>
                 </div>
-            
-
-            }
-            else if (sesionSeleccionadaId != 0)
-            {
-                <p class="text-muted">No hay historial para esta sesión.</p>
-            }
-        </div>
+            </div>
+        </fieldset>
     </div>
+</div>
 
-                </div>
 
 @code {
     private DataTable sesiones = new();
     private DataTable historial = new();
     private int sesionSeleccionadaId = 0;
     private string? mensajeError;
+    private string filtroUsuario = string.Empty;
+    private string filtroTipoDocumento = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,7 +125,12 @@
     {
         try
         {
-            sesiones = await ServicioUsuario.TraerTablaParametrosAsync("SesionesConversacion", "Id, Usuario, FechaInicio, TipoDocumento, Asunto", "1=1", 18);
+            sesiones = await ServicioUsuario.TraerTablaParametrosAsync(
+                "SesionesConversacion",
+                "Id, Usuario, FechaInicio, TipoDocumento, Asunto",
+                "1=1",
+                18
+            );
         }
         catch (Exception ex)
         {
