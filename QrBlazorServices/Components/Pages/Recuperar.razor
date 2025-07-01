@@ -1,141 +1,45 @@
-﻿@page "/Recuperar"
+﻿@page "/zf"
 @using AccesoDatos
 @using System.Data
 @inject NavigationManager Navigation
 @inject AccesoDatosSoapClient ServicioUsuario
 @rendermode InteractiveServer
+@using QrBlazorServices.Components.Pages
 
-<head>
-    <link href="css/Style.css" rel="stylesheet" />
-</head>
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+        <button class="nav-link @(formActivo == "Email" ? "active" : "")" @onclick='() => CambiarFormulario("Email")'>Correo</button>
 
-<EditForm Model="@usuarioLogin" OnValidSubmit="IniciarSesion">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
-        <div class="col-md-6">
-            <fieldset class="fieldset-custom">
-                <legend class="legend">Inicio de Sesión</legend>
-
-                <div class="form-group">
-                    <label for="NombreUsuario">Nombre de Usuario:</label>
-                    <InputText id="NombreUsuario" @bind-Value="usuarioLogin.NombreUsuario" class="form-control" placeholder="Documento del Usuario" />
-                </div>
-
-                <div class="form-group">
-                    <label for="NombreUsuario">Nombre de Usuario:</label>
-                    <InputText id="NombreUsuario" @bind-Value="usuarioLogin.NombreUsuario" class="form-control" placeholder="Nombre de Usuario" />
-                </div>
-                
-
-                <div class="form-group">
-                    <label for="Clave">Clave:</label>
-                    <InputText id="Clave" @bind-Value="usuarioLogin.Clave" type="password" class="form-control" placeholder="Clave" />
-                </div>
-
-                <div class="d-flex">
-                    <button class="btn btn-primary mt-2 btn-custom" type="submit">Iniciar sesión</button>
-                    <button class="btn btn-primary mt-2 btn-custom ms-2" type="button" @onclick="ReguitroModule">Registrar usuario</button>
-                </div>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(formActivo == "GeminiRazor" ? "active" : "")" @onclick='() => CambiarFormulario("GeminiRazor")'>DOCUMENTOS IA </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(formActivo == "Banco" ? "active" : "")" @onclick='() => CambiarFormulario("Banco")'>Banco</button>
+        </li>
+    </ul>
 
 
-                @if (!string.IsNullOrWhiteSpace(mensaje))
-                {
-                    <div class="alert alert-info mt-3">@mensaje</div>
-                }
-
-            </fieldset>
-        </div>
-    </div>
-</EditForm>
+<div class="card p-4">
+    @switch (formActivo)
+    {
+        case "Email":
+            <Email />
+            break;
+        case "GeminiRazor":
+            <GeminiRazor />
+            break;
+        case "Banco":
+            <Banco />
+            break;
+    }
+</div>
 
 @code {
-    // Cliente SOAP para llamar a los métodos del backend
-    private AccesoDatosSoapClient _servicioUsuario = new AccesoDatosSoapClient(
-        AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
+    private string formActivo = "Email";
 
-    private UsuarioLogin usuarioLogin = new();
-    private string mensaje = "";
-
-    // Modelo para el formulario de login
-    public class UsuarioLogin
+    void CambiarFormulario(string nombre)
     {
-        public string NombreUsuario { get; set; } = string.Empty;
-        public string Clave { get; set; } = string.Empty;
-    }
-
-    // Ir al módulo de registro
-    private async Task ReguitroModule()
-    {
-        Navigation.NavigateTo("/agregar");
-    }
-
-    // Iniciar sesión al enviar el formulario
-    private async Task IniciarSesion()
-    {
-        await AutenticarUsuario();
-
-        if (mensaje.StartsWith("Bienvenido"))
-        {
-            Navigation.NavigateTo("/GR"); // Redirige si fue exitoso
-        }
-    }
-
-    // Función que autentica el usuario contra la base de datos
-    private async Task AutenticarUsuario()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(usuarioLogin.NombreUsuario) || string.IsNullOrWhiteSpace(usuarioLogin.Clave))
-            {
-                mensaje = "El usuario y la clave son obligatorios.";
-                return;
-            }
-
-            string nombreUsuario = usuarioLogin.NombreUsuario.Replace("'", "''");
-            string condicion = $"NombreUsuario = '{nombreUsuario}'";
-            string campos = "Id, Documento, Clave, NombreUsuario, Area, Cargo";
-
-            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Usuarios", campos, condicion, 18);
-
-            if (resultado != null && resultado.Rows.Count > 0)
-            {
-                var fila = resultado.Rows[0];
-                string claveHashAlmacenada = fila["Clave"].ToString() ?? "";
-
-                if (VerifyPassword(usuarioLogin.Clave, claveHashAlmacenada))
-                {
-                    mensaje = $"Bienvenido, {fila["NombreUsuario"]}";
-                    // Aquí puedes guardar el usuario en sesión si lo deseas
-                }
-                else
-                {
-                    mensaje = "Contraseña incorrecta.";
-                }
-            }
-            else
-            {
-                mensaje = "Usuario no encontrado.";
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"Error al autenticar: {ex.Message}";
-        }
-    }
-
-    // Encriptar la contraseña con SHA256
-    private string HashPassword(string password)
-    {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        byte[] bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(bytes);
-    }
-
-    // Verificar si la contraseña coincide con el hash
-    private bool VerifyPassword(string inputPassword, string storedHash)
-    {
-        return HashPassword(inputPassword) == storedHash;
+        formActivo = nombre;
     }
 }
