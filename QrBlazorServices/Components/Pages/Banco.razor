@@ -3,6 +3,8 @@
 @using System.Data
 @inject AccesoDatosSoapClient ServicioUsuario
 @rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
 
 <head>
     <link href="css/Style.css" rel="stylesheet" />
@@ -11,8 +13,15 @@
 <div class="container" style="max-width: 1200px; margin: auto; height: 700px;">
     <div class="row justify-content-center h-100">
         <div class="col-12">
+
+
             <fieldset class="fieldset-custom h-100 d-flex flex-column">
-            <legend class="legend">🧠 Visor de Banco de Conversaciones</legend>
+
+            <div class="text-center mb-4">
+                <h6 class="fw-bold fs-6">📄 Banco de Documentos</h6>
+            </div>
+
+            <legend class="legend"><!--🧠--> Visor de Banco de Conversaciones</legend>
 
 
                 <div class="row gx-3 gy-3 h-100 w-100 mx-0">
@@ -21,10 +30,10 @@
                     <div class="col-md-6 h-100">
 
                         <div class="fieldset-custom d-flex flex-column overflow-hidden" style="height: 600px; background-color: white;">
-                        <legend class="legend">📋 Sesiones</legend>
+                        <legend class="legend"><!--📋--> Sesiones</legend>
 
-                        <InputText @bind-Value="filtroUsuario" class="form-control mb-2" placeholder="🔍 Filtrar por usuario" />
-                        <InputText @bind-Value="filtroTipoDocumento" class="form-control mb-3" placeholder="📄 Filtrar por tipo de documento" />
+                            <InputText @bind-Value="filtroUsuario" class="form-control mb-2" placeholder="Filtrar por usuario" /> <!--🔍-->
+                            <InputText @bind-Value="filtroTipoDocumento" class="form-control mb-3" placeholder="Filtrar por tipo de documento" /> <!--📄-->
 
                         <div class="flex-grow-1 overflow-auto">
                             <table class="table table-sm table-hover">
@@ -58,66 +67,74 @@
                     </div>
                 </div>
 
-                <!-- CONTENEDOR DEL CHAT -->
+                    <!-- CONTENEDOR DEL CHAT -->
                     <div class="col-md-6 h-100">
-
-
-
-
                         <div class="fieldset-custom d-flex flex-column overflow-hidden" style="height: 600px; background-color: white;">
-                        <legend class="legend">💬 Historial de Conversación</legend>
+                            <legend class="legend"><!--💬--> Historial de Conversación</legend>
 
-                        <div class="flex-grow-1 overflow-auto px-3">
-                            @if (historial != null && historial.Rows.Count > 0)
-                            {
-                                @foreach (DataRow row in historial.Rows)
+                            <!-- CONTENEDOR SCROLLEABLE -->
+                            <div class="flex-grow-1 overflow-auto px-3">
+                                @if (historial != null && historial.Rows.Count > 0)
                                 {
-                                    var rol = row["Rol"].ToString()?.ToLower();
-                                    var contenidoOriginal = row["Contenido"].ToString();
-                                    var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
-
-                                    var frasesAEliminar = new[]
+                                    @foreach (DataRow row in historial.Rows)
                                     {
-                            "Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.",
-                            "Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>. No uses Markdown."
-                            };
+                                        var rol = row["Rol"].ToString()?.ToLower();
+                                        var contenidoOriginal = row["Contenido"].ToString();
+                                        var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
 
-                                    var contenidoLimpio = rol == "user"
-                                    ? frasesAEliminar.Aggregate(contenidoOriginal, (c, frase) => c.Replace(frase, "").Trim())
-                                    : contenidoOriginal;
+                                        var frasesAEliminar = new[]
+                                        {
+                                "Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.",
+                                "Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>. No uses Markdown."
+                                };
 
-                                    var isUser = rol == "user";
+                                        var contenidoLimpio = rol == "user"
+                                        ? frasesAEliminar.Aggregate(contenidoOriginal, (c, frase) => c.Replace(frase, "").Trim())
+                                        : contenidoOriginal;
 
-                                    <div class="d-flex mb-4 @(isUser ? "justify-content-start" : "justify-content-end")">
-                                        <div class="chat-bubble p-3" style="
-                                            background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
-                                            border-radius: 1rem;
-                                            max-width: 90%;
-                                            box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
-                                            word-wrap: break-word;
-                                            white-space: normal;">
-                                            <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.5rem;">
-                                                <strong>@rol</strong> • @fecha
+                                        var isUser = rol == "user";
+
+                                        <div class="d-flex mb-4 @(isUser ? "justify-content-start" : "justify-content-end")">
+                                            <div class="chat-bubble p-3" style="
+                            background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
+                            border-radius: 1rem;
+                            max-width: 90%;
+                            box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+                            word-wrap: break-word;
+                            white-space: normal;">
+                                                <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.5rem;">
+                                                    <strong>@rol</strong> • @fecha
+                                                </div>
+                                                <div>@((MarkupString)contenidoLimpio)</div>
                                             </div>
-                                            <div>@((MarkupString)contenidoLimpio)</div>
                                         </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="d-flex justify-content-center align-items-center h-100 text-muted">
+                                        <p class="text-center">Selecciona una sesión para ver el historial.</p>
                                     </div>
                                 }
-                            }
-                            else
-                            {
-                                <div class="d-flex justify-content-center align-items-center h-100 text-muted">
-                                    <p class="text-center">Selecciona una sesión para ver el historial.</p>
-                                </div>
-                            }
+                            </div>
+
+                            <!-- BOTÓN DE DESCARGA DEBAJO DEL CHAT -->
+                            <div class="d-flex justify-content-end pt-2">
+                                <button class="btn btn-custom" @onclick="DescargarDocSimple">
+                                    <!--⬇️--> Descargar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </fieldset>
+                    </div>
+                    
+
+
+            </fieldset>
     </div>
 </div>
 </div>
+
 
 
 @code {
@@ -161,10 +178,42 @@
                 $"SesionId = {id}",
                 18
             );
+
+            // 🔽 Aquí generamos el texto plano del historial del rol assistant
+            ResponseText = string.Join(Environment.NewLine + Environment.NewLine,
+                historial.Rows.Cast<DataRow>()
+                .Where(r => r["Rol"].ToString()?.ToLower() == "assistant")
+                .Select(r => r["Contenido"].ToString()));
         }
         catch (Exception ex)
         {
             mensajeError = $"Error al cargar historial: {ex.Message}";
         }
     }
+
+
+    private IJSObjectReference? moduloJS;
+    private bool jsListo = false;
+    private string? ResponseText;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Carga el módulo JS desde wwwroot/js/custom.js
+            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import","./js/custom.js");
+            jsListo = true;
+        }
+    }
+
+
+    private async Task DescargarDocSimple()
+    {
+        if (jsListo && moduloJS is not null)
+        {
+            await moduloJS.InvokeVoidAsync("descargarDocDesdeTextoPlano", ResponseText);
+        }
+    }
+
+
 }
