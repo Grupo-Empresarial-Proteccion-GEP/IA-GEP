@@ -1,4 +1,4 @@
-﻿@page "/zf"
+﻿@page "/menu"
 @using AccesoDatos
 @using System.Data
 @inject NavigationManager Navigation
@@ -6,21 +6,21 @@
 @rendermode InteractiveServer
 @using QrBlazorServices.Components.Pages
 
-    <ul class="nav nav-tabs mb-3">
-        <li class="nav-item">
+<!-- Tabs de navegación -->
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
         <button class="nav-link @(formActivo == "Email" ? "active" : "")" @onclick='() => CambiarFormulario("Email")'>Correo</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(formActivo == "GeminiRazor" ? "active" : "")" @onclick='() => CambiarFormulario("GeminiRazor")'>Documentos IA</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(formActivo == "Banco" ? "active" : "")" @onclick='() => CambiarFormulario("Banco")'>Banco</button>
+    </li>
+</ul>
 
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(formActivo == "GeminiRazor" ? "active" : "")" @onclick='() => CambiarFormulario("GeminiRazor")'>DOCUMENTOS IA </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link @(formActivo == "Banco" ? "active" : "")" @onclick='() => CambiarFormulario("Banco")'>Banco</button>
-        </li>
-    </ul>
-
-
-<div class="card p-4">
+<!-- Escala aplicada al contenedor para simular Ctrl - -->
+<div style="transform: scale(0.95); transform-origin: top center; width: 100%;">
     @switch (formActivo)
     {
         case "Email":
