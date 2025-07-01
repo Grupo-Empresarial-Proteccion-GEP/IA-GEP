@@ -26,6 +26,7 @@ namespace QrBlazorServices
 
             builder.Services.AddHttpClient();
 
+            builder.Services.AddScoped<EmailService>();
             builder.Services.AddScoped<AccesoDatos.AccesoDatosSoapClient>(sp =>
     new AccesoDatos.AccesoDatosSoapClient(
         AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12));
