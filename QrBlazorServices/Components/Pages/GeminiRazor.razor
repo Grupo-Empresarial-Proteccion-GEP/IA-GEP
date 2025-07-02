@@ -24,7 +24,7 @@
 </head>
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
-
+    
     <div style="background-color: #f5f5f5;">
         <div class="scale-wrapper">
             <div class="container-fluid card p-4">
@@ -450,14 +450,14 @@
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
 
-        // 1. Eliminar bloques Markdown ``` ``` de cualquier tipo (html, json, etc.)
+        // 1. Eliminar bloques Markdown ``` ``` de cualquier tipo
         texto = Regex.Replace(texto, @"```[\s\S]*?```", "", RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-        // 2. Eliminar etiquetas <pre>, <code> si las hubiera (por si la IA devuelve como HTML)
+        // 2. Eliminar etiquetas <pre>, <code>
         texto = Regex.Replace(texto, @"<pre[\s\S]*?</pre>", "", RegexOptions.IgnoreCase);
         texto = Regex.Replace(texto, @"<code[\s\S]*?</code>", "", RegexOptions.IgnoreCase);
 
-        // 3. Palabras clave a eliminar (instrucciones típicas)
+        // 3. Frases o patrones a eliminar (instrucciones y contenido repetitivo)
         var instrucciones = new[]
         {
         "usa etiquetas como",
@@ -466,18 +466,27 @@
         "no uses markdown",
         "responde en formato html",
         "por favor responde en html",
-        "Instrucciones del usuario:",
-        "Archivo Cargado:"
+        "instrucciones del usuario:",
+        "archivo cargado:",
+        "el contenido debe estar completamente redactado como si fuera un documento final",
+        "ten en cuenta estas respuestas anteriores para mantener coherencia",
+        "no uses bloques de código ni markdown",
+        "--- ?? el contenido debe estar completamente redactado como"
     };
 
-        // 4. Eliminar líneas con esas frases
+        // 4. Eliminar líneas que contengan alguna de las frases anteriores
         var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         var contenidoFiltrado = lineas
-            .Where(linea => !instrucciones.Any(instr => linea.ToLower().Contains(instr)))
+            .Where(linea =>
+                !instrucciones.Any(instr =>
+                    linea.ToLowerInvariant().Contains(instr.ToLowerInvariant())
+                )
+            )
             .ToList();
 
         return string.Join("\n", contenidoFiltrado).Trim();
     }
+
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
@@ -722,33 +731,17 @@
                 .Replace("{contenidoAuxiliar}", contenidoAuxiliar ?? "")
                 .Replace("{fileContent}", fileContent ?? "");
 
-            // 3. Obtener retroalimentación de respuestas anteriores
-            var respuestasPrevias = await ObtenerRespuestasAnterioresAsync(TipoDocumento);
-
-            if (respuestasPrevias.Any())
-            {
-                var contextoBuilder = new StringBuilder();
-                contextoBuilder.AppendLine("Ten en cuenta estas respuestas anteriores para mantener coherencia:\n");
-
-                foreach (var r in respuestasPrevias)
-                {
-                    contextoBuilder.AppendLine($"<blockquote>{r}</blockquote>\n");
-                }
-
-                promptFinal = contextoBuilder.ToString() + "\n\n" + promptFinal;
-            }
-
-            // 4. Si no hay datos suficientes, usar prompt básico
+            // 3. Validación mínima de datos (prompt básico si está vacío)
             if (string.IsNullOrWhiteSpace(Ciudad + Emisor + Receptor + fileContent))
             {
                 promptFinal = $"Instrucciones del usuario: {UserPrompt}\n\nPor favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
             }
 
-            // 5. Guardar sesión y mensajes
+            // 4. Guardar sesión y mensajes
             int sesionId = await GuardarSesionConversacionAsync(TipoDocumento, Asunto);
             await GuardarMensajeConversacionAsync(sesionId, "user", promptFinal);
 
-            // 6. Enviar a IA con reintentos
+            // 5. Enviar a IA con reintentos
             int intentos = 0;
             int maxIntentos = 5;
             int esperaMs = 2000;
