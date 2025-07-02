@@ -82,15 +82,32 @@
                                         var contenidoOriginal = row["Contenido"].ToString();
                                         var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
 
-                                        var frasesAEliminar = new[]
+                                        var palabrasClave = new[]
                                         {
-                                "Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.",
-                                "Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>. No uses Markdown."
+                                "por favor genera la respuesta como html",
+                                "por favor genera el documento como html",
+                                "usa etiquetas como",
+                                "no uses markdown",
+                                "no incluyas bloques de código",
+                                "escribe el contenido como si fuera el texto final"
                                 };
 
+                                        // Eliminación de líneas con frases clave (más flexible)
+                                        string LimpiarContenido(string texto)
+                                        {
+                                            var lineas = texto.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+
+                                            var filtradas = lineas
+                                            .Where(linea => !palabrasClave.Any(clave => linea.ToLower().Contains(clave)))
+                                            .ToArray();
+
+                                            return string.Join("\n", filtradas).Trim();
+                                        }
+
                                         var contenidoLimpio = rol == "user"
-                                        ? frasesAEliminar.Aggregate(contenidoOriginal, (c, frase) => c.Replace(frase, "").Trim())
+                                        ? LimpiarContenido(contenidoOriginal)
                                         : contenidoOriginal;
+
 
                                         var isUser = rol == "user";
 
