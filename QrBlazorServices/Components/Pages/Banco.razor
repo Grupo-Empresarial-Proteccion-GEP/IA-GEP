@@ -5,6 +5,7 @@
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 @inject IJSRuntime JSRuntime
+@using System.Text.RegularExpressions
 
 <head>
     <link href="css/Style.css" rel="stylesheet" />
@@ -74,35 +75,44 @@
 
                             <!-- CONTENEDOR SCROLLEABLE -->
                             <div class="flex-grow-1 overflow-auto px-3">
-                                @if (historial != null && historial.Rows.Count > 0)
-                                {
-                                    @foreach (DataRow row in historial.Rows)
-                                    {
-                                        var rol = row["Rol"].ToString()?.ToLower();
-                                        var contenidoOriginal = row["Contenido"].ToString();
-                                        var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
+@if (historial != null && historial.Rows.Count > 0)
+{
+    @foreach (DataRow row in historial.Rows)
+    {
+        var rol = row["Rol"].ToString()?.ToLowerInvariant();
+        var contenidoOriginal = row["Contenido"].ToString();
+        var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
 
-                                        var palabrasClave = new[]
-                                        {
-                                "por favor genera la respuesta como html",
-                                "por favor genera el documento como html",
-                                "usa etiquetas como",
-                                "no uses markdown",
-                                "no incluyas bloques de código",
-                                "escribe el contenido como si fuera el texto final"
-                                };
+        string LimpiarContenido(string texto)
+        {
+            // 1. Eliminar bloques <blockquote>…</blockquote>
+            texto = Regex.Replace(texto, @"<blockquote[^>]*>[\s\S]*?<\/blockquote>", "", RegexOptions.IgnoreCase);
 
-                                        // Eliminación de líneas con frases clave (más flexible)
-                                        string LimpiarContenido(string texto)
-                                        {
-                                            var lineas = texto.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            // 2. Frases clave a eliminar (más generalizadas)
+            var frasesClave = new[]
+            {
+                "por favor genera la respuesta como html",
+                "por favor genera el documento como html",
+                "usa etiquetas como",
+                "no uses markdown",
+                "no incluyas bloques de código",
+                "escribe el contenido como si fuera el texto final",
+                "el contenido debe estar completamente redactado como",
+                "ten en cuenta estas respuestas anteriores",
+                "etc. no uses bloques de código ni markdown",
+                "---",
+                                ":No uses bloques de código ni markdown."
+            };
 
-                                            var filtradas = lineas
-                                            .Where(linea => !palabrasClave.Any(clave => linea.ToLower().Contains(clave)))
-                                            .ToArray();
+            // 3. Dividir en líneas y filtrar
+            var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var filtradas = lineas
+                .Where(linea => !frasesClave.Any(f =>
+                    linea.ToLowerInvariant().Contains(f)))
+                .ToArray();
 
-                                            return string.Join("\n", filtradas).Trim();
-                                        }
+            return string.Join("\n", filtradas).Trim();
+        }
 
                                         var contenidoLimpio = rol == "user"
                                         ? LimpiarContenido(contenidoOriginal)
