@@ -1,27 +1,23 @@
-﻿import jsPDF from 'jspdf';
+﻿// js/custom.js
+export function descargarDocDesdeTextoPlano(contenido, nombreArchivo = "documento.doc") {
+    // Estructura básica para Word compatible
+    const htmlHeader = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office'
+              xmlns:w='urn:schemas-microsoft-com:office:word'
+              xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>Documento</title></head><body>`;
+    const htmlFooter = "</body></html>";
 
-export function descargarDocYpdfDesdeTextoPlano(contenido) {
-    // Descargar Word
-    const blobWord = new Blob([contenido], { type: 'application/msword' });
-    const linkWord = document.createElement("a");
-    linkWord.href = URL.createObjectURL(blobWord);
-    linkWord.download = "documento.doc";
-    document.body.appendChild(linkWord);
-    linkWord.click();
-    document.body.removeChild(linkWord);
+    const htmlCompleto = htmlHeader + contenido + htmlFooter;
 
-    // Descargar PDF
-    const doc = new jsPDF();
+    const blob = new Blob([htmlCompleto], {
+        type: 'application/msword;charset=utf-8'
+    });
 
-    // Opcional: divide el contenido en líneas si es muy largo
-    const lineas = doc.splitTextToSize(contenido, 180);
-    doc.text(lineas, 10, 10);
-
-    const pdfBlob = doc.output('blob');
-    const linkPDF = document.createElement("a");
-    linkPDF.href = URL.createObjectURL(pdfBlob);
-    linkPDF.download = "documento.pdf";
-    document.body.appendChild(linkPDF);
-    linkPDF.click();
-    document.body.removeChild(linkPDF);
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

@@ -80,7 +80,8 @@ public class GeminiService : ILanguageModelService
             await GuardarConsumoTokens(responseJson);
 
 
-            return $"{message}\n\n🧾 Tokens usados:\n- Prompt: {promptTokens}\n- Respuesta: {completionTokens}\n- Total: {totalTokens}";
+            //return $"{message}\n\n🧾 Tokens usados:\n- Prompt: {promptTokens}\n- Respuesta: {completionTokens}\n- Total: {totalTokens}";
+            return $"{message}\n\n";
 
         }
         else
