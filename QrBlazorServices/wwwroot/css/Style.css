@@ -59,8 +59,20 @@ body {
 }
 
 /* Estilo para campos de formulario */
+.form-control1 {
+    
+    border-radius: 8px;
+    font-size: 1rem;
+    padding: 4px 4px;
+    width: 100%;
+    border: 1.5px solid #ccc;
+    background-color: #fff;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Estilo para campos de formulario */
 .form-control {
-    /*height: 44px;*/
+    height: 44px;
     border-radius: 8px;
     font-size: 1rem;
     /*padding: 10px 10px;*/

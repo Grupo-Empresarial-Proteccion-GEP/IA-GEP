@@ -170,7 +170,7 @@
                             <!-- 📎 Adjuntar archivo -->
                             <div class="mt-4">    </div>
                             <legend class="legend"><!--📎--> Adjuntar archivo</legend>
-                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
+                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control1 mb-3" disabled="@cargantwo" />
                             <div class="d-flex gap-2">
                                 <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
                                 <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
