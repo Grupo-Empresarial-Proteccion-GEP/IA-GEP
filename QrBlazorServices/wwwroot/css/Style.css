@@ -158,10 +158,6 @@ body {
         padding: 20px;
     }
 
-    .nav-link.active {
-        background-color: rgb(255, 180, 50) !important;
-        color: white !important;
-    }
 
-}
+
 
