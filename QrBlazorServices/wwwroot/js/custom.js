@@ -1,4 +1,14 @@
-﻿// wwwroot/js/custom.js
+﻿// js/custom.js
+
+export function obtenerHtmlEditable(element) {
+    return element.innerHTML;
+}
+
+export function setHtmlEditable(element, html) {
+    if (element) {
+        element.innerHTML = html;
+    }
+}
 
 export function descargarDocDesdeTextoPlano(contenido, nombreArchivo = "documento.doc") {
     const htmlHeader = `<html xmlns:o='urn:schemas-microsoft-com:office:office'
@@ -16,13 +26,8 @@ export function descargarDocDesdeTextoPlano(contenido, nombreArchivo = "document
     link.href = URL.createObjectURL(blob);
     link.download = nombreArchivo;
     document.body.appendChild(link);
-
     setTimeout(() => {
         link.click();
         document.body.removeChild(link);
     }, 0);
-}
-
-export function obtenerHtmlEditable(element) {
-    return element.innerHTML;
 }

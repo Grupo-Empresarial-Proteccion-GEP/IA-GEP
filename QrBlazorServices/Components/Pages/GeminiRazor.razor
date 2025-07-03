@@ -149,7 +149,7 @@
                                 {
                                     <div contenteditable="true"
                                          @ref="editorRef"
-                                         @oninput="ActualizarTextoEditable">
+                                         @onblur="ActualizarTextoEditable">
                                         @((MarkupString)ResponseText)
                                     </div>
 
@@ -367,12 +367,11 @@
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
-    private async Task ActualizarTextoEditable(ChangeEventArgs e)
+    private async Task ActualizarTextoEditable()
     {
         if (moduloJS != null)
         {
-            var html = await moduloJS.InvokeAsync<string>("obtenerHtmlEditable", editorRef);
-            ResponseText = html;
+            ResponseText = await moduloJS.InvokeAsync<string>("obtenerHtmlEditable", editorRef);
         }
     }
 
@@ -822,10 +821,17 @@
     {
         if (firstRender)
         {
-            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/custom.js");
+            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/custom.js");
             jsListo = true;
+
+            if (!string.IsNullOrWhiteSpace(ResponseText))
+            {
+                await moduloJS.InvokeVoidAsync("setHtmlEditable", editorRef, ResponseText);
+            }
         }
     }
+
+
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
