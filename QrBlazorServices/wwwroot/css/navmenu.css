@@ -1,61 +1,51 @@
 ﻿.sidebar {
-    background-color: rgb(255, 255, 255);
+    background-color: rgb(000, 000, 000);
     height: 100vh;
     width: 250px;
     padding: 15px;
     box-sizing: border-box;
     border-radius: 10px 0 0 10px;
+    border-left: 10px solid rgb(255, 150, 0); 
 }
 
-
 .nav {
-    background-color: transparent;
+    background-color: rgb(000, 000, 000);
     margin: 0;
     padding: 0;
 }
 
-.nav-link {
-    color: black;
-    padding: 10px;
-    border-radius: 8px;
-    display: block;
-    text-decoration: none;
+.nav-list li {
+    margin-bottom: 8px;
 }
 
-    .nav-list li {
-        margin-bottom: 8px; /* Espacio entre items */
-    }
-
 .nav-link {
-    display: block; /* Para que todo el área sea clickeable */
+    display: block;
     padding: 0.5rem 1rem;
-    color: rgb(255, 150, 0);
+    color: rgb(255, 255, 255);
     text-decoration: none;
-    transition: transform 0.2s ease;
-    background-color: rgb(255, 255, 255);
-    color: rgb(0, 0, 0);
+    transition: transform 0.2s ease, background-color 0.3s ease;
+    background-color: rgb(000, 000, 000);
     font-weight: bold;
     font-size: 1rem;
     max-width: 100%;
     word-wrap: break-word;
-    text-decoration: none;
-    transition: transform 0.2s ease, background-color 0.3s ease;
     cursor: pointer;
+    border-radius: 8px;
 }
 
     .nav-link:hover {
-        transform: scale(1.1);
-        background-color: rgb(255, 180, 50); /* Color más claro al pasar mouse */
+        transform: scale(1.05);
+        background-color: rgb(255, 150, 00);
+        color: rgb(0, 0, 0) !important;
+    }
+
+    a.nav-link.active {
+        font-weight: bold;
+        background-color: rgb(255, 150, 00);
         color: rgb(0, 0, 0);
     }
 
-    .nav-link.active {
-        font-weight: bold;
-        background-color: rgb(255, 180, 50);
-    }
 .top-row {
     border: none !important;
     box-shadow: none !important;
 }
-
-

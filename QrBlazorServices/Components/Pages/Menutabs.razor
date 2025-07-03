@@ -6,8 +6,9 @@
 @rendermode InteractiveServer
 @using QrBlazorServices.Components.Pages
 
+<div class="d-flex flex-column align-items-center w-100">
 <!-- Tabs de navegación -->
-<ul class="nav nav-tabs mb-3">
+<ul class="nav nav-tabs mb-3" style="max-width: 800px; width: 100%;">
     <li class="nav-item">
         <button class="nav-link @(formActivo == "Email" ? "active" : "")" @onclick='() => CambiarFormulario("Email")'>Correo</button>
     </li>
@@ -20,6 +21,7 @@
 </ul>
 
 <!-- Escala aplicada al contenedor para simular Ctrl - -->
+<div class="w-100 d-flex justify-content-center">
 <div style="transform: scale(0.96); transform-origin: top center; width: 100%;">
     @switch (formActivo)
     {
@@ -34,7 +36,8 @@
             break;
     }
 </div>
-
+</div>
+</div>
 @code {
     private string formActivo = "Email";
 
