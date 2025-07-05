@@ -203,7 +203,7 @@
                 <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
             </div>
 
-            @if (ChatService.ChatHistory?.Any() == true)
+            @if (ChatService.ChatHistory != null && ChatService.ChatHistory.Count > 0)
             {
                 @foreach (var mensaje in ChatService.ChatHistory)
                 {
@@ -216,7 +216,6 @@
                         else if (mensaje.Role == "assistant")
                         {
                             <p class="fw-bold text-success">🤖 Asistente:</p>
-
                             <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
                                 @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
                                 <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
@@ -227,11 +226,26 @@
             }
             else
             {
-                <p class="text-muted">No hay historial disponible.</p>
+                <p class="text-muted">📭 No hay historial disponible.</p>
             }
+
         </div>
     </div>
 }
+
+@if (ChatService.ChatHistory != null)
+{
+    <p><strong>Total mensajes:</strong> @ChatService.ChatHistory.Count</p>
+
+    @foreach (var mensaje in ChatService.ChatHistory)
+    {
+        <div class="alert alert-secondary">
+            <p><strong>Rol:</strong> @mensaje.Role</p>
+            <p><strong>Contenido (sin limpiar):</strong> @mensaje.Content</p>
+        </div>
+    }
+}
+
 
 @code {
     private bool showModal = false;
@@ -470,14 +484,14 @@
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
 
-        // 1. Eliminar bloques Markdown ``` ``` de cualquier tipo
-        texto = Regex.Replace(texto, @"```[\s\S]*?```", "", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        // 1. Quitar triple backticks
+        texto = texto.Replace("```html", "").Replace("```", "");
 
         // 2. Eliminar etiquetas <pre>, <code>
         texto = Regex.Replace(texto, @"<pre[\s\S]*?</pre>", "", RegexOptions.IgnoreCase);
         texto = Regex.Replace(texto, @"<code[\s\S]*?</code>", "", RegexOptions.IgnoreCase);
 
-        // 3. Frases o patrones a eliminar (instrucciones y contenido repetitivo)
+        // 3. Frases o patrones a eliminar
         var instrucciones = new[]
         {
         "usa etiquetas como",
@@ -496,7 +510,6 @@
         "Redacta el resultado final como un documento o texto bien presentado. Usa etiquetas HTML (<p>, <strong>, <h2>, <br>, etc.)."
     };
 
-        // 4. Eliminar líneas que contengan alguna de las frases anteriores
         var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         var contenidoFiltrado = lineas
             .Where(linea =>
@@ -508,6 +521,7 @@
 
         return string.Join("\n", contenidoFiltrado).Trim();
     }
+
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
@@ -812,6 +826,7 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
