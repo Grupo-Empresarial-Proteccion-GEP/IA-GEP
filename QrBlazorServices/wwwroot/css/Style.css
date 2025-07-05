@@ -157,7 +157,61 @@ body {
         width: 90%;
         padding: 20px;
     }
+}
 
+/* Color del fondo y texto de los tabs inactivos */
+.nav-tabs .nav-link {
+    background-color: #f5f5f5;
+    color: #333;
+    border: 1px solid #dee2e6;
+    transition: background-color 0.2s ease;
+}
 
+    /* Color al pasar el mouse */
+    .nav-tabs .nav-link:hover {
+        background-color: #e0e0e0;
+        color: #000;
+    }
 
+    /* Tab activo */
+    .nav-tabs .nav-link.active {
+        background-color: #007bff; /* color activo */
+        color: white;
+        border-color: #007bff #007bff #fff;
+    }
+}
 
+/* Estilo personalizado para tabs */
+.custom-tabs {
+    max-width: 800px;
+    width: 100%;
+    background-color: #fcfcfc;
+    border-radius: 12px;
+    padding: 8px;
+    border: 1px solid rgb(255, 150, 0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilo individual del botón tab */
+.nav-tabs .nav-link {
+    background-color: #fff;
+    color: #111;
+    border: 1.5px solid transparent;
+    border-radius: 6px;
+    margin-right: 4px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+    .nav-tabs .nav-link:hover {
+        background-color: #ffe0b3; /* tono naranja muy suave */
+        color: #000;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: #000;
+        color: #fff;
+        border-color: rgb(255, 150, 0);
+        border-left: 5px solid rgb(255, 150, 0);
+        font-weight: bold;
+    }

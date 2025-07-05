@@ -6,9 +6,16 @@
 @rendermode InteractiveServer
 @using QrBlazorServices.Components.Pages
 
+
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
 <div class="d-flex flex-column align-items-center w-100">
 <!-- Tabs de navegación -->
-<ul class="nav nav-tabs mb-3" style="max-width: 800px; width: 100%;">
+    <ul class="nav nav-tabs mb-3 custom-tabs">
+
     <li class="nav-item">
         <button class="nav-link @(formActivo == "Email" ? "active" : "")" @onclick='() => CambiarFormulario("Email")'>Correo</button>
     </li>
