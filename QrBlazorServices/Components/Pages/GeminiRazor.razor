@@ -208,11 +208,13 @@
                 @foreach (var mensaje in ChatService.ChatHistory)
                 {
                     <div class="p-3 border rounded bg-light shadow-sm mb-2">
+
                         @if (mensaje.Role == "user")
                         {
                             <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
-                            <p>@LimpiarInstrucciones(mensaje.Content)</p>
+                            <p>@LimpiarInstruccionUsuario(mensaje.Content)</p>
                         }
+
                         else if (mensaje.Role == "assistant")
                         {
                             <p class="fw-bold text-success">🤖 Asistente:</p>
@@ -480,6 +482,37 @@
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
+    private string LimpiarInstruccionUsuario(string texto)
+    {
+        if (string.IsNullOrWhiteSpace(texto)) return "";
+
+        // 1. Quitar encabezado si existe
+        var sinEncabezado = texto.Replace("Instrucciones del usuario:", "", StringComparison.OrdinalIgnoreCase);
+
+        // 2. Eliminar frases comunes después del mensaje
+        var frasesRuido = new[]
+        {
+        "por favor genera la respuesta como html",
+        "usa etiquetas como",
+        "no uses markdown",
+        "etc."
+    };
+
+        foreach (var frase in frasesRuido)
+        {
+            int index = sinEncabezado.ToLowerInvariant().IndexOf(frase);
+            if (index > 0)
+            {
+                sinEncabezado = sinEncabezado.Substring(0, index).Trim();
+                break;
+            }
+        }
+
+        return sinEncabezado.Trim();
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     private string LimpiarInstrucciones(string texto)
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
@@ -491,8 +524,8 @@
         texto = Regex.Replace(texto, @"<pre[\s\S]*?</pre>", "", RegexOptions.IgnoreCase);
         texto = Regex.Replace(texto, @"<code[\s\S]*?</code>", "", RegexOptions.IgnoreCase);
 
-        // 3. Frases o patrones a eliminar
-        var instrucciones = new[]
+        // 3. Frases a eliminar si aparecen solas o al inicio de la línea
+        var frasesEliminar = new[]
         {
         "usa etiquetas como",
         "genera la respuesta como html",
@@ -500,23 +533,27 @@
         "no uses markdown",
         "responde en formato html",
         "por favor responde en html",
-        "instrucciones del usuario:",
         "archivo cargado:",
         "el contenido debe estar completamente redactado como si fuera un documento final",
         "ten en cuenta estas respuestas anteriores para mantener coherencia",
         "no uses bloques de código ni markdown",
+        "redacta el resultado final como un documento o texto bien presentado",
         "--- ?? el contenido debe estar completamente redactado como",
-        ", , ,1q, etc. No uses bloques de código ni markdown.",
-        "Redacta el resultado final como un documento o texto bien presentado. Usa etiquetas HTML (<p>, <strong>, <h2>, <br>, etc.)."
+        ", , ,1q, etc. No uses bloques de código ni markdown."
     };
 
+        // 4. Limpiar línea por línea pero preservar contenido útil
         var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         var contenidoFiltrado = lineas
             .Where(linea =>
-                !instrucciones.Any(instr =>
-                    linea.ToLowerInvariant().Contains(instr.ToLowerInvariant())
-                )
-            )
+            {
+                var lineaMin = linea.Trim().ToLowerInvariant();
+
+                // Excluye si la línea empieza con una frase a eliminar Y no tiene más contenido
+                return !frasesEliminar.Any(f =>
+                    lineaMin.StartsWith(f.ToLowerInvariant()) && lineaMin.Length <= f.Length + 10
+                );
+            })
             .ToList();
 
         return string.Join("\n", contenidoFiltrado).Trim();
