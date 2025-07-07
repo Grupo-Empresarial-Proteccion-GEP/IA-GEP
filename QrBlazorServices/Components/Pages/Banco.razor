@@ -1,0 +1,251 @@
+﻿@page "/Banco"
+@using AccesoDatos
+@using System.Data
+@inject AccesoDatosSoapClient ServicioUsuario
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
+@using System.Text.RegularExpressions
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
+<div class="container" style="max-width: 1200px; margin: auto; height: 700px;">
+    <div class="row justify-content-center h-100">
+        <div class="col-12">
+
+
+            <fieldset class="fieldset-custom h-100 d-flex flex-column">
+
+                <div class="text-center mb-4">
+                    <h6 class="fw-bold fs-6">📄 Banco de Documentos</h6>
+                </div>
+
+                <legend class="legend"><!--🧠--> Banco de Conversaciones</legend>
+
+
+                <div class="row gx-3 gy-3 h-100 w-100 mx-0">
+
+                    <!-- CONTENEDOR DE SESIONES -->
+                    <div class="col-md-6 h-100">
+
+                        <div class="fieldset-custom d-flex flex-column overflow-hidden" style="height: 600px; background-color: white;">
+                            <legend class="legend"><!--📋--> Sesiones</legend>
+
+                            <InputText @bind-Value="filtroUsuario" class="form-control mb-2" placeholder="Filtrar por usuario" /> <!--🔍-->
+                            <InputText @bind-Value="filtroTipoDocumento" class="form-control mb-3" placeholder="Filtrar por tipo de documento" /> <!--📄-->
+
+                            <div class="flex-grow-1 overflow-auto">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Asunto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (DataRow fila in sesiones.Rows.Cast<DataRow>()
+                                        .Where(f =>
+                                        f["Usuario"].ToString().Contains(filtroUsuario, StringComparison.OrdinalIgnoreCase) &&
+                                        f["TipoDocumento"].ToString().Contains(filtroTipoDocumento, StringComparison.OrdinalIgnoreCase)))
+                                        {
+                                            var id = Convert.ToInt32(fila["Id"]);
+                                            <tr style="cursor:pointer"
+                                                @onclick="() => SeleccionarSesion(id)"
+                                                class="@(id == sesionSeleccionadaId ? "table-primary" : "")">
+                                                <td>@fila["Usuario"]</td>
+                                                <td>@Convert.ToDateTime(fila["FechaInicio"]).ToString("g")</td>
+                                                <td>@fila["TipoDocumento"]</td>
+                                                <td>@fila["Asunto"]</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONTENEDOR DEL CHAT -->
+                    <div class="col-md-6 h-100">
+                        <div class="fieldset-custom d-flex flex-column overflow-hidden" style="height: 600px; background-color: white;">
+                            <legend class="legend"><!--💬--> Historial de Conversación</legend>
+
+                            <!-- CONTENEDOR SCROLLEABLE -->
+                            <div class="flex-grow-1 overflow-auto px-3">
+                                @if (historial != null && historial.Rows.Count > 0)
+                                {
+                                    @foreach (DataRow row in historial.Rows)
+                                    {
+                                        var rol = row["Rol"].ToString()?.ToLowerInvariant();
+                                        var contenidoOriginal = row["Contenido"].ToString();
+                                        var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
+
+                                        string LimpiarContenido(string texto)
+                                        {
+                                            // 1. Eliminar bloques <blockquote>…</blockquote>
+                                            texto = Regex.Replace(texto, @"<blockquote[^>]*>[\s\S]*?<\/blockquote>", "", RegexOptions.IgnoreCase);
+
+                                            // 2. Frases clave a eliminar (más generalizadas)
+                                            var frasesClave = new[]
+                                            {
+                                "por favor genera la respuesta como html",
+                                "por favor genera el documento como html",
+                                "usa etiquetas como",
+                                "no uses markdown",
+                                "no incluyas bloques de código",
+                                "escribe el contenido como si fuera el texto final",
+                                "el contenido debe estar completamente redactado como",
+                                "ten en cuenta estas respuestas anteriores",
+                                "etc. no uses bloques de código ni markdown",
+                                "---",
+                                ":No uses bloques de código ni markdown.",
+                                "Usa etiquetas HTML (<p>, <strong>, <h2>, <br>, etc.).",
+                                ", etc.).",
+                                "  No uses bloques de código ni markdown.",
+                                " Usa etiquetas HTML (",
+                                " No uses bloques de código ni markdown."
+                                };
+
+                                            // 3. Dividir en líneas y filtrar
+                                            var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                            var filtradas = lineas
+                                            .Where(linea => !frasesClave.Any(f =>
+                                            linea.ToLowerInvariant().Contains(f)))
+                                            .ToArray();
+
+                                            return string.Join("\n", filtradas).Trim();
+                                        }
+
+                                        var contenidoLimpio = rol == "user"
+                                        ? LimpiarContenido(contenidoOriginal)
+                                        : contenidoOriginal;
+
+
+                                        var isUser = rol == "user";
+
+                                        <div class="d-flex mb-4 @(isUser ? "justify-content-start" : "justify-content-end")">
+                                            <div class="chat-bubble p-3" style="
+                            background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
+                            border-radius: 1rem;
+                            max-width: 90%;
+                            box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+                            word-wrap: break-word;
+                            white-space: normal;">
+                                                <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.5rem;">
+                                                    <strong>@rol</strong> • @fecha
+                                                </div>
+                                                <div>@((MarkupString)contenidoLimpio)</div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="d-flex justify-content-center align-items-center h-100 text-muted">
+                                        <p class="text-center">Selecciona una sesión para ver el historial.</p>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- BOTÓN DE DESCARGA DEBAJO DEL CHAT -->
+                            <div class="d-flex justify-content-end pt-2">
+                                <button class="btn btn-custom" @onclick="DescargarDocSimple">
+                                    <!--⬇️--> Descargar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </fieldset>
+        </div>
+    </div>
+</div>
+
+
+
+@code {
+    private DataTable sesiones = new();
+    private DataTable historial = new();
+    private int sesionSeleccionadaId = 0;
+    private string? mensajeError;
+    private string filtroUsuario = string.Empty;
+    private string filtroTipoDocumento = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarSesiones();
+    }
+
+    private async Task CargarSesiones()
+    {
+        try
+        {
+            sesiones = await ServicioUsuario.TraerTablaParametrosAsync(
+                "SesionesConversacion",
+                "Id, Usuario, FechaInicio, TipoDocumento, Asunto",
+                "1=1",
+                18
+            );
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar sesiones: {ex.Message}";
+        }
+    }
+
+    private async Task SeleccionarSesion(int id)
+    {
+        sesionSeleccionadaId = id;
+        try
+        {
+            historial = await ServicioUsuario.TraerTablaParametrosAsync(
+                "HistorialConversaciones",
+                "Fecha, Rol, Contenido",
+                $"SesionId = {id}",
+                18
+            );
+
+            // 🔽 Aquí generamos el texto plano del historial del rol assistant
+            ResponseText = string.Join(Environment.NewLine + Environment.NewLine,
+                historial.Rows.Cast<DataRow>()
+                .Where(r => r["Rol"].ToString()?.ToLower() == "assistant")
+                .Select(r => r["Contenido"].ToString()));
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar historial: {ex.Message}";
+        }
+    }
+
+
+    private IJSObjectReference? moduloJS;
+    private bool jsListo = false;
+    private string? ResponseText;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Carga el módulo JS desde wwwroot/js/custom.js
+            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/custom.js");
+            jsListo = true;
+        }
+    }
+
+
+    private async Task DescargarDocSimple()
+    {
+        if (jsListo && moduloJS is not null)
+        {
+            await moduloJS.InvokeVoidAsync("descargarDocDesdeTextoPlano", ResponseText);
+        }
+    }
+
+
+}

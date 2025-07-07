@@ -1,0 +1,55 @@
+﻿@page "/menu"
+@using AccesoDatos
+@using System.Data
+@inject NavigationManager Navigation
+@inject AccesoDatosSoapClient ServicioUsuario
+@rendermode InteractiveServer
+@using QrBlazorServices.Components.Pages
+
+
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
+<div class="d-flex flex-column align-items-center w-100">
+<!-- Tabs de navegación -->
+    <ul class="nav nav-tabs mb-3 custom-tabs">
+
+    <li class="nav-item">
+        <button class="nav-link @(formActivo == "Email" ? "active" : "")" @onclick='() => CambiarFormulario("Email")'>Correo</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(formActivo == "GeminiRazor" ? "active" : "")" @onclick='() => CambiarFormulario("GeminiRazor")'>Documentos IA</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(formActivo == "Banco" ? "active" : "")" @onclick='() => CambiarFormulario("Banco")'>Banco</button>
+    </li>
+</ul>
+
+<!-- Escala aplicada al contenedor para simular Ctrl - -->
+<div class="w-100 d-flex justify-content-center">
+<div style="transform: scale(0.96); transform-origin: top center; width: 100%;">
+    @switch (formActivo)
+    {
+        case "Email":
+            <Email />
+            break;
+        case "GeminiRazor":
+            <GeminiRazor />
+            break;
+        case "Banco":
+            <Banco />
+            break;
+    }
+</div>
+</div>
+</div>
+@code {
+    private string formActivo = "Email";
+
+    void CambiarFormulario(string nombre)
+    {
+        formActivo = nombre;
+    }
+}

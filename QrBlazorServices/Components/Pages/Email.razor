@@ -1,0 +1,86 @@
+﻿@page "/correo"
+@using QrBlazorServices.Controllers
+@inject EmailService EmailService
+@rendermode InteractiveServer
+
+@* Asegúrate de tener esta línea en el <head> de tu página o Layout *@
+<link href="css/Style.css" rel="stylesheet" />
+
+<EditForm Model="@correo" OnValidSubmit="Enviar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+        <div class="col-md-6">
+            <fieldset class="fieldset-custom">
+                <legend class="legend">Enviar Correo</legend>
+
+                <div class="form-group">
+                    <label>Remitente (Gmail):</label>
+                    <InputText class="form-control" @bind-Value="correo.Remitente" />
+                </div>
+
+                <div class="form-group">
+                    <label>Contraseña de aplicación:</label>
+                    <InputText class="form-control" type="password" @bind-Value="correo.Contrasena" />
+                </div>
+
+                <div class="form-group">
+                    <label>Destinatario:</label>
+                    <InputText class="form-control" @bind-Value="correo.Destinatario" />
+                </div>
+
+                <div class="form-group">
+                    <label>Asunto:</label>
+                    <InputText class="form-control" @bind-Value="correo.Asunto" />
+                </div>
+
+                <div class="form-group">
+                    <label>Mensaje:</label>
+                    <InputTextArea class="form-control" @bind-Value="correo.Mensaje" style="height: 150px; resize: none;" />
+                </div>
+
+                <div class="form-group mb-2">
+                    <label>Adjuntar archivo:</label>
+                    <InputFile OnChange="OnFileSelected" class="form-control1" />
+                    @if (correo.Adjuntos.Count > 0)
+                    {
+                        <p class="text-success">✅ @correo.Adjuntos.Count archivo(s) cargado(s)</p>
+                    }
+                </div>
+
+                <button class="btn btn-primary mt-2 btn-custom" type="submit">Enviar</button>
+
+                @if (!string.IsNullOrEmpty(mensaje))
+                {
+                    <div class="alert alert-info mt-3">@mensaje</div>
+                }
+
+            </fieldset>
+        </div>
+    </div>
+</EditForm>
+
+
+@code {
+    private CorreoModel correo = new();
+    private string? mensaje;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        correo.Adjuntos = e.GetMultipleFiles().ToList();
+    }
+
+    private async Task Enviar()
+    {
+        try
+        {
+            await EmailService.EnviarCorreo(correo);
+            mensaje = "✅ Correo enviado correctamente.";
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al enviar: {ex.Message}";
+        }
+    }
+}

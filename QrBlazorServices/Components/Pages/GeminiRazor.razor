@@ -8,224 +8,255 @@
 @using Microsoft.AspNetCore.Hosting
 @using QrBlazorServices.Helpers
 @inject ChatService ChatService
-@inject otraIA otraIA 
+@inject otraIA otraIA
 @using System.Text.RegularExpressions;
 @rendermode InteractiveServer
+@using System.Data;
+@using System.Text
+
 
 <head>
+    <!-- Bootstrap CSS -->
+    <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />-->
+
+    <!-- Tu estilo personalizado -->
     <link href="css/Style.css" rel="stylesheet" />
 </head>
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
-    <div class="api-form container py-4">
 
-        <!-- TÍTULO -->
-        <div class="text-center mb-5">
-            <h2 class="display-6">📄 Generador Inteligente de Documentos</h2>
-            <p class="text-muted">Completa los datos para generar o analizar documentos con IA</p>
-        </div>
+    <div style="background-color: #f5f5f5;">
+        <div class="scale-wrapper">
+            <div class="container-fluid card p-4">
 
-        <!-- CARD GENERAL -->
-        <div class="card p-4 shadow-sm rounded-4 bg-light">
-
-            <!-- Fila 1: Receptor y Emisor -->
-            <div class="row g-4">
-                <!-- Receptor -->
-                <div class="col-md-6">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">👤 Receptor</legend>
-                        <div class="form-group">
-                            <label for="Receptor">Nombre</label>
-                            <InputText id="Receptor" @bind-Value="Receptor" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Documento_R">Tipo de documento</label>
-                            <select id="Documento_R" @bind="Documento_R" class="form-control">
-                                <option value="">Seleccione</option>
-                                <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
-                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                <option value="PEP">PEP</option>
-                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                <option value="NIT">NIT</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="NumeroDoc_R">Número de documento</label>
-                            <InputText id="NumeroDoc_R" @bind-Value="NumeroDoc_R" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Direccion_R">Dirección</label>
-                            <InputText id="Direccion_R" @bind-Value="Direccion_R" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Telefono_R">Teléfono</label>
-                            <InputText id="Telefono_R" @bind-Value="Telefono_R" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Correo_R">Correo</label>
-                            <InputText id="Correo_R" @bind-Value="Correo_R" class="form-control" />
-                        </div>
-                    </fieldset>
+                <div class="text-center mb-4">
+                    <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
                 </div>
 
-                <!-- Emisor -->
-                <div class="col-md-6">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">🏢 Emisor</legend>
-                        <div class="form-group">
-                            <label for="Emisor">Nombre</label>
-                            <InputText id="Emisor" @bind-Value="Emisor" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Documento_E">Tipo de documento</label>
-                            <select id="Documento_E" @bind="Documento_E" class="form-control">
-                                <option value="">Seleccione</option>
-                                <option value="CEDULA DE CIUDADANÍA">Cédula de Ciudadanía</option>
-                                <option value="TARJETA DE IDENTIDAD">Tarjeta de Identidad</option>
-                                <option value="PEP">PEP</option>
-                                <option value="PERMISO POR PROTECCIÓN TEMPORAL">Permiso Temporal</option>
-                                <option value="NIT">NIT</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="NumeroDoc_E">Número de documento</label>
-                            <InputText id="NumeroDoc_E" @bind-Value="NumeroDoc_E" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Direccion_E">Dirección</label>
-                            <InputText id="Direccion_E" @bind-Value="Direccion_E" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Telefono_E">Teléfono</label>
-                            <InputText id="Telefono_E" @bind-Value="Telefono_E" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Correo_E">Correo</label>
-                            <InputText id="Correo_E" @bind-Value="Correo_E" class="form-control" />
-                        </div>
-                    </fieldset>
-                </div>
-            </div>
 
-            <!-- Fila 2: Información del Documento + Selección IA -->
+                <!-- CONTENEDOR GENERAL EN DOS COLUMNAS -->
+                <div class="row gy-4">
+                    <!-- COLUMNA IZQUIERDA -->
+                    <div class="col-lg-6">
+                        <!-- Busqueda De Doc -->
+                        <fieldset class="fieldset-custom mb-3">
+                            <!-- Se agregó 'mb-4' para separación -->
+                            <legend class="legend"> <!--📄--> Buscar Usuario </legend>
+                            <div class="d-flex mb-3 gap-2">
+                                <InputText @bind-Value="nombreBuscado" class="form-control" placeholder="Buscar por documento" />
+                                <button class="btn-custom btn-secondary" @onclick="BuscarClientePorDocumento" type="button" disabled="@buscandoCliente">
+                                    @(buscandoCliente ? "Buscando..." : "Buscar")
+                                </button>
+                            </div>
+                        </fieldset>
 
-                <!-- Información del Documento -->
-                <div class="col-md-12">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">📌 Información del Documento</legend>
-                        <div class="form-group">
-                            <label for="TipoDocumento">Tipo</label>
-                            <select id="TipoDocumento" @bind="TipoDocumento" class="form-control">
-                                <option value="">Seleccione</option>
+                        <!-- Receptor y Emisor -->
+                        <div class="row gy-3">
+                            <!-- Receptor -->
+                            <div class="col-md-6">
+                                <fieldset class="fieldset-custom">
+                                    <legend class="legend"><!--👤--> Receptor</legend>
+                                    <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
+                                    <select class="form-control mb-2" @bind="Documento_R">
+                                        <option value="">Tipo de documento</option>
+                                        <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                                        <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                                        <option value="PEP">PEP</option>
+                                        <option value="Permiso por Protección Temporal">Permiso Temporal</option>
+                                        <option value="NIT">NIT</option>
+                                    </select>
+                                    <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_R" />
+                                    <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_R" />
+                                    <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_R" />
+                                    <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_R" />
+                                </fieldset>
+                            </div>
+
+                            <!-- Emisor -->
+                            <div class="col-md-6">
+                                <fieldset class="fieldset-custom">
+                                    <legend class="legend"> <!--🏢--> Emisor   </legend>
+                                    <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Emisor" />
+                                    <select class="form-control mb-2" @bind="Documento_E">
+                                        <option value="">Tipo de documento</option>
+                                        <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                                        <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                                        <option value="PEP">PEP</option>
+                                        <option value="Permiso por Protección Temporal">Permiso Temporal</option>
+                                        <option value="NIT">NIT</option>
+                                    </select>
+
+                                    <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_E" />
+                                    <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_E" />
+                                    <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_E" />
+                                    <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_E" />
+                                </fieldset>
+                            </div>
+                        </div>
+
+                        <!-- Info Documento -->
+                        <fieldset class="fieldset-custom mt-3">
+                            <legend class="legend"> <!--📄--> Información del Documento </legend>
+                            <select class="form-control mb-2" @bind="TipoDocumento">
+                                <option value="">Tipo</option>
                                 <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
                                 <option value="CARTA LABORAL">Carta Laboral</option>
                                 <option value="CONSTANCIA">Constancia</option>
                                 <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
                                 <option value="SOLICITUD GENERAL">Solicitud General</option>
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="Ciudad">Ciudad</label>
-                            <InputText id="Ciudad" @bind-Value="Ciudad" class="form-control" />
-                        </div>
-                        <div class="form-group">
-                            <label for="Asunto">Asunto</label>
-                            <InputText id="Asunto" @bind-Value="Asunto" class="form-control" />
-                        </div>
-                         <legend class="legend">🤖 Selección de IA</legend>
-                        <div class="form-group">
-                            <label for="SelectorIA">IA a utilizar</label>
-                            <select id="SelectorIA" @onchange="e => CambiarIA(e.Value?.ToString())" class="form-select">
+                            <InputText class="form-control mb-2" placeholder="Ciudad" @bind-Value="Ciudad" />
+                            <InputText class="form-control mb-2" placeholder="Asunto" @bind-Value="Asunto" />
+                        </fieldset>
+
+                        <!-- Descripción -->
+                        <fieldset class="fieldset-custom mt-3">
+                            <legend class="legend"><!--🤖--> Selección de IA</legend>
+                            <select class="form-select mb-3" @onchange="e => CambiarIA(e.Value?.ToString())">
                                 <option value="openai">OpenAI (GPT)</option>
                                 <option value="gemini">Gemini (Google)</option>
                             </select>
-                        </div>
-                    </fieldset>
-                </div>
 
-            <!-- Fila 3: TextArea -->
-                
-                <div class="col-md-12">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">🧠 Descripción para la IA</legend>
-                        <div class="form-group">
-                            <label for="UserPrompt">Descripción detallada (opcional)</label>
-                            <InputTextArea id="UserPrompt" @bind-Value="UserPrompt" class="form-control"
-                                           placeholder="Describe claramente qué quieres generar o analizar..."
-                                           style="min-height: 400px; resize: vertical;" />
-                        </div>
-                    </fieldset>
-                </div>
+                            <legend class="legend"><!--✍️--> Descripción para la IA</legend>
+                            <InputTextArea class="form-control" style="min-height: 180px;" placeholder="Describe claramente qué quieres generar o analizar..." @bind-Value="UserPrompt" />
+                        </fieldset>
+                    </div>
 
-				
-            <!-- Fila 4: Adjuntar archivo + Botones -->
-                
-                <div class="col-md-12">
-                    <fieldset class="fieldset-custom">
-                        <legend class="legend">📎 Adjuntar archivo</legend>
-                        <div class="form-group mb-3">
-                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control" disabled="@cargantwo" />
-                        </div>
+                    <div class="col-lg-6 d-flex flex-column fieldset-custom">
+                        <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
 
-                        <div class="d-flex" style="gap: 20px;">
-                            <button @onclick="EnviarYLimpiarDespues" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargando">
-                                @(cargando ? "Generando documento..." : "Generar Documento con IA")
-                            </button>
-                            <button @onclick="EnviarYLimpiarDespues2" class="btn btn-primary mt-2 btn-custom" type="button" disabled="@cargantwo">
-                                @(cargantwo ? "Analizando..." : "Analizar Documento")
-                            </button>
-                        </div>
-                    </fieldset>
+                            <legend class="legend"><!--🪪--> Resultado</legend>
+
+                            <!-- Contenedor principal de la respuesta -->
+                            <div class="form-control mb-3 flex-grow-1" style="min-height: 200px; overflow-y: auto;">
+
+                                @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
+                                {
+                                    <legend class="legend">Sugerencias Generadas</legend>
+                                    <p><strong>Selecciona la(s) sugerencia(s):</strong></p>
+                                    <ul class="list-unstyled">
+                                        @foreach (var opcion in opcionesGeneradas)
+                                        {
+                                            <li class="form-check">
+                                                <input class="form-check-input" type="checkbox"
+                                                       @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
+                                                <label class="form-check-label">@opcion</label>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(ResponseText))
+                                {
+                                    <div contenteditable="true"
+                                         @ref="editorRef"
+                                         @onblur="ActualizarTextoEditable">
+                                        @((MarkupString)ResponseText)
+                                    </div>
+
+                                }
+                                else
+                                {
+                                    <p class="text-muted">Aún no hay contenido generado.</p>
+                                }
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="form-group d-flex mt-3 gap-3">
+                                <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">Descargar como Word</button>
+                                <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">Mostrar Historial</button>
+                            </div>
+
+                            <!-- Historial -->
+                            <div id="historial-container" class="historial mt-3" style="@HistorialStyle">
+                                <h5>Historial de Chat:</h5>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                </div>
+                            </div>
+
+                            <!-- 📎 Adjuntar archivo -->
+                            <div class="mt-4">    </div>
+                            <legend class="legend"><!--📎--> Adjuntar archivo</legend>
+                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control1 mb-3" disabled="@cargantwo" />
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
+                                <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
+                            </div>
+                        </fieldset>
+                    </div>
                 </div>
             </div>
         </div>
-  
+    </div>
 
 </EditForm>
 
-
-
-
-
-
-
-    @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
-    {
-
-         <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-12">
-                <fieldset class="fieldset-custom">
-                    <legend class="legend">Sugerencias Generadas</legend>
-                    <div class="form-group">
-                        <p><strong>Selecciona la(s) sugerencia(s) que prefieras:</strong></p>
-                        <ul class="list-unstyled">
-                            @foreach (var opcion in opcionesGeneradas)
-                            {
-                                  <div class="container mt-4">
-                                              <li class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                    @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
-                                    <label class="form-check-label">
-                                        @opcion
-                                    </label>
-                                </li>
-                        </div>
-                            }
-                        </ul>
-                    </div>
-                </fieldset>
+@if (showModal)
+{
+    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                 background-color: rgba(0, 0, 0, 0.5); display: flex;
+                 justify-content: center; align-items: center; z-index: 9999;">
+        <div style="background: white; padding: 20px; border-radius: 10px;
+                    width: 50%; max-height: 50vh; overflow-y: auto;
+                    box-shadow: 0 0 10px #000; box-sizing: border-box;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><!--📚--> Historial de Chat </h5>
+                <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
             </div>
+
+            @if (ChatService.ChatHistory?.Any() == true)
+            {
+                @foreach (var mensaje in ChatService.ChatHistory)
+                {
+                    <div class="p-3 border rounded bg-light shadow-sm mb-2">
+                        @if (mensaje.Role == "user")
+                        {
+                            <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
+                            <p>@LimpiarInstrucciones(mensaje.Content)</p>
+                        }
+                        else if (mensaje.Role == "assistant")
+                        {
+                            <p class="fw-bold text-success">🤖 Asistente:</p>
+
+                            <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
+                                @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+                                <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="text-muted">No hay historial disponible.</p>
+            }
         </div>
-        </div>
-    }
+    </div>
+}
 
+@code {
+    private bool showModal = false;
+}
 
+@if (cargantwo)
+{
+    <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
+        <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    </div>
+}
 
-
+@if (cargando)
+{
+    <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
+        <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    </div>
+}
 
 @code {
     private string userInput = "";
+    private bool isHistorialVisible = false;
+    private string HistorialStyle => isHistorialVisible ? "display: block;" : "display: none;";
 
     private async Task EnviarMensaje()
     {
@@ -240,82 +271,6 @@
     {
         if (e.Key == "Enter") await EnviarMensaje();
     }
-}
-
-@if (cargantwo)
-{
-    {
-        <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
-            <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
-        </div>
-    }
-}
-
-@if (cargando)
-{
-    
-        <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
-            <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-            <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
-        </div>
-    
-}
-else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
-{
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-12">
-                <fieldset class="fieldset-custom">
-                    <legend class="legend">Detalles de la Respuesta</legend>
-                    <div class="form-group">
-                        <p><strong>Respuesta generada:</strong></p>
-                        <div class="resultado-html form-control mb-3"
-                             style="height: 500px; overflow: auto; white-space: normal; word-wrap: break-word;">
-                            @((MarkupString)ResponseText)
-                        </div>
-
-                    </div>
-
-                    <div class="form-group d-flex" style="gap: 20px;">
-                        <button @onclick="DescargarDocSimple" class="btn btn-primary mt-2 btn-custom" type="button">
-                            Descargar como Word
-                        </button>
-                        <button @onclick="ToggleHistorialVisibility" class="btn btn-primary mt-2 btn-custom" type="button">
-                            Mostrar/Ocultar Historial
-                        </button>
-                    </div>
-
-
-                    <div id="historial-container" class="historial" style="@HistorialStyle">
-                        <h3>Historial de Chat:</h3>
-                        <div>
-                            @foreach (var mensaje in ChatService.ChatHistory)
-                            {
-                                <div class="p-4 border rounded bg-white shadow mb-4">
-                                    @if (mensaje.Role == "user")
-                                    {
-                                        <p class="font-semibold text-blue-600">🧑‍💻 Tú:</p>
-                                        <p>@LimpiarInstrucciones(mensaje.Content)</p>
-                                    }
-                                    else if (mensaje.Role == "assistant")
-                                    {
-                                        <p class="font-semibold text-green-600">🤖 Asistente:</p>
-                                        @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
-                                    }
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </fieldset>
-            </div>
-        </div>
-    </div>
-}
-
-@code {
-    private bool isHistorialVisible = false;
-    private string HistorialStyle => isHistorialVisible ? "display: block;" : "display: none;";
 
     private void ToggleHistorialVisibility()
     {
@@ -323,32 +278,7 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
     }
 }
 
-<!-- @if (!string.IsNullOrEmpty(ResponseText))
-{
-    <hr />
-    <h3>Respuesta de Gemini</h3>
-    <div style="border:1px solid black; padding:10px;" @onclick="ToggleHtml">
-        @if (mostrarHtml)
-        {
-            @((MarkupString)ResponseText)
-        }
-        else
-        {
-            <pre>@ResponseText</pre>
-        }
-    </div>
-} 
-}
-@if (!string.IsNullOrEmpty(fileContent))
-{
-    <p>Contenido del archivo:</p>
-    <pre>@fileContent</pre>
-}-->
-
-<!-- //////////////////////////////////////////////////////////////////////////////////// -->
-<!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
-    @foreach (var item in opcionesCheckbox)
+@foreach (var item in opcionesCheckbox)
 {
     <div>
         <input type="checkbox" @bind="item.Seleccionada" />
@@ -360,6 +290,7 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
 @code {
+    private ElementReference editorRef;
 
     private string? Ciudad;
     private string? Receptor;
@@ -378,19 +309,11 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
     private string? TipoDocumento;
     private string? UserPrompt;
     private string? ResponseText;
-    private string fileContent;
+    private string? fileContent;
     private string contenidoAuxiliar = "";
     private string textoParcial = "";
-    
-    private IBrowserFile uploadedFile;
-    private IJSObjectReference? moduloJS;
 
-    private string inputFileKey = Guid.NewGuid().ToString();
-    private string uploadedFileContent = string.Empty;
-    
-    private List<string> opcionesGeneradas = new();
-    private List<string> opcionesSeleccionadas = new();
-    private List<OpcionCheckbox> opcionesCheckbox = new();
+    public string UsuarioActual { get; set; } = "Invitado";
 
     private bool mostrarHtml = true;
     private bool isLoading = false;
@@ -399,17 +322,33 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
     private bool mostrarSugerencias = true;
     private bool jsListo = false;
 
+    private bool mostrarHistorial = true;
+    private IBrowserFile uploadedFile;
+
+    private IJSObjectReference? moduloJS;
+
+    private string inputFileKey = Guid.NewGuid().ToString();
+    private string uploadedFileContent = string.Empty;
+
+    private List<string> opcionesGeneradas = new();
+    private List<string> opcionesSeleccionadas = new();
+    private List<OpcionCheckbox> opcionesCheckbox = new();
+
+
+    string nombreBuscado; // input para búsqueda
+    string mensaje; // para mostrar mensajes al usuario
+    bool buscandoCliente = false;
 
     int intentos = 0;
     int maxIntentos = 5;
     int espera = 2000; // milisegundos
 
+    private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
     private string selectedIA = "openai";
-
     private void CambiarIA(string nuevaIA)
     {
         selectedIA = nuevaIA;
@@ -420,6 +359,16 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
             ChatService.SetIA(otraIA);
     }
 
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task ActualizarTextoEditable()
+    {
+        if (moduloJS != null)
+        {
+            ResponseText = await moduloJS.InvokeAsync<string>("obtenerHtmlEditable", editorRef);
+        }
+    }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
@@ -428,10 +377,8 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
     {
         cargando = true;
 
-
         // 1. Ejecuta tu función principal
         await SendToGemini();
-
 
         // 2. Luego limpia los campos (dejándolos visualmente en blanco)
         Ciudad = "";
@@ -463,7 +410,6 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
 
         // 3. Fuerza actualización de UI
         StateHasChanged();
-
 
     }
 
@@ -508,14 +454,29 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    
+
+    private void SeleccionarRespuesta(string contenido)
+    {
+        ResponseText = contenido;
+        mostrarSugerencias = false;
+        showModal = false; // ✅ Cierra el modal inmediatamente
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
     private string LimpiarInstrucciones(string texto)
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
 
-        // Dividir en líneas
-        var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        // 1. Eliminar bloques Markdown ``` ``` de cualquier tipo
+        texto = Regex.Replace(texto, @"```[\s\S]*?```", "", RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
+        // 2. Eliminar etiquetas <pre>, <code>
+        texto = Regex.Replace(texto, @"<pre[\s\S]*?</pre>", "", RegexOptions.IgnoreCase);
+        texto = Regex.Replace(texto, @"<code[\s\S]*?</code>", "", RegexOptions.IgnoreCase);
+
+        // 3. Frases o patrones a eliminar (instrucciones y contenido repetitivo)
         var instrucciones = new[]
         {
         "usa etiquetas como",
@@ -524,21 +485,31 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
         "no uses markdown",
         "responde en formato html",
         "por favor responde en html",
-        "Instrucciones del usuario:",
-        "Archivo Cargado:"
-
+        "instrucciones del usuario:",
+        "archivo cargado:",
+        "el contenido debe estar completamente redactado como si fuera un documento final",
+        "ten en cuenta estas respuestas anteriores para mantener coherencia",
+        "no uses bloques de código ni markdown",
+        "--- ?? el contenido debe estar completamente redactado como",
+        ", , ,1q, etc. No uses bloques de código ni markdown.",
+        "Usa etiquetas HTML (<p>, <strong>, <h2>, <br>, etc.)."
     };
 
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
-        // Filtrar líneas que parecen instrucciones
+        // 4. Eliminar líneas que contengan alguna de las frases anteriores
+        var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         var contenidoFiltrado = lineas
-            .Where(linea => !instrucciones.Any(instr => linea.ToLower().Contains(instr)))
+            .Where(linea =>
+                !instrucciones.Any(instr =>
+                    linea.ToLowerInvariant().Contains(instr.ToLowerInvariant())
+                )
+            )
             .ToList();
 
         return string.Join("\n", contenidoFiltrado).Trim();
     }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
     private string ExtraerContenidoHtml(string respuesta)
     {
@@ -604,7 +575,7 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// --> 
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
     public static string EliminarDuplicadosConCheckboxes(string texto)
     {
@@ -664,13 +635,12 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
         }
 
     }
-        
+
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
     private async Task SendResumenDesdeArchivo()
     {
-
         try
         {
             if (string.IsNullOrWhiteSpace(fileContent))
@@ -679,51 +649,46 @@ else if (mostrarHtml && !string.IsNullOrEmpty(ResponseText))
                 return;
             }
 
-            string promptResumen = $@"
-Este es el contenido de un archivo cargado. Por favor, analiza el texto y redacta <strong>exactamente cuatro recomendaciones distintas
-para continuar con el documento.
+            // Traer la plantilla desde la tabla Prompts
+            string condicion = "Nombre = 'ResumenDesdeArchivo'";
+            string campos = "Plantilla";
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Prompts", campos, condicion, 18);
 
-Las recomendaciones deben redactarse exclusivamente en formato de enumeración ordinal o cardinal, no con viñetas. Cada recomendación debe estar
-claramente diferenciada dentro del texto. Además, cada una debe ser breve y directa (no más de 4 o 5 líneas).
+            if (resultado == null || resultado.Rows.Count == 0)
+            {
+                ResponseText = "<p><strong>No se encontró el prompt configurado.</strong></p>";
+                return;
+            }
 
-Usa etiquetas HTML como <p>, <strong> o <em>, pero <strong>no uses</strong> <ul>, <ol> ni <li>, y no uses Markdown.
+            // Obtener la plantilla y reemplazar el marcador
+            string plantillaPrompt = resultado.Rows[0]["Plantilla"].ToString();
+            string promptFinal = plantillaPrompt.Replace("{fileContent}", fileContent);
 
-Contenido del documento:
-{fileContent}";
-
-
-            // Enviar la solicitud para obtener la respuesta
-            ResponseText = await ChatService.SendMessageAsync(promptResumen);
+            // Enviar a IA
+            ResponseText = await ChatService.SendMessageAsync(promptFinal);
             mostrarHtml = false;
 
+            // Procesar respuesta
             string textoSinDuplicados = EliminarDuplicadosConCheckboxes(ResponseText);
 
-            // Extraer todas las frases entre <p> o <li> o líneas separadas manualmente
             var matches = Regex.Matches(ResponseText, "<li>(.*?)</li>|<p>(.*?)</p>", RegexOptions.IgnoreCase);
 
-            // Unir todos los grupos y limpiar etiquetas HTML adicionales
             opcionesGeneradas = matches
                 .Select(m => string.IsNullOrEmpty(m.Groups[1].Value) ? m.Groups[2].Value : m.Groups[1].Value)
-                .Select(o => Regex.Replace(o, "<.*?>", "").Trim()) // elimina etiquetas HTML
-                .Distinct() // evita duplicados
+                .Select(o => Regex.Replace(o, "<.*?>", "").Trim())
+                .Distinct()
                 .ToList();
-
-
         }
         catch (Exception ex)
         {
             ResponseText = $"<p><strong>Ocurrió un error:</strong> {ex.Message}</p>";
         }
-
         finally
         {
             cargantwo = false;
-            // 🔄 Resetear el input después de generar las opciones y antes del siguiente render
             inputFileKey = Guid.NewGuid().ToString();
             mostrarSugerencias = true;
-
         }
-
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
@@ -749,98 +714,74 @@ Contenido del documento:
     {
         cargando = true;
 
-        var tieneArchivo = !string.IsNullOrWhiteSpace(fileContent);
-        var datosCompletos = !string.IsNullOrWhiteSpace(Ciudad)
-        || !string.IsNullOrWhiteSpace(Receptor)
-        || !string.IsNullOrWhiteSpace(Direccion_R)
-        || !string.IsNullOrWhiteSpace(Documento_R)
-        || !string.IsNullOrWhiteSpace(NumeroDoc_R)
-        || !string.IsNullOrWhiteSpace(Telefono_R)
-        || !string.IsNullOrWhiteSpace(Correo_R)
-        || !string.IsNullOrWhiteSpace(Emisor)
-        || !string.IsNullOrWhiteSpace(Direccion_E)
-        || !string.IsNullOrWhiteSpace(Documento_E)
-        || !string.IsNullOrWhiteSpace(NumeroDoc_E)
-        || !string.IsNullOrWhiteSpace(Telefono_E)
-        || !string.IsNullOrWhiteSpace(Correo_E)
-        || !string.IsNullOrWhiteSpace(Asunto);
-
-        string opcionesTexto = string.Join("\n", opcionesSeleccionadas);
-
-        string promptFinal;
-
-        if (datosCompletos)
-        {
-            promptFinal = $@"
-Redacta un documento formalsegun su tipo: {TipoDocumento} y teniendo en cuenta la informacion adicional:{UserPrompt} con la siguiente información:
-Ciudad: {Ciudad}
-
-Fecha: {DateTime.Now:dd 'de' MMMM 'del' yyyy}
-Nombre del receptor: {Receptor}
-Dirección receptor: {Direccion_R}
-Documento receptor: {Documento_R}
-Número Documento receptor: {NumeroDoc_R}
-Teléfono receptor: {Telefono_R}
-Correo receptor: {Correo_R}
-
-Nombre del emisor: {Emisor}
-Dirección emisor: {Direccion_E}
-Documento emisor: {Documento_E}
-Número Documento emisor: {NumeroDoc_E}
-Teléfono emisor: {Telefono_E}
-Correo emisor: {Correo_E}
-
-Asunto: {Asunto}
-
-{contenidoAuxiliar}
-
-contenido documento {fileContent}
-
-Por favor genera el documento como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
-        }
-        else
-        {
-            // Si no hay datos completos, también puedes asignar un valor a promptFinal
-            var contenidoAdicional = "";
-
-            if (!string.IsNullOrWhiteSpace(UserPrompt))
-                contenidoAdicional += $"Instrucciones del usuario: {UserPrompt}\n";
-
-           // if (!string.IsNullOrWhiteSpace(UserPrompt))
-             //   contenidoAdicional += $"Archivo Cargado: {fileContent}\n";
-
-
-            promptFinal = $@"
-{contenidoAdicional}
-Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
-
-        }
-
-        if (!string.IsNullOrWhiteSpace(contenidoAuxiliar))        
-        {
-        var contenidoAdicional = "";
-        contenidoAdicional += $"Sugerencia del usuario: \n{contenidoAuxiliar}\n";
-
-            promptFinal = $@"
-        {contenidoAdicional}
-        Por favor genera el documento en base a la sugerencia seleccionada {contenidoAuxiliar} 
-        como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
-        }
-
-        
         try
         {
+            // 1. Obtener la plantilla
+            string condicion = "Nombre = 'GenerarDocumentoFormal'";
+            string campos = "Plantilla";
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Prompts", campos, condicion, 18);
+
+            if (resultado == null || resultado.Rows.Count == 0)
+            {
+                ResponseText = "<p><strong>No se encontró el prompt configurado.</strong></p>";
+                return;
+            }
+
+            string plantillaPrompt = resultado.Rows[0]["Plantilla"].ToString();
+
+            // 2. Construir el prompt
+            string promptFinal = plantillaPrompt
+                .Replace("{TipoDocumento}", TipoDocumento)
+                .Replace("{UserPrompt}", UserPrompt ?? "")
+                .Replace("{Ciudad}", Ciudad ?? "")
+                .Replace("{Fecha}", DateTime.Now.ToString("dd 'de' MMMM 'del' yyyy"))
+                .Replace("{Receptor}", Receptor ?? "")
+                .Replace("{Direccion_R}", Direccion_R ?? "")
+                .Replace("{Documento_R}", Documento_R ?? "")
+                .Replace("{NumeroDoc_R}", NumeroDoc_R ?? "")
+                .Replace("{Telefono_R}", Telefono_R ?? "")
+                .Replace("{Correo_R}", Correo_R ?? "")
+                .Replace("{Emisor}", Emisor ?? "")
+                .Replace("{Direccion_E}", Direccion_E ?? "")
+                .Replace("{Documento_E}", Documento_E ?? "")
+                .Replace("{NumeroDoc_E}", NumeroDoc_E ?? "")
+                .Replace("{Telefono_E}", Telefono_E ?? "")
+                .Replace("{Correo_E}", Correo_E ?? "")
+                .Replace("{Asunto}", Asunto ?? "")
+                .Replace("{contenidoAuxiliar}", contenidoAuxiliar ?? "")
+                .Replace("{fileContent}", fileContent ?? "");
+
+            // 3. Validación mínima de datos (prompt básico si está vacío)
+            if (string.IsNullOrWhiteSpace(Ciudad + Emisor + Receptor + fileContent))
+            {
+                promptFinal = $"Instrucciones del usuario: {UserPrompt}\n\nPor favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
+            }
+
+            int sesionId = await GuardarSesionConversacionAsync(TipoDocumento, Asunto);
+
+            // Guardar selección de opciones (si existen)
+            if (opcionesSeleccionadas?.Any() == true)
+            {
+                string opcionesTexto = string.Join("\n", opcionesSeleccionadas.Select((op, i) => $"{i + 1}. {op}"));
+                await GuardarMensajeConversacionAsync(sesionId, "user", $"Opciones seleccionadas:\n{opcionesTexto}");
+            }
+
+            // Guardar mensaje enviado por el usuario
+            await GuardarMensajeConversacionAsync(sesionId, "user", promptFinal);
+
+
+            // 5. Enviar a IA con reintentos
             int intentos = 0;
             int maxIntentos = 5;
-            int esperaMs = 2000; // 2 segundos
+            int esperaMs = 2000;
 
             while (intentos < maxIntentos)
             {
                 try
                 {
                     ResponseText = await ChatService.SendMessageAsync(promptFinal);
+                    await GuardarMensajeConversacionAsync(sesionId, "assistant", ResponseText);
                     break;
-
                 }
                 catch (HttpRequestException ex)
                 {
@@ -854,7 +795,7 @@ Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul
                         }
 
                         await Task.Delay(esperaMs);
-                        esperaMs *= 2; // backoff exponencial
+                        esperaMs *= 2;
                     }
                     else
                     {
@@ -863,6 +804,7 @@ Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul
                     }
                 }
             }
+
             mostrarHtml = true;
         }
         catch (Exception ex)
@@ -873,7 +815,6 @@ Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul
         {
             cargando = false;
             mostrarSugerencias = false;
-  
         }
     }
 
@@ -884,11 +825,18 @@ Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul
     {
         if (firstRender)
         {
-            // Carga el módulo JS desde wwwroot/js/custom.js
-            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/custom.js");
+            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/custom.js");
             jsListo = true;
+
+            if (!string.IsNullOrWhiteSpace(ResponseText))
+            {
+                await moduloJS.InvokeVoidAsync("setHtmlEditable", editorRef, ResponseText);
+            }
         }
     }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
     private async Task DescargarDocSimple()
     {
@@ -897,6 +845,128 @@ Por favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul
             await moduloJS.InvokeVoidAsync("descargarDocDesdeTextoPlano", ResponseText);
         }
     }
-}
 
- 
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task BuscarClientePorDocumento()
+    {
+        buscandoCliente = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(nombreBuscado))
+            {
+                mensaje = "Por favor ingrese un número de documento para buscar.";
+                return;
+            }
+
+            string documento = nombreBuscado.Replace("'", "''");
+            string condicion = $"NumeroDeDocumento = '{documento}'";
+            string campos = "Nombre, TipoDeDocumento, NumeroDeDocumento, Direccion, Telefono, Correo";
+
+            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Clientes", campos, condicion, 18);
+
+            if (resultado != null && resultado.Rows.Count > 0)
+            {
+                var fila = resultado.Rows[0];
+
+                Emisor = fila["Nombre"].ToString();
+                Documento_E = fila["TipoDeDocumento"].ToString();
+                NumeroDoc_E = fila["NumeroDeDocumento"].ToString();
+                Direccion_E = fila["Direccion"].ToString();
+                Telefono_E = fila["Telefono"].ToString();
+                Correo_E = fila["Correo"].ToString();
+
+                mensaje = "Cliente encontrado.";
+            }
+            else
+            {
+                mensaje = "No se encontró ningún cliente con ese documento.";
+                Emisor = Documento_E = NumeroDoc_E = Direccion_E = Telefono_E = Correo_E = string.Empty;
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error al buscar cliente: {ex.Message}";
+        }
+        finally
+        {
+            buscandoCliente = false;
+        }
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task<int> GuardarSesionConversacionAsync(string tipoDocumento, string asunto)
+    {
+        DataTable tabla = new DataTable("SesionesConversacion");
+        tabla.Columns.Add("Id", typeof(int));
+        tabla.Columns.Add("Usuario", typeof(string));
+        tabla.Columns.Add("FechaInicio", typeof(DateTime));
+        tabla.Columns.Add("TipoDocumento", typeof(string));
+        tabla.Columns.Add("Asunto", typeof(string));
+
+        var fila = tabla.NewRow();
+        fila["Id"] = 0;
+        fila["Usuario"] = DBNull.Value; // ← Usuario no necesario
+        fila["FechaInicio"] = DateTime.Now;
+        fila["TipoDocumento"] = tipoDocumento ?? "";
+        fila["Asunto"] = asunto ?? "";
+
+        tabla.Rows.Add(fila);
+
+        string id = await _servicioUsuario.InsertarFilaDevuelveConsecutivoAsync(tabla, "SesionesConversacion", 18);
+        return int.TryParse(id, out int sesionId) ? sesionId : 0;
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task GuardarMensajeConversacionAsync(int sesionId, string rol, string contenido)
+    {
+        DataTable tablaHistorial = new DataTable("HistorialConversaciones");
+        tablaHistorial.Columns.Add("Id", typeof(int));
+        tablaHistorial.Columns.Add("SesionId", typeof(int));
+        tablaHistorial.Columns.Add("Fecha", typeof(DateTime));
+        tablaHistorial.Columns.Add("Rol", typeof(string));
+        tablaHistorial.Columns.Add("Contenido", typeof(string));
+
+        DataRow fila = tablaHistorial.NewRow();
+        fila["Id"] = 0;
+        fila["SesionId"] = sesionId;
+        fila["Fecha"] = DateTime.Now;
+        fila["Rol"] = rol ?? "";
+        fila["Contenido"] = contenido ?? "";
+
+        tablaHistorial.Rows.Add(fila);
+
+        await _servicioUsuario.InsertarTablaAsync(tablaHistorial, "HistorialConversaciones", 18);
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    private async Task<List<string>> ObtenerRespuestasAnterioresAsync(string tipoDoc)
+    {
+        string consulta = $@"
+        SELECT TOP 3 Contenido FROM HistorialConversaciones
+        WHERE Rol = 'assistant'
+        AND SesionId IN (
+            SELECT Id FROM SesionesConversacion
+            WHERE TipoDocumento = '{tipoDoc}'
+        )
+        ORDER BY Fecha DESC";
+
+        var tabla = await _servicioUsuario.TraerConsultaAsync(consulta, 18);
+        var respuestas = new List<string>();
+
+        foreach (DataRow row in tabla.Rows)
+        {
+            respuestas.Add(row["Contenido"].ToString());
+        }
+
+        return respuestas;
+    }
+
+}
