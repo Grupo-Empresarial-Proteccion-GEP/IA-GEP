@@ -18,55 +18,55 @@
 
             <fieldset class="fieldset-custom h-100 d-flex flex-column">
 
-            <div class="text-center mb-4">
-                <h6 class="fw-bold fs-6">📄 Banco de Documentos</h6>
-            </div>
+                <div class="text-center mb-4">
+                    <h6 class="fw-bold fs-6">📄 Banco de Documentos</h6>
+                </div>
 
-            <legend class="legend"><!--🧠--> Banco de Conversaciones</legend>
+                <legend class="legend"><!--🧠--> Banco de Conversaciones</legend>
 
 
                 <div class="row gx-3 gy-3 h-100 w-100 mx-0">
 
-                <!-- CONTENEDOR DE SESIONES -->
+                    <!-- CONTENEDOR DE SESIONES -->
                     <div class="col-md-6 h-100">
 
                         <div class="fieldset-custom d-flex flex-column overflow-hidden" style="height: 600px; background-color: white;">
-                        <legend class="legend"><!--📋--> Sesiones</legend>
+                            <legend class="legend"><!--📋--> Sesiones</legend>
 
                             <InputText @bind-Value="filtroUsuario" class="form-control mb-2" placeholder="Filtrar por usuario" /> <!--🔍-->
                             <InputText @bind-Value="filtroTipoDocumento" class="form-control mb-3" placeholder="Filtrar por tipo de documento" /> <!--📄-->
 
-                        <div class="flex-grow-1 overflow-auto">
-                            <table class="table table-sm table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Usuario</th>
-                                        <th>Fecha</th>
-                                        <th>Tipo</th>
-                                        <th>Asunto</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (DataRow fila in sesiones.Rows.Cast<DataRow>()
-                                    .Where(f =>
-                                    f["Usuario"].ToString().Contains(filtroUsuario, StringComparison.OrdinalIgnoreCase) &&
-                                    f["TipoDocumento"].ToString().Contains(filtroTipoDocumento, StringComparison.OrdinalIgnoreCase)))
-                                    {
-                                        var id = Convert.ToInt32(fila["Id"]);
-                                        <tr style="cursor:pointer"
-                                            @onclick="() => SeleccionarSesion(id)"
-                                            class="@(id == sesionSeleccionadaId ? "table-primary" : "")">
-                                            <td>@fila["Usuario"]</td>
-                                            <td>@Convert.ToDateTime(fila["FechaInicio"]).ToString("g")</td>
-                                            <td>@fila["TipoDocumento"]</td>
-                                            <td>@fila["Asunto"]</td>
+                            <div class="flex-grow-1 overflow-auto">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Asunto</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (DataRow fila in sesiones.Rows.Cast<DataRow>()
+                                        .Where(f =>
+                                        f["Usuario"].ToString().Contains(filtroUsuario, StringComparison.OrdinalIgnoreCase) &&
+                                        f["TipoDocumento"].ToString().Contains(filtroTipoDocumento, StringComparison.OrdinalIgnoreCase)))
+                                        {
+                                            var id = Convert.ToInt32(fila["Id"]);
+                                            <tr style="cursor:pointer"
+                                                @onclick="() => SeleccionarSesion(id)"
+                                                class="@(id == sesionSeleccionadaId ? "table-primary" : "")">
+                                                <td>@fila["Usuario"]</td>
+                                                <td>@Convert.ToDateTime(fila["FechaInicio"]).ToString("g")</td>
+                                                <td>@fila["TipoDocumento"]</td>
+                                                <td>@fila["Asunto"]</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
 
                     <!-- CONTENEDOR DEL CHAT -->
                     <div class="col-md-6 h-100">
@@ -75,46 +75,49 @@
 
                             <!-- CONTENEDOR SCROLLEABLE -->
                             <div class="flex-grow-1 overflow-auto px-3">
-@if (historial != null && historial.Rows.Count > 0)
-{
-    @foreach (DataRow row in historial.Rows)
-    {
-        var rol = row["Rol"].ToString()?.ToLowerInvariant();
-        var contenidoOriginal = row["Contenido"].ToString();
-        var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
+                                @if (historial != null && historial.Rows.Count > 0)
+                                {
+                                    @foreach (DataRow row in historial.Rows)
+                                    {
+                                        var rol = row["Rol"].ToString()?.ToLowerInvariant();
+                                        var contenidoOriginal = row["Contenido"].ToString();
+                                        var fecha = Convert.ToDateTime(row["Fecha"]).ToString("g");
 
-        string LimpiarContenido(string texto)
-        {
-            // 1. Eliminar bloques <blockquote>…</blockquote>
-            texto = Regex.Replace(texto, @"<blockquote[^>]*>[\s\S]*?<\/blockquote>", "", RegexOptions.IgnoreCase);
+                                        string LimpiarContenido(string texto)
+                                        {
+                                            // 1. Eliminar bloques <blockquote>…</blockquote>
+                                            texto = Regex.Replace(texto, @"<blockquote[^>]*>[\s\S]*?<\/blockquote>", "", RegexOptions.IgnoreCase);
 
-            // 2. Frases clave a eliminar (más generalizadas)
-            var frasesClave = new[]
-            {
-                "por favor genera la respuesta como html",
-                "por favor genera el documento como html",
-                "usa etiquetas como",
-                "no uses markdown",
-                "no incluyas bloques de código",
-                "escribe el contenido como si fuera el texto final",
-                "el contenido debe estar completamente redactado como",
-                "ten en cuenta estas respuestas anteriores",
-                "etc. no uses bloques de código ni markdown",
-                "---",  ":No uses bloques de código ni markdown.",
-                                "No uses bloques de código ni markdown.",
-                ", etc.).",
-                "No uses bloques de código ni markdown."
-            };
+                                            // 2. Frases clave a eliminar (más generalizadas)
+                                            var frasesClave = new[]
+                                            {
+                                "por favor genera la respuesta como html",
+                                "por favor genera el documento como html",
+                                "usa etiquetas como",
+                                "no uses markdown",
+                                "no incluyas bloques de código",
+                                "escribe el contenido como si fuera el texto final",
+                                "el contenido debe estar completamente redactado como",
+                                "ten en cuenta estas respuestas anteriores",
+                                "etc. no uses bloques de código ni markdown",
+                                "---",
+                                ":No uses bloques de código ni markdown.",
+                                "Usa etiquetas HTML (<p>, <strong>, <h2>, <br>, etc.).",
+                                ", etc.).",
+                                "  No uses bloques de código ni markdown.",
+                                " Usa etiquetas HTML (",
+                                " No uses bloques de código ni markdown."
+                                };
 
-            // 3. Dividir en líneas y filtrar
-            var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var filtradas = lineas
-                .Where(linea => !frasesClave.Any(f =>
-                    linea.ToLowerInvariant().Contains(f)))
-                .ToArray();
+                                            // 3. Dividir en líneas y filtrar
+                                            var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                            var filtradas = lineas
+                                            .Where(linea => !frasesClave.Any(f =>
+                                            linea.ToLowerInvariant().Contains(f)))
+                                            .ToArray();
 
-            return string.Join("\n", filtradas).Trim();
-        }
+                                            return string.Join("\n", filtradas).Trim();
+                                        }
 
                                         var contenidoLimpio = rol == "user"
                                         ? LimpiarContenido(contenidoOriginal)
@@ -155,13 +158,13 @@
                             </div>
                         </div>
                     </div>
-                    </div>
-                    
+                </div>
+
 
 
             </fieldset>
+        </div>
     </div>
-</div>
 </div>
 
 
@@ -224,13 +227,13 @@
     private IJSObjectReference? moduloJS;
     private bool jsListo = false;
     private string? ResponseText;
-    
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             // Carga el módulo JS desde wwwroot/js/custom.js
-            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import","./js/custom.js");
+            moduloJS = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/custom.js");
             jsListo = true;
         }
     }

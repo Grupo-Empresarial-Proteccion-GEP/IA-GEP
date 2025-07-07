@@ -17,14 +17,14 @@
 
 <head>
     <!-- Bootstrap CSS -->
-    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" /> -->
-   
+    <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />-->
+
     <!-- Tu estilo personalizado -->
     <link href="css/Style.css" rel="stylesheet" />
 </head>
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
-    
+
     <div style="background-color: #f5f5f5;">
         <div class="scale-wrapper">
             <div class="container-fluid card p-4">
@@ -129,7 +129,7 @@
 
                             <!-- Contenedor principal de la respuesta -->
                             <div class="form-control mb-3 flex-grow-1" style="min-height: 200px; overflow-y: auto;">
-                                    
+
                                 @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
                                 {
                                     <legend class="legend">Sugerencias Generadas</legend>
@@ -203,21 +203,20 @@
                 <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
             </div>
 
-            @if (ChatService.ChatHistory != null && ChatService.ChatHistory.Count > 0)
+            @if (ChatService.ChatHistory?.Any() == true)
             {
                 @foreach (var mensaje in ChatService.ChatHistory)
                 {
                     <div class="p-3 border rounded bg-light shadow-sm mb-2">
-
                         @if (mensaje.Role == "user")
                         {
                             <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
-                            <p>@LimpiarInstruccionUsuario(mensaje.Content)</p>
+                            <p>@LimpiarInstrucciones(mensaje.Content)</p>
                         }
-
                         else if (mensaje.Role == "assistant")
                         {
                             <p class="fw-bold text-success">🤖 Asistente:</p>
+
                             <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
                                 @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
                                 <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
@@ -228,31 +227,15 @@
             }
             else
             {
-                <p class="text-muted">📭 No hay historial disponible.</p>
+                <p class="text-muted">No hay historial disponible.</p>
             }
-
         </div>
     </div>
 }
 
-@if (ChatService.ChatHistory != null)
-{
-    <p><strong>Total mensajes:</strong> @ChatService.ChatHistory.Count</p>
-
-    @foreach (var mensaje in ChatService.ChatHistory)
-    {
-        <div class="alert alert-secondary">
-            <p><strong>Rol:</strong> @mensaje.Role</p>
-            <p><strong>Contenido (sin limpiar):</strong> @mensaje.Content</p>
-        </div>
-    }
-}
-
-
 @code {
     private bool showModal = false;
 }
-
 
 @if (cargantwo)
 {
@@ -329,7 +312,6 @@
     private string? fileContent;
     private string contenidoAuxiliar = "";
     private string textoParcial = "";
-    private string selectedIA = "openai";
 
     public string UsuarioActual { get; set; } = "Invitado";
 
@@ -353,19 +335,20 @@
     private List<OpcionCheckbox> opcionesCheckbox = new();
 
 
-    string nombreBuscado;
-    string mensaje; 
+    string nombreBuscado; // input para búsqueda
+    string mensaje; // para mostrar mensajes al usuario
     bool buscandoCliente = false;
 
     int intentos = 0;
     int maxIntentos = 5;
-    int espera = 2000; 
+    int espera = 2000; // milisegundos
 
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
+    private string selectedIA = "openai";
     private void CambiarIA(string nuevaIA)
     {
         selectedIA = nuevaIA;
@@ -389,7 +372,7 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task EnviarYLimpiarDespues()
     {
         cargando = true;
@@ -482,50 +465,19 @@
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
-    private string LimpiarInstruccionUsuario(string texto)
-    {
-        if (string.IsNullOrWhiteSpace(texto)) return "";
-
-        // 1. Quitar encabezado si existe
-        var sinEncabezado = texto.Replace("Instrucciones del usuario:", "", StringComparison.OrdinalIgnoreCase);
-
-        // 2. Eliminar frases comunes después del mensaje
-        var frasesRuido = new[]
-        {
-        "por favor genera la respuesta como html",
-        "usa etiquetas como",
-        "no uses markdown",
-        "etc."
-    };
-
-        foreach (var frase in frasesRuido)
-        {
-            int index = sinEncabezado.ToLowerInvariant().IndexOf(frase);
-            if (index > 0)
-            {
-                sinEncabezado = sinEncabezado.Substring(0, index).Trim();
-                break;
-            }
-        }
-
-        return sinEncabezado.Trim();
-    }
-
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     private string LimpiarInstrucciones(string texto)
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
 
-        // 1. Quitar triple backticks
-        texto = texto.Replace("```html", "").Replace("```", "");
+        // 1. Eliminar bloques Markdown ``` ``` de cualquier tipo
+        texto = Regex.Replace(texto, @"```[\s\S]*?```", "", RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
         // 2. Eliminar etiquetas <pre>, <code>
         texto = Regex.Replace(texto, @"<pre[\s\S]*?</pre>", "", RegexOptions.IgnoreCase);
         texto = Regex.Replace(texto, @"<code[\s\S]*?</code>", "", RegexOptions.IgnoreCase);
 
-        // 3. Frases a eliminar si aparecen solas o al inicio de la línea
-        var frasesEliminar = new[]
+        // 3. Frases o patrones a eliminar (instrucciones y contenido repetitivo)
+        var instrucciones = new[]
         {
         "usa etiquetas como",
         "genera la respuesta como html",
@@ -533,32 +485,28 @@
         "no uses markdown",
         "responde en formato html",
         "por favor responde en html",
+        "instrucciones del usuario:",
         "archivo cargado:",
         "el contenido debe estar completamente redactado como si fuera un documento final",
         "ten en cuenta estas respuestas anteriores para mantener coherencia",
         "no uses bloques de código ni markdown",
-        "redacta el resultado final como un documento o texto bien presentado",
         "--- ?? el contenido debe estar completamente redactado como",
-        ", , ,1q, etc. No uses bloques de código ni markdown."
+        ", , ,1q, etc. No uses bloques de código ni markdown.",
+        "Usa etiquetas HTML (<p>, <strong>, <h2>, <br>, etc.)."
     };
 
-        // 4. Limpiar línea por línea pero preservar contenido útil
+        // 4. Eliminar líneas que contengan alguna de las frases anteriores
         var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
         var contenidoFiltrado = lineas
             .Where(linea =>
-            {
-                var lineaMin = linea.Trim().ToLowerInvariant();
-
-                // Excluye si la línea empieza con una frase a eliminar Y no tiene más contenido
-                return !frasesEliminar.Any(f =>
-                    lineaMin.StartsWith(f.ToLowerInvariant()) && lineaMin.Length <= f.Length + 10
-                );
-            })
+                !instrucciones.Any(instr =>
+                    linea.ToLowerInvariant().Contains(instr.ToLowerInvariant())
+                )
+            )
             .ToList();
 
         return string.Join("\n", contenidoFiltrado).Trim();
     }
-
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
@@ -809,9 +757,18 @@
                 promptFinal = $"Instrucciones del usuario: {UserPrompt}\n\nPor favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
             }
 
-            // 4. Guardar sesión y mensajes
             int sesionId = await GuardarSesionConversacionAsync(TipoDocumento, Asunto);
+
+            // Guardar selección de opciones (si existen)
+            if (opcionesSeleccionadas?.Any() == true)
+            {
+                string opcionesTexto = string.Join("\n", opcionesSeleccionadas.Select((op, i) => $"{i + 1}. {op}"));
+                await GuardarMensajeConversacionAsync(sesionId, "user", $"Opciones seleccionadas:\n{opcionesTexto}");
+            }
+
+            // Guardar mensaje enviado por el usuario
             await GuardarMensajeConversacionAsync(sesionId, "user", promptFinal);
+
 
             // 5. Enviar a IA con reintentos
             int intentos = 0;
@@ -863,7 +820,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -991,7 +947,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task<List<string>> ObtenerRespuestasAnterioresAsync(string tipoDoc)
     {
         string consulta = $@"
