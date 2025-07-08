@@ -1,0 +1,140 @@
+﻿@page "/buscar"
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@using System.Data
+
+<h3>🔍 Buscar Entidades</h3>
+
+<div class="row">
+    <div class="col-md-4">
+        <label><strong>Nombre:</strong></label>
+
+        <select class="form-control" @bind="filtro.Nombre" @bind:event="onchange">
+            <option value="">-- Seleccione --</option>
+            @foreach (var nombre in nombres)
+            {
+                <option value="@nombre">@nombre</option>
+            }
+        </select>
+
+    </div>
+
+    <div class="col-md-4">
+        <label><strong>Tipo de Entidad:</strong></label>
+        <select class="form-control" @bind="filtro.TipoEntidad" disabled="@(!tiposEntidad.Any())">
+            <option value="">-- Seleccione --</option>
+            @foreach (var tipo in tiposEntidad)
+            {
+                <option value="@tipo">@tipo</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-4">
+        <label><strong>Servicio Brindado:</strong></label>
+        <select class="form-control" @bind="filtro.ServicioBrindado" disabled="@(!servicios.Any())">
+            <option value="">-- Seleccione --</option>
+            @foreach (var servicio in servicios)
+            {
+                <option value="@servicio">@servicio</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (resultado != null && resultado.Any())
+{
+    <hr />
+    <h5>Resultados encontrados:</h5>
+    <ul>
+        @foreach (var entidad in resultado)
+        {
+            <li><strong>@entidad.Nombre</strong> | @entidad.TipoEntidad | @entidad.ServicioBrindado</li>
+        }
+    </ul>
+}
+
+@code {
+    public class FiltroEntidad
+    {
+        public string Nombre { get; set; } = string.Empty;
+        public string TipoEntidad { get; set; } = string.Empty;
+        public string ServicioBrindado { get; set; } = string.Empty;
+    }
+
+    public class Entidad
+    {
+        public string Nombre { get; set; }
+        public string TipoEntidad { get; set; }
+        public string ServicioBrindado { get; set; }
+    }
+
+    private FiltroEntidad filtro = new();
+    private List<string> nombres = new();
+    private List<string> tiposEntidad = new();
+    private List<string> servicios = new();
+    private List<Entidad> resultado = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var tabla = await ServicioUsuario.TraerTablaAsync("Entidades", 18);
+
+        nombres = tabla.AsEnumerable()
+            .Select(r => r["Nombre"].ToString())
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .Distinct()
+            .OrderBy(n => n)
+            .ToList();
+    }
+
+    private async Task OnNombreSeleccionado(ChangeEventArgs e)
+    {
+        var nombreSeleccionado = e?.Value?.ToString();
+        filtro.Nombre = nombreSeleccionado;
+
+        if (string.IsNullOrWhiteSpace(nombreSeleccionado))
+        {
+            tiposEntidad.Clear();
+            servicios.Clear();
+            resultado.Clear();
+            filtro.TipoEntidad = string.Empty;
+            filtro.ServicioBrindado = string.Empty;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        string nombreEscapado = nombreSeleccionado.Replace("'", "''");
+
+        var tabla = await ServicioUsuario.TraerTablaParametrosAsync(
+            "Entidades",
+            "*",
+            $"Nombre = '{nombreEscapado}'",
+            18
+        );
+
+        // Limpia selección actual
+        filtro.TipoEntidad = string.Empty;
+        filtro.ServicioBrindado = string.Empty;
+
+        // Crear nuevas instancias para forzar renderizado
+        tiposEntidad = new List<string>(tabla.AsEnumerable()
+            .Select(r => r["TipoEntidad"].ToString())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct());
+
+        servicios = new List<string>(tabla.AsEnumerable()
+            .Select(r => r["ServicioBrindado"].ToString())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct());
+
+        resultado = tabla.AsEnumerable()
+            .Select(r => new Entidad
+                {
+                    Nombre = r["Nombre"].ToString(),
+                    TipoEntidad = r["TipoEntidad"].ToString(),
+                    ServicioBrindado = r["ServicioBrindado"].ToString()
+                })
+            .ToList();
+
+        await InvokeAsync(StateHasChanged);
+    }
+}
