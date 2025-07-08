@@ -1,0 +1,183 @@
+﻿@page "/registro"
+@using System.Data
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations;
+
+<head>
+    <link href="css/Style.css" rel="stylesheet" />
+</head>
+
+<EditForm Model="@entidad" OnSubmit="GuardarEntidad">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container" style="min-height: 70vh;">
+        <fieldset class="fieldset-custom">
+            <legend class="legend">Registro de Entidades</legend>
+
+            <div class="row">
+                <!-- COLUMNA 1 -->
+                <div class="col-md-6">
+                    <div class="form-group mb-2">
+                        <label>Nombre de la Entidad:</label>
+                        <InputText @bind-Value="entidad.Nombre" class="form-control" placeholder="Ej: Grupo Empresarial Proteccion S.A.S."/>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label for="TipoEntidad">Tipo de Entidad:</label>
+                        <select class="form-control" id="TipoEntidad" @bind="entidad.Tipo">
+                            <option value="">Tipo de entidad</option>
+                            <option value="Entidad Publica">Entidad Pública</option>
+                            <option value="Entidad Privada">Entidad Privada</option>
+                            <option value="Entidad Mixta">Entidad Mixta</option>
+                            <option value="Entidad Sin Animo De lucro">Entidad Sin Ánimo de Lucro</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label for="TipoDocumento">Tipo de Documento:</label>
+                        <select class="form-control" id="TipoDocumento" @bind="entidad.TipoDocumento">
+                            <option value="">Tipo de documento</option>
+                            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
+                            <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
+                            <option value="PEP">PEP</option>
+                            <option value="Permiso por Protección Temporal">Permiso por Protección Temporal</option>
+                            <option value="NIT">NIT</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label for="NumeroDocumento">Número de Documento:</label>
+                        <InputText id="NumeroDocumento" @bind-Value="entidad.NumeroDocumento" class="form-control" placeholder="Ej: 900123456-7" />
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Servicio Brindado:</label>
+                        <InputText @bind-Value="entidad.Servicio" class="form-control" placeholder="Ej:Servicios Funerarios"  />
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Departamento:</label>
+                        <InputText @bind-Value="entidad.Departamento" class="form-control" placeholder="Ej:Cundinamarca" />
+                    </div>
+                </div>
+
+                <!-- COLUMNA 2 -->
+                <div class="col-md-6">
+                    <div class="form-group mb-2">
+                        <label>Ciudad:</label>
+                        <InputText @bind-Value="entidad.Ciudad" class="form-control" placeholder="Ej:Bogota D.C" />
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Dirección:</label>
+                        <InputText @bind-Value="entidad.Direccion" class="form-control" placeholder="Ej:Cl 72 #7 - 64 Piso 3" />
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Teléfono:</label>
+                        <InputText @bind-Value="entidad.Telefono" class="form-control" placeholder="Ej:302 460 0000" />
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Correo Electrónico:</label>
+                        <InputText @bind-Value="entidad.Correo" class="form-control" placeholder="Ej:GrupoProteccion@gep.com.co" />
+                    </div>
+
+                    <div class="form-group mb-2">
+                        <label>Sitio Web:</label>
+                        <InputText @bind-Value="entidad.SitioWeb" class="form-control" placeholder="Ej:https://www.grupoempresarialproteccion.com/" />
+                    </div>
+
+                    <div class="d-flex justify-content-start gap-2 mt-4">
+                        <button class="btn btn-success btn-custom" type="submit">Registrar entidad</button>
+                        <button class="btn btn-primary btn-custom" type="button" @onclick="IrAInicio">Inicio</button>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-success">@mensaje</div>
+}
+
+@code {
+
+    private Entidad entidad = new Entidad();
+    private string mensaje;
+
+    public class Entidad
+
+    {
+        public string Nombre { get; set; }
+        public string Tipo { get; set; } // Puede ser 'Pública', 'Privada', etc.
+        public string Servicio { get; set; } // Salud, Educación, etc.
+        public string Departamento { get; set; }
+        public string Ciudad { get; set; }
+        public string Direccion { get; set; }
+        public string Telefono { get; set; }
+        public string Correo { get; set; }
+        public string SitioWeb { get; set; } // Solo si existe también en SQL
+        public string TipoDocumento { get; set; }
+        public string NumeroDocumento { get; set; }
+    }
+
+    private async Task GuardarEntidad()
+    {
+        try
+        {
+            DataTable tabla = new("Entidades");
+            tabla.Columns.Add("Id", typeof(int));
+            tabla.Columns.Add("Nombre", typeof(string));
+            tabla.Columns.Add("TipoEntidad", typeof(string));
+
+            tabla.Columns.Add("TipoDocumento", typeof(string));
+            tabla.Columns.Add("NumeroDocumento", typeof(string));
+
+            tabla.Columns.Add("ServicioBrindado", typeof(string));
+            tabla.Columns.Add("Departamento", typeof(string));
+            tabla.Columns.Add("Ciudad", typeof(string));
+            tabla.Columns.Add("Direccion", typeof(string));
+            tabla.Columns.Add("Telefono", typeof(string));
+            tabla.Columns.Add("Correo", typeof(string));
+            tabla.Columns.Add("SitioWeb", typeof(string));
+
+            DataRow fila = tabla.NewRow();
+            fila["Id"] = 0;
+            fila["Nombre"] = entidad.Nombre;
+            fila["TipoEntidad"] = entidad.Tipo.ToString();
+
+            fila["TipoDocumento"] = entidad.TipoDocumento;
+            fila["NumeroDocumento"] = entidad.NumeroDocumento;
+
+            fila["ServicioBrindado"] = entidad.Servicio;
+            fila["Departamento"] = entidad.Departamento;
+            fila["Ciudad"] = entidad.Ciudad;
+            fila["Direccion"] = entidad.Direccion;
+            fila["Telefono"] = entidad.Telefono;
+            fila["Correo"] = entidad.Correo;
+            fila["SitioWeb"] = entidad.SitioWeb;
+
+            tabla.Rows.Add(fila);
+
+            await ServicioUsuario.InsertarTablaAsync(tabla, "Entidades", 18);
+
+            mensaje = "Entidad registrada correctamente.";
+            entidad = new Entidad(); // Limpia el formulario
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error: {ex.Message}";
+        }
+    }
+
+    private void IrAInicio()
+    {
+        Navigation.NavigateTo("/rs");
+    }
+}
