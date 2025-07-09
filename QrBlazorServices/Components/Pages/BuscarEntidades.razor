@@ -1,214 +1,90 @@
-﻿@page "/buscar"
+﻿@page "/entidades"
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject NavigationManager Navigation
 @using System.Data
+@using Radzen
+@using Radzen.Blazor
+@rendermode InteractiveServer
 
-<head>
-    <link href="css/Style.css" rel="stylesheet" />
-</head>
+<h3 class="mb-4">📋 Lista de Entidades</h3>
 
-<h4 class="mb-3">📄 Datos del Receptor</h4>
+<RadzenDataGrid TItem="Entidad" Data="@entidades" AllowPaging="true" PageSize="10"
+                AllowSorting="true" AllowFiltering="true" ShowPagingSummary="true"
+                RowSelect="@SeleccionarEntidad" class="mb-4">
+    <Columns>
+        <RadzenDataGridColumn TItem="Entidad" Property="Nombre" Title="Nombre" />
+        <RadzenDataGridColumn TItem="Entidad" Property="Tipo" Title="Tipo Entidad" />
+        <RadzenDataGridColumn TItem="Entidad" Property="TipoDocumento" Title="Tipo Documento" />
+        <RadzenDataGridColumn TItem="Entidad" Property="NumeroDocumento" Title="Número Documento" />
+        <RadzenDataGridColumn TItem="Entidad" Property="Departamento" Title="Departamento" />
+        <RadzenDataGridColumn TItem="Entidad" Property="Ciudad" Title="Ciudad" />
+        <RadzenDataGridColumn TItem="Entidad" Property="Direccion" Title="Dirección" />
+        <RadzenDataGridColumn TItem="Entidad" Property="Telefono" Title="Teléfono" />
+        <RadzenDataGridColumn TItem="Entidad" Property="Correo" Title="Correo" />
+    </Columns>
+</RadzenDataGrid>
 
-<div class="row gy-3">
-    <!-- Selección de entidad -->
-    <div class="col-12">
-        <label><strong>Seleccionar Entidad:</strong></label>
-        <select class="form-control" @onchange="OnEntidadSeleccionada">
-            <option value="">Seleccione una entidad</option>
-            @foreach (var e in entidades)
-            {
-                <option value="@e.Id">@e.Nombre</option>
-            }
-        </select>
-    </div>
+@if (entidades is null || entidades.Count == 0)
+{
+    <RadzenAlert Severity="AlertSeverity.Info">No hay entidades registradas aún.</RadzenAlert>
+}
 
-    <!-- Receptor -->
-    <div class="col-md-6">
-        <fieldset class="fieldset-custom">
-            <legend class="legend">👤 Receptor</legend>
-            <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
-            <select class="form-control mb-2" @bind="Documento_R">
-                <option value="">Tipo de documento</option>
-                <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
-                <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
-                <option value="PEP">PEP</option>
-                <option value="Permiso por Protección Temporal">Permiso Temporal</option>
-                <option value="NIT">NIT</option>
-            </select>
-            <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_R" />
-            <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_R" />
-            <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_R" />
-            <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_R" />
-        </fieldset>
-    </div>
-
-    <!-- Servicio y subdivisión -->
-    <div class="col-md-6">
-        <fieldset class="fieldset-custom">
-            <legend class="legend">🏢 Servicio / Subdivisión</legend>
-
-            <label><strong>Servicio brindado:</strong></label>
-            <select class="form-control mb-2" @bind="servicioSeleccionadoId">
-                <option value="">Seleccione servicio</option>
-                @foreach (var s in servicios)
-                {
-                    <option value="@s.Id">@s.ServicioBrindado</option>
-                }
-            </select>
-
-            <label><strong>Subdivisión (opcional):</strong></label>
-            <select class="form-control mb-2" @bind="subdivSeleccionadaId">
-                <option value="">Seleccione subdivisión</option>
-                @foreach (var s in subdivisiones)
-                {
-                    <option value="@s.Id">@s.NombreSubdiv</option>
-                }
-            </select>
-        </fieldset>
-    </div>
-</div>
+<RadzenButton Text="➕ Nueva Entidad" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle" />
 
 @code {
-    // Datos del receptor
-    private string Receptor;
-    private string Documento_R;
-    private string NumeroDoc_R;
-    private string Direccion_R;
-    private string Telefono_R;
-    private string Correo_R;
-
-    private int servicioSeleccionadoId;
-    private int subdivSeleccionadaId;
-
-
     private List<Entidad> entidades = new();
-    private List<Servicio> servicios = new();
-    private List<Subdiv> subdivisiones = new();
-
-    private int entidadSeleccionadaId;
-
-    protected override async Task OnInitializedAsync()
-    {
-        var dtEntidades = await ServicioUsuario.TraerTablaAsync("Entidades", 18);
-        entidades = ConvertirEntidades(dtEntidades);
-    }
-
-    private async Task OnEntidadSeleccionada(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out int id))
-        {
-            entidadSeleccionadaId = id;
-
-            // 1. Obtener entidad
-            var dtEntidad = await ServicioUsuario.TraerTablaParametrosAsync("Entidades", "*", $"Id = {id}", 18);
-
-            if (dtEntidad.Rows.Count > 0)
-            {
-                var row = dtEntidad.Rows[0];
-                Receptor = row["Nombre"]?.ToString();
-                Documento_R = row["TipoDocumento"]?.ToString();
-                NumeroDoc_R = row["NumeroDocumento"]?.ToString();
-                Direccion_R = row["Direccion"]?.ToString();
-                Telefono_R = row["Telefono"]?.ToString();
-                Correo_R = row["Correo"]?.ToString();
-            }
-
-            // 2. Obtener servicios
-            var dtServicios = await ServicioUsuario.TraerTablaParametrosAsync("Servicios", "*", $"EntidadId = {id}", 18);
-            servicios = ConvertirServicios(dtServicios);
-
-            // 3. Obtener subdivisiones
-            var dtSubdiv = await ServicioUsuario.TraerTablaParametrosAsync("Subdivisiones", "*", $"EntidadId = {id}", 18);
-            subdivisiones = ConvertirSubdivisiones(dtSubdiv);
-        }
-    }
-
-
-    private List<Entidad> ConvertirEntidades(DataTable dt)
-    {
-        var lista = new List<Entidad>();
-        foreach (DataRow row in dt.Rows)
-        {
-            lista.Add(new Entidad
-                {
-                    Id = Convert.ToInt32(row["Id"]),
-                    Nombre = row["Nombre"].ToString(),
-                    TipoDocumento = row["TipoDocumento"].ToString(),
-                    NumeroDocumento = row["NumeroDocumento"].ToString(),
-                    Direccion = row["Direccion"].ToString(),
-                    Telefono = row["Telefono"].ToString(),
-                    Correo = row["Correo"].ToString(),
-                });
-        }
-        return lista;
-    }
-
-    private List<Servicio> ConvertirServicios(DataTable dt)
-    {
-        var lista = new List<Servicio>();
-        foreach (DataRow row in dt.Rows)
-        {
-            lista.Add(new Servicio
-                {
-                    Id = Convert.ToInt32(row["Id"]),
-                    EntidadId = Convert.ToInt32(row["EntidadId"]),
-                    ServicioBrindado = row["ServicioBrindado"].ToString()
-                });
-        }
-        return lista;
-    }
-
-    private List<Subdiv> ConvertirSubdivisiones(DataTable dt)
-    {
-        var lista = new List<Subdiv>();
-        foreach (DataRow row in dt.Rows)
-        {
-            lista.Add(new Subdiv
-                {
-                    Id = Convert.ToInt32(row["Id"]),
-                    EntidadId = Convert.ToInt32(row["EntidadId"]),
-                    NombreSubdiv = row["NombreSubdiv"].ToString(),
-                    Ciudad = row["Ciudad"].ToString(),
-                    Direccion = row["Direccion"].ToString(),
-                    Telefono = row["Telefono"].ToString(),
-                    Correo = row["Correo"].ToString(),
-                    Responsable = row["Responsable"].ToString()
-                });
-        }
-        return lista;
-    }
-
-
-
-
 
     public class Entidad
     {
         public int Id { get; set; }
         public string Nombre { get; set; }
+        public string Tipo { get; set; }
         public string TipoDocumento { get; set; }
         public string NumeroDocumento { get; set; }
-        public string Direccion { get; set; }
-        public string Telefono { get; set; }
-        public string Correo { get; set; }
-    }
-
-    public class Servicio
-    {
-        public int Id { get; set; }
-        public int EntidadId { get; set; }
-        public string ServicioBrindado { get; set; }
-    }
-
-    public class Subdiv
-    {
-        public int Id { get; set; }
-        public int EntidadId { get; set; }
-        public string NombreSubdiv { get; set; }
+        public string Departamento { get; set; }
         public string Ciudad { get; set; }
         public string Direccion { get; set; }
         public string Telefono { get; set; }
         public string Correo { get; set; }
-        public string Responsable { get; set; }
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var dt = await ServicioUsuario.TraerConsultaAsync("SELECT * FROM Entidades", 18);
+
+            if (dt.Rows.Count > 0)
+            {
+                entidades = dt.Rows.Cast<DataRow>().Select(row => new Entidad
+                    {
+                        Id = Convert.ToInt32(row["Id"]),
+                        Nombre = row["Nombre"].ToString(),
+                        Tipo = row["TipoEntidad"].ToString(),
+                        TipoDocumento = row["TipoDocumento"].ToString(),
+                        NumeroDocumento = row["NumeroDocumento"].ToString(),
+                        Departamento = row["Departamento"].ToString(),
+                        Ciudad = row["Ciudad"].ToString(),
+                        Direccion = row["Direccion"].ToString(),
+                        Telefono = row["Telefono"].ToString(),
+                        Correo = row["Correo"].ToString()
+                    }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error al cargar entidades: " + ex.Message);
+        }
+    }
+
+    private void SeleccionarEntidad(Entidad entidad)
+    {
+        // Aquí podrías redirigir a agregar servicios u otra vista
+        Navigation.NavigateTo($"/agregar-servicios/{entidad.Id}");
+    }
+
+    private void IrARegistro()
+    {
+        Navigation.NavigateTo("/registro");
+    }
 }
