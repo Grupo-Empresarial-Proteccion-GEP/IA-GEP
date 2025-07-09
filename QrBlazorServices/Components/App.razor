@@ -1,4 +1,6 @@
 ﻿@using QrBlazorServices.Components.Layout
+@using Radzen
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,12 +8,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <!----><link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+
+    <!-- Radzen CSS Theme -->
+    <link href="_content/Radzen.Blazor/css/material-base.css" rel="stylesheet" />
+    <link href="_content/Radzen.Blazor/css/material.css" rel="stylesheet" />
+
+    <!-- Tu CSS personalizado -->
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="QrBlazorServices.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
 
-    <RadzenTheme Theme ="material" @rendermode ="InteractiveServer"/>
     <HeadOutlet />
 </head>
 

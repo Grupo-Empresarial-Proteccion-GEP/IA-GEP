@@ -1,183 +1,288 @@
 ﻿@page "/registro"
-@using System.Data
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
-@using System.ComponentModel.DataAnnotations;
+@using System.ComponentModel.DataAnnotations
+@using System.Data
+@using Radzen
+@using Radzen.Blazor
 
-<head>
-    <link href="css/Style.css" rel="stylesheet" />
-</head>
-
-<EditForm Model="@entidad" OnSubmit="GuardarEntidad">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-
-    <div class="container" style="min-height: 70vh;">
-        <fieldset class="fieldset-custom">
-            <legend class="legend">Registro de Entidades</legend>
-
+<RadzenTemplateForm Data="@entidad" Submit="@GuardarEntidad" TItem="Entidad">
+    <div class="p-4">
+        <RadzenFieldset Text="Registro de Entidades" Style="border-radius: 12px;">
             <div class="row">
-                <!-- COLUMNA 1 -->
+                <!-- Columna 1 -->
                 <div class="col-md-6">
-                    <div class="form-group mb-2">
-                        <label>Nombre de la Entidad:</label>
-                        <InputText @bind-Value="entidad.Nombre" class="form-control" placeholder="Ej: Grupo Empresarial Proteccion S.A.S."/>
-                    </div>
+                    <RadzenLabel Text="Entidad " /> 
+                    <RadzenTextBox Name="Nombre" @bind-Value="entidad.Nombre" Placeholder="Nombre de la entidad" Class="w-100 mb-3" />
 
-                    <div class="form-group mb-2">
-                        <label for="TipoEntidad">Tipo de Entidad:</label>
-                        <select class="form-control" id="TipoEntidad" @bind="entidad.Tipo">
-                            <option value="">Tipo de entidad</option>
-                            <option value="Entidad Publica">Entidad Pública</option>
-                            <option value="Entidad Privada">Entidad Privada</option>
-                            <option value="Entidad Mixta">Entidad Mixta</option>
-                            <option value="Entidad Sin Animo De lucro">Entidad Sin Ánimo de Lucro</option>
-                        </select>
-                    </div>
+                    <RadzenDropDown Name="TipoEntidad" Placeholder="Tipo de Entidad"
+                                    @bind-Value="entidad.Tipo" Class="w-100 mb-3"
+                                    Data="@tiposEntidad" />
+                    <RadzenDropDown Name="TipoDocumento" Placeholder="Tipo de Documento"
+                                    @bind-Value="entidad.TipoDocumento" Class="w-100 mb-3"
+                                    Data="@tiposDocumento" />
 
-                    <div class="form-group mb-2">
-                        <label for="TipoDocumento">Tipo de Documento:</label>
-                        <select class="form-control" id="TipoDocumento" @bind="entidad.TipoDocumento">
-                            <option value="">Tipo de documento</option>
-                            <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
-                            <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
-                            <option value="PEP">PEP</option>
-                            <option value="Permiso por Protección Temporal">Permiso por Protección Temporal</option>
-                            <option value="NIT">NIT</option>
-                        </select>
-                    </div>
+                    <RadzenTextBox Name="NumeroDocumento" @bind-Value="entidad.NumeroDocumento" Placeholder="Número de Documento" Class="w-100 mb-3" />
+                    <RadzenTextBox Name="Departamento" @bind-Value="entidad.Departamento" Placeholder="Departamento" Class="w-100 mb-3" />
 
-                    <div class="form-group mb-2">
-                        <label for="NumeroDocumento">Número de Documento:</label>
-                        <InputText id="NumeroDocumento" @bind-Value="entidad.NumeroDocumento" class="form-control" placeholder="Ej: 900123456-7" />
-                    </div>
-
-                    <div class="form-group mb-2">
-                        <label>Servicio Brindado:</label>
-                        <InputText @bind-Value="entidad.Servicio" class="form-control" placeholder="Ej:Servicios Funerarios"  />
-                    </div>
-
-                    <div class="form-group mb-2">
-                        <label>Departamento:</label>
-                        <InputText @bind-Value="entidad.Departamento" class="form-control" placeholder="Ej:Cundinamarca" />
-                    </div>
+                    <RadzenTextBox Name="Ciudad" @bind-Value="entidad.Ciudad" Placeholder="Ciudad" Class="w-100 mb-3" />
+                    <RadzenTextBox Name="Direccion" @bind-Value="entidad.Direccion" Placeholder="Dirección" Class="w-100 mb-3" />
+                    <RadzenTextBox Name="Telefono" @bind-Value="entidad.Telefono" Placeholder="Teléfono" Class="w-100 mb-3" />
+                    <RadzenTextBox Name="Correo" @bind-Value="entidad.Correo" Placeholder="Correo Electrónico" Class="w-100 mb-3" />
                 </div>
 
-                <!-- COLUMNA 2 -->
+                <!-- Columna 2 -->
                 <div class="col-md-6">
-                    <div class="form-group mb-2">
-                        <label>Ciudad:</label>
-                        <InputText @bind-Value="entidad.Ciudad" class="form-control" placeholder="Ej:Bogota D.C" />
-                    </div>
+                    <RadzenLabel Text="Servicios" />
+               
+                    <RadzenTextBox @bind-Value="nuevoServicio" Placeholder="Servicios Ej: Capacitación" Class="w-100 mb-3" />
 
-                    <div class="form-group mb-2">
-                        <label>Dirección:</label>
-                        <InputText @bind-Value="entidad.Direccion" class="form-control" placeholder="Ej:Cl 72 #7 - 64 Piso 3" />
-                    </div>
+                    <RadzenButton Icon="add_circle" Text="Agregar Servicio" Click="@AgregarServicio" ButtonStyle="ButtonStyle.Secondary"/>
+                    
+                    <ul class="mt-2">
+                        @foreach (var s in listaServicios)
+                        {
+                            <li>
+                                @s
+                                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                              Click="@(args => EliminarServicio(s))" />
+                            </li>
+                        }
+                    </ul>
 
-                    <div class="form-group mb-2">
-                        <label>Teléfono:</label>
-                        <InputText @bind-Value="entidad.Telefono" class="form-control" placeholder="Ej:302 460 0000" />
-                    </div>
+                    <RadzenLabel Text="Subdivisiones (opcional)"class="mt-3" />
+                    <RadzenTextBox @bind-Value="subdiv.NombreSubdiv" Placeholder="Nombre subdivisión" Class="w-100 mb-2" />
+                    <RadzenTextBox @bind-Value="subdiv.Ciudad" Placeholder="Ciudad" Class="w-100 mb-2" />
+                    <RadzenTextBox @bind-Value="subdiv.Direccion" Placeholder="Dirección" Class="w-100 mb-2" />
+                    <RadzenTextBox @bind-Value="subdiv.Telefono" Placeholder="Teléfono" Class="w-100 mb-2" />
+                    <RadzenTextBox @bind-Value="subdiv.Correo" Placeholder="Correo" Class="w-100 mb-2" />
+                    <RadzenTextBox @bind-Value="subdiv.Responsable" Placeholder="Responsable" Class="w-100 mb-2" />
+                    <RadzenButton Icon="add_circle" Text="Agregar Subdivisión" Click="@AgregarSubdiv" ButtonStyle="ButtonStyle.Secondary" />
 
-                    <div class="form-group mb-2">
-                        <label>Correo Electrónico:</label>
-                        <InputText @bind-Value="entidad.Correo" class="form-control" placeholder="Ej:GrupoProteccion@gep.com.co" />
-                    </div>
-
-                    <div class="form-group mb-2">
-                        <label>Sitio Web:</label>
-                        <InputText @bind-Value="entidad.SitioWeb" class="form-control" placeholder="Ej:https://www.grupoempresarialproteccion.com/" />
-                    </div>
-
-                    <div class="d-flex justify-content-start gap-2 mt-4">
-                        <button class="btn btn-success btn-custom" type="submit">Registrar entidad</button>
-                        <button class="btn btn-primary btn-custom" type="button" @onclick="IrAInicio">Inicio</button>
-                    </div>
+                    <ul class="mt-2">
+                        @foreach (var sd in listaSubdiv)
+                        {
+                            <li>
+                                @sd.NombreSubdiv - @sd.Ciudad
+                                <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                              Click="@(args => EliminarSubdiv(sd))" />
+                            </li>
+                        }
+                    </ul>
                 </div>
             </div>
-        </fieldset>
-    </div>
-</EditForm>
 
-@if (!string.IsNullOrEmpty(mensaje))
-{
-    <div class="alert alert-success">@mensaje</div>
-}
+            <RadzenButton Text="Registrar entidad" ButtonStyle="ButtonStyle.Success" Type="Submit" Style="margin-top: 20px;" />
+            <RadzenButton Text="Inicio" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
+
+
+
+
+
+        </RadzenFieldset>
+
+
+
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <RadzenAlert Severity="AlertSeverity.Success" Style="margin-top: 20px;">@mensaje</RadzenAlert>
+        }
+    </div>
+</RadzenTemplateForm>
 
 @code {
-
-    private Entidad entidad = new Entidad();
+    private Entidad entidad = new();
+    private string nuevoServicio = "";
+    private List<string> listaServicios = new();
+    private Subdivision subdiv = new();
+    private List<Subdivision> listaSubdiv = new();
     private string mensaje;
 
-    public class Entidad
+    private List<string> tiposEntidad = new() { "Entidad Pública", "Entidad Privada", "Entidad Mixta", "Entidad Sin Ánimo de Lucro" };
+    private List<string> tiposDocumento = new() { "Cédula de Ciudadanía", "Tarjeta de Identidad", "PEP", "Permiso por Protección Temporal", "NIT" };
 
+    public class Entidad
     {
         public string Nombre { get; set; }
-        public string Tipo { get; set; } // Puede ser 'Pública', 'Privada', etc.
-        public string Servicio { get; set; } // Salud, Educación, etc.
+        public string Tipo { get; set; }
+        public string TipoDocumento { get; set; }
+        public string NumeroDocumento { get; set; }
         public string Departamento { get; set; }
         public string Ciudad { get; set; }
         public string Direccion { get; set; }
         public string Telefono { get; set; }
         public string Correo { get; set; }
-        public string SitioWeb { get; set; } // Solo si existe también en SQL
-        public string TipoDocumento { get; set; }
-        public string NumeroDocumento { get; set; }
+    }
+
+    public class Subdivision
+    {
+        public string NombreSubdiv { get; set; }
+        public string Ciudad { get; set; }
+        public string Direccion { get; set; }
+        public string Telefono { get; set; }
+        public string Correo { get; set; }
+        public string Responsable { get; set; }
+    }
+
+    private void AgregarServicio()
+    {
+        if (!string.IsNullOrWhiteSpace(nuevoServicio))
+        {
+            listaServicios.Add(nuevoServicio);
+            nuevoServicio = string.Empty;
+        }
+    }
+
+    private void EliminarServicio(string servicio)
+    {
+        listaServicios.Remove(servicio);
+    }
+
+    private void AgregarSubdiv()
+    {
+        if (!string.IsNullOrWhiteSpace(subdiv.NombreSubdiv))
+        {
+            listaSubdiv.Add(subdiv);
+            subdiv = new Subdivision();
+        }
+    }
+
+    private void EliminarSubdiv(Subdivision s)
+    {
+        listaSubdiv.Remove(s);
     }
 
     private async Task GuardarEntidad()
     {
         try
         {
-            DataTable tabla = new("Entidades");
-            tabla.Columns.Add("Id", typeof(int));
-            tabla.Columns.Add("Nombre", typeof(string));
-            tabla.Columns.Add("TipoEntidad", typeof(string));
+            DataTable tablaEntidad = new("Entidades");
+            tablaEntidad.Columns.Add("Id", typeof(int));
+            tablaEntidad.Columns.Add("Nombre", typeof(string));
+            tablaEntidad.Columns.Add("TipoEntidad", typeof(string));
+            tablaEntidad.Columns.Add("TipoDocumento", typeof(string));
+            tablaEntidad.Columns.Add("NumeroDocumento", typeof(string));
+            tablaEntidad.Columns.Add("Departamento", typeof(string));
+            tablaEntidad.Columns.Add("Ciudad", typeof(string));
+            tablaEntidad.Columns.Add("Direccion", typeof(string));
+            tablaEntidad.Columns.Add("Telefono", typeof(string));
+            tablaEntidad.Columns.Add("Correo", typeof(string));
 
-            tabla.Columns.Add("TipoDocumento", typeof(string));
-            tabla.Columns.Add("NumeroDocumento", typeof(string));
-
-            tabla.Columns.Add("ServicioBrindado", typeof(string));
-            tabla.Columns.Add("Departamento", typeof(string));
-            tabla.Columns.Add("Ciudad", typeof(string));
-            tabla.Columns.Add("Direccion", typeof(string));
-            tabla.Columns.Add("Telefono", typeof(string));
-            tabla.Columns.Add("Correo", typeof(string));
-            tabla.Columns.Add("SitioWeb", typeof(string));
-
-            DataRow fila = tabla.NewRow();
+            var fila = tablaEntidad.NewRow();
             fila["Id"] = 0;
             fila["Nombre"] = entidad.Nombre;
-            fila["TipoEntidad"] = entidad.Tipo.ToString();
-
+            fila["TipoEntidad"] = entidad.Tipo;
             fila["TipoDocumento"] = entidad.TipoDocumento;
             fila["NumeroDocumento"] = entidad.NumeroDocumento;
-
-            fila["ServicioBrindado"] = entidad.Servicio;
             fila["Departamento"] = entidad.Departamento;
             fila["Ciudad"] = entidad.Ciudad;
             fila["Direccion"] = entidad.Direccion;
             fila["Telefono"] = entidad.Telefono;
             fila["Correo"] = entidad.Correo;
-            fila["SitioWeb"] = entidad.SitioWeb;
+            tablaEntidad.Rows.Add(fila);
 
-            tabla.Rows.Add(fila);
+            await ServicioUsuario.InsertarTablaAsync(tablaEntidad, "Entidades", 18);
 
-            await ServicioUsuario.InsertarTablaAsync(tabla, "Entidades", 18);
+            var resultado = await ServicioUsuario.TraerConsultaAsync("SELECT TOP 1 Id FROM Entidades ORDER BY Id DESC", 18);
+            int entidadId = Convert.ToInt32(resultado.Rows[0]["Id"]);
 
-            mensaje = "Entidad registrada correctamente.";
-            entidad = new Entidad(); // Limpia el formulario
+            DataTable tablaServicios = new("Servicios");
+            tablaServicios.Columns.Add("Id", typeof(int));
+            tablaServicios.Columns.Add("EntidadId", typeof(int));
+            tablaServicios.Columns.Add("ServicioBrindado", typeof(string));
+
+            foreach (var servicio in listaServicios)
+            {
+                var row = tablaServicios.NewRow();
+                row["Id"] = 0;
+                row["EntidadId"] = entidadId;
+                row["ServicioBrindado"] = servicio;
+                tablaServicios.Rows.Add(row);
+            }
+
+            await ServicioUsuario.InsertarTablaAsync(tablaServicios, "Servicios", 18);
+
+            DataTable tablaSubdiv = new("Subdivisiones");
+            tablaSubdiv.Columns.Add("Id", typeof(int));
+            tablaSubdiv.Columns.Add("EntidadId", typeof(int));
+            tablaSubdiv.Columns.Add("NombreSubdiv", typeof(string));
+            tablaSubdiv.Columns.Add("Ciudad", typeof(string));
+            tablaSubdiv.Columns.Add("Direccion", typeof(string));
+            tablaSubdiv.Columns.Add("Telefono", typeof(string));
+            tablaSubdiv.Columns.Add("Correo", typeof(string));
+            tablaSubdiv.Columns.Add("Responsable", typeof(string));
+
+            foreach (var sd in listaSubdiv)
+            {
+                var row = tablaSubdiv.NewRow();
+                row["Id"] = 0;
+                row["EntidadId"] = entidadId;
+                row["NombreSubdiv"] = sd.NombreSubdiv;
+                row["Ciudad"] = sd.Ciudad;
+                row["Direccion"] = sd.Direccion;
+                row["Telefono"] = sd.Telefono;
+                row["Correo"] = sd.Correo;
+                row["Responsable"] = sd.Responsable;
+                tablaSubdiv.Rows.Add(row);
+            }
+
+            await ServicioUsuario.InsertarTablaAsync(tablaSubdiv, "Subdivisiones", 18);
+
+            mensaje = "✅ Entidad registrada exitosamente con servicios y subdivisiones.";
+            entidad = new(); listaServicios.Clear(); listaSubdiv.Clear();
         }
         catch (Exception ex)
         {
-            mensaje = $"Error: {ex.Message}";
+            mensaje = $"❌ Error: {ex.Message}";
         }
     }
 
-    private void IrAInicio()
+    private void IrAInicio() => Navigation.NavigateTo("/rs");
+
+    private List<EntidadVisual> entidades = new();
+
+    public class EntidadVisual
     {
-        Navigation.NavigateTo("/rs");
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public string TipoEntidad { get; set; }
+        public string TipoDocumento { get; set; }
+        public string NumeroDocumento { get; set; }
+        public string Departamento { get; set; }
+        public string Ciudad { get; set; }
+        public string Direccion { get; set; }
+        public string Telefono { get; set; }
+        public string Correo { get; set; }
+        public DateTime FechaRegistro { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT * FROM Entidades ORDER BY FechaRegistro DESC", 18);
+
+        foreach (DataRow row in dt.Rows)
+        {
+            entidades.Add(new EntidadVisual
+                {
+                    Id = Convert.ToInt32(row["Id"]),
+                    Nombre = row["Nombre"].ToString(),
+                    TipoEntidad = row["TipoEntidad"].ToString(),
+                    TipoDocumento = row["TipoDocumento"].ToString(),
+                    NumeroDocumento = row["NumeroDocumento"].ToString(),
+                    Departamento = row["Departamento"].ToString(),
+                    Ciudad = row["Ciudad"].ToString(),
+                    Direccion = row["Direccion"].ToString(),
+                    Telefono = row["Telefono"].ToString(),
+                    Correo = row["Correo"].ToString(),
+                    FechaRegistro = Convert.ToDateTime(row["FechaRegistro"])
+                });
+        }
+    }
+
+    void OnRowSelect(EntidadVisual entidad)
+    {
+        // Puedes navegar o abrir un modal
+        Console.WriteLine($"Seleccionaste: {entidad.Nombre}");
     }
 }
