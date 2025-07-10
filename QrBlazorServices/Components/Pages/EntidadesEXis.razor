@@ -7,21 +7,34 @@
 @rendermode InteractiveServer
 @using QrBlazorServices.Clases
 
-<h3 class="mb-4">📋 Lista de Entidades</h3>
+<h3 class="mb-4">Lista de Entidades</h3>
 
-<RadzenDataGrid TItem="Entidad" Data="@entidades" AllowPaging="true" PageSize="10"
-                AllowSorting="true" AllowFiltering="true" ShowPagingSummary="true"
-                RowSelect="@SeleccionarEntidad" class="mb-4">
+
+
+
+<RadzenDataGrid TItem="Entidad" Data="@entidadesFiltradas"
+                AllowPaging="true" PageSize="10"
+                AllowSorting="true"
+                FilterMode="FilterMode.Simple"
+                ShowPagingSummary="true"
+                class="mb-4">
     <Columns>
+
         <RadzenDataGridColumn TItem="Entidad" Property="Nombre" Title="Nombre" />
-        <RadzenDataGridColumn TItem="Entidad" Property="Tipo" Title="Tipo Entidad" />
         <RadzenDataGridColumn TItem="Entidad" Property="TipoDocumento" Title="Tipo Documento" />
+        <RadzenDataGridColumn TItem="Entidad" Property="Tipo" Title="Tipo Entidad" />
         <RadzenDataGridColumn TItem="Entidad" Property="NumeroDocumento" Title="Número Documento" />
-        <RadzenDataGridColumn TItem="Entidad" Property="Departamento" Title="Departamento" />
-        <RadzenDataGridColumn TItem="Entidad" Property="Ciudad" Title="Ciudad" />
-        <RadzenDataGridColumn TItem="Entidad" Property="Direccion" Title="Dirección" />
-        <RadzenDataGridColumn TItem="Entidad" Property="Telefono" Title="Teléfono" />
-        <RadzenDataGridColumn TItem="Entidad" Property="Correo" Title="Correo" />
+
+        <RadzenDataGridColumn TItem="Entidad" Title="Acciones" Filterable="false" Sortable="false">
+            <Template Context="entidad">
+                <RadzenButton Text="Editar" Icon="edit"
+                              Click="@(args => IrAEditarEntidad(entidad))"
+                              ButtonStyle="ButtonStyle.Primary" Style="margin-right:5px" />
+                <RadzenButton Text="Servicios" Icon="build"
+                              Click="@(args => IrAAgregarServicios(entidad))"
+                              ButtonStyle="ButtonStyle.Info" />
+            </Template>
+        </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>
 
@@ -30,12 +43,34 @@
     <RadzenAlert Severity="AlertSeverity.Info">No hay entidades registradas aún.</RadzenAlert>
 }
 
-<RadzenButton Text="➕ Nueva Entidad" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle" />
+<RadzenButton Text="Nueva Entidad" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle"  Style="margin-bottom: 10px; margin-right: 10px;" />
+
+<RadzenButton Text="Buscar" Click="@(() => mostrarBuscador = !mostrarBuscador)"
+              ButtonStyle="ButtonStyle.Secondary" Icon="search"  Style="margin-bottom: 10px; margin-right: 10px;"  />
+
+
+
+@if (mostrarBuscador)
+{
+    <RadzenTextBox @bind-Value="filtroNombre"
+                   Placeholder="Nombre"
+                   Change="@(args => AplicarFiltro())"
+                   Style="margin-bottom: 10px; margin-right: 10px;" />
+
+    <RadzenTextBox @bind-Value="filtroNumeroDocumento"
+                   Placeholder="Número De Documento"
+                   Change="@(args => AplicarFiltro())"
+                   Style="margin-bottom: 10px;" />
+}
+
 
 @code {
     private List<Entidad> entidades = new();
-
-
+  
+    private List<Entidad> entidadesFiltradas = new();
+    private bool mostrarBuscador = false;
+    private string filtroNombre = "";
+    private string filtroNumeroDocumento = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -58,6 +93,7 @@
                         Telefono = row["Telefono"].ToString(),
                         Correo = row["Correo"].ToString()
                     }).ToList();
+                entidadesFiltradas = entidades;
             }
         }
         catch (Exception ex)
@@ -66,9 +102,13 @@
         }
     }
 
-    private void SeleccionarEntidad(Entidad entidad)
+    private void IrAEditarEntidad(Entidad entidad)
     {
-        // Aquí podrías redirigir a agregar servicios u otra vista
+        Navigation.NavigateTo($"/registro/{entidad.Id}");
+    }
+
+    private void IrAAgregarServicios(Entidad entidad)
+    {
         Navigation.NavigateTo($"/agregar-servicios/{entidad.Id}");
     }
 
@@ -76,4 +116,14 @@
     {
         Navigation.NavigateTo("/registro");
     }
+
+    private void AplicarFiltro()
+    {
+        entidadesFiltradas = entidades
+            .Where(e =>
+                (string.IsNullOrWhiteSpace(filtroNombre) || e.Nombre.Contains(filtroNombre, StringComparison.OrdinalIgnoreCase)) &&
+                (string.IsNullOrWhiteSpace(filtroNumeroDocumento) || e.NumeroDocumento.Contains(filtroNumeroDocumento, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+    }
+
 }
