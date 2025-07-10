@@ -1,4 +1,4 @@
-﻿@page "/GR"
+﻿@page "/RS"
 @inject GeminiService GeminiService
 @using static System.Net.WebRequestMethods;
 @inject HttpClient Http
@@ -18,7 +18,6 @@
 <head>
     <!-- Bootstrap CSS -->
     <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />-->
-
     <!-- Tu estilo personalizado -->
     <link href="css/Style.css" rel="stylesheet" />
 </head>
@@ -125,8 +124,16 @@
                     <div class="col-lg-6 d-flex flex-column fieldset-custom">
                         <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
 
-                            <legend class="legend"><!--🪪--> Resultado</legend>
+                            <!-- 📎 Adjuntar archivo -->
+                            <div class="">    </div>
+                            <legend class="legend"><!--📎--> Adjuntar archivo</legend>
+                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control1 mb-3" disabled="@cargantwo" />
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
+                                <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
+                            </div>
 
+                            <legend class="legend  mt-3"><!--🪪--> Resultado</legend>
                             <!-- Contenedor principal de la respuesta -->
                             <div class="form-control mb-3 flex-grow-1" style="min-height: 200px; overflow-y: auto;">
 
@@ -161,7 +168,7 @@
                             </div>
 
                             <!-- Botones -->
-                            <div class="form-group d-flex mt-3 gap-3">
+                            <div class="form-group d-flex gap-3">
                                 <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">Descargar como Word</button>
                                 <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">Mostrar Historial</button>
                             </div>
@@ -173,14 +180,7 @@
                                 </div>
                             </div>
 
-                            <!-- 📎 Adjuntar archivo -->
-                            <div class="mt-4">    </div>
-                            <legend class="legend"><!--📎--> Adjuntar archivo</legend>
-                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control1 mb-3" disabled="@cargantwo" />
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
-                                <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
-                            </div>
+
                         </fieldset>
                     </div>
                 </div>
@@ -288,7 +288,6 @@
 
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
 @code {
     private ElementReference editorRef;
 
@@ -347,7 +346,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private string selectedIA = "openai";
     private void CambiarIA(string nuevaIA)
     {
@@ -361,7 +359,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task ActualizarTextoEditable()
     {
         if (moduloJS != null)
@@ -372,7 +369,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    
     private async Task EnviarYLimpiarDespues()
     {
         cargando = true;
@@ -415,7 +411,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task EnviarYLimpiarDespues2()
     {
         cargantwo = true; // Activar el spinner
@@ -454,7 +449,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private void SeleccionarRespuesta(string contenido)
     {
         ResponseText = contenido;
@@ -464,7 +458,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private string LimpiarInstrucciones(string texto)
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
@@ -510,7 +503,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private string ExtraerContenidoHtml(string respuesta)
     {
         if (string.IsNullOrEmpty(respuesta)) return string.Empty;
@@ -527,7 +519,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     public class OpcionCheckbox
     {
         public string Texto { get; set; }
@@ -536,7 +527,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     void OnCheckboxChanged(string opcion, bool isChecked)
     {
         // Agrega o elimina la opción seleccionada de la lista
@@ -557,7 +547,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private void GuardarSeleccionadas()
     {
         // Unimos las opciones seleccionadas en un solo string
@@ -576,7 +565,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     public static string EliminarDuplicadosConCheckboxes(string texto)
     {
         // Expresión regular para capturar solo las opciones numeradas dentro de <li> o <p>
@@ -605,7 +593,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
 
@@ -638,7 +625,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task SendResumenDesdeArchivo()
     {
         try
@@ -693,7 +679,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task SimularEscritura(string textoCompleto)
     {
         textoParcial = "";
@@ -709,7 +694,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task SendToGemini()
     {
         cargando = true;
@@ -820,7 +804,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -837,7 +820,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task DescargarDocSimple()
     {
         if (jsListo && moduloJS is not null)
@@ -848,7 +830,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task BuscarClientePorDocumento()
     {
         buscandoCliente = true;
@@ -898,7 +879,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task<int> GuardarSesionConversacionAsync(string tipoDocumento, string asunto)
     {
         DataTable tabla = new DataTable("SesionesConversacion");
@@ -923,7 +903,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task GuardarMensajeConversacionAsync(int sesionId, string rol, string contenido)
     {
         DataTable tablaHistorial = new DataTable("HistorialConversaciones");
@@ -947,7 +926,6 @@
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private async Task<List<string>> ObtenerRespuestasAnterioresAsync(string tipoDoc)
     {
         string consulta = $@"

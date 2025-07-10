@@ -8,20 +8,17 @@
 @using Radzen
 @using Radzen.Blazor
 
-<head>
-    <link href="css/Style.css" rel="stylesheet" />
-</head>
 
 <div class="d-flex flex-column align-items-center w-100">
 
     <!-- Barra de navegación con estilo Radzen -->
     <div class="d-flex mb-3 gap-2 justify-content-center">
-        <RadzenButton Text="Correo"
-                      Click="@(args => CambiarFormulario("Email"))"
-                      ButtonStyle="@(formActivo == "Email" ? ButtonStyle.Primary : ButtonStyle.Light)" />
-        <RadzenButton Text="Documentos IA"
-                      Click="@(args => CambiarFormulario("GeminiRazor"))"
-                      ButtonStyle="@(formActivo == "GeminiRazor" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="Registro De Entidades"
+                      Click="@(args => CambiarFormulario("Entidades"))"
+                      ButtonStyle="@(formActivo == "Entidades" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="Registro De Servicios"
+                      Click="@(args => CambiarFormulario("EntidadesEXis"))"
+                      ButtonStyle="@(formActivo == "EntidadesEXis" ? ButtonStyle.Primary : ButtonStyle.Light)" />
         <RadzenButton Text="Banco"
                       Click="@(args => CambiarFormulario("Banco"))"
                       ButtonStyle="@(formActivo == "Banco" ? ButtonStyle.Primary : ButtonStyle.Light)" />
@@ -30,24 +27,26 @@
     <!-- Contenedor escalado -->
     <div class="w-100 d-flex justify-content-center">
         <div style="transform: scale(0.96); transform-origin: top center; width: 100%;">
+
             @switch (formActivo)
             {
-                case "Email":
-                    <Email />
+                case "Entidades":
+                    <Entidades />
                     break;
-                case "GeminiRazor":
-                    <GeminiRazor />
+                case "EntidadesEXis":
+                    <EntidadesEXis />
                     break;
                 case "Banco":
                     <Banco />
                     break;
             }
+
         </div>
     </div>
 </div>
 
 @code {
-    private string formActivo = "Email";
+    private string formActivo = "Entidades";
 
     void CambiarFormulario(string nombre)
     {

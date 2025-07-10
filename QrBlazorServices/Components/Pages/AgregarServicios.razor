@@ -5,6 +5,7 @@
 @using Radzen
 @using Radzen.Blazor
 @rendermode InteractiveServer
+@using QrBlazorServices.Clases
 
 
 
@@ -63,6 +64,7 @@
     <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 20px;">@mensaje</RadzenAlert>
 }
 
+
 @code {
     [Parameter] public int EntidadId { get; set; }
 
@@ -74,14 +76,37 @@
 
     private string mensaje;
 
-    public class Subdivision
+
+    protected override async Task OnInitializedAsync()
     {
-        public string NombreSubdiv { get; set; }
-        public string Ciudad { get; set; }
-        public string Direccion { get; set; }
-        public string Telefono { get; set; }
-        public string Correo { get; set; }
-        public string Responsable { get; set; }
+        await CargarServiciosYSubdivisiones();
+    }
+
+    private async Task CargarServiciosYSubdivisiones()
+    {
+        try
+        {
+            // Servicios existentes
+            var dtServicios = await ServicioUsuario.TraerConsultaAsync($"SELECT * FROM Servicios WHERE EntidadId = {EntidadId}", 18);
+            listaServicios = dtServicios.Rows.Cast<DataRow>()
+                .Select(row => row["ServicioBrindado"].ToString()).ToList();
+
+            // Subdivisiones existentes
+            var dtSubdiv = await ServicioUsuario.TraerConsultaAsync($"SELECT * FROM Subdivisiones WHERE EntidadId = {EntidadId}", 18);
+            listaSubdiv = dtSubdiv.Rows.Cast<DataRow>().Select(row => new Subdivision
+                {
+                    NombreSubdiv = row["NombreSubdiv"].ToString(),
+                    Ciudad = row["Ciudad"].ToString(),
+                    Direccion = row["Direccion"].ToString(),
+                    Telefono = row["Telefono"].ToString(),
+                    Correo = row["Correo"].ToString(),
+                    Responsable = row["Responsable"].ToString()
+                }).ToList();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al cargar datos existentes: {ex.Message}";
+        }
     }
 
     private void AgregarServicio()
@@ -116,6 +141,11 @@
     {
         try
         {
+            // 🔄 Eliminar servicios y subdivisiones anteriores
+            await ServicioUsuario.TraerConsultaAsync($"DELETE FROM Servicios WHERE EntidadId = {EntidadId}", 18);
+            await ServicioUsuario.TraerConsultaAsync($"DELETE FROM Subdivisiones WHERE EntidadId = {EntidadId}", 18);
+
+            // Guardar nuevos servicios
             if (listaServicios.Any())
             {
                 DataTable tablaServicios = new("Servicios");
@@ -135,6 +165,7 @@
                 await ServicioUsuario.InsertarTablaAsync(tablaServicios, "Servicios", 18);
             }
 
+            // Guardar nuevas subdivisiones
             if (listaSubdiv.Any())
             {
                 DataTable tablaSubdiv = new("Subdivisiones");
@@ -164,9 +195,12 @@
                 await ServicioUsuario.InsertarTablaAsync(tablaSubdiv, "Subdivisiones", 18);
             }
 
-            mensaje = "✅ Información guardada correctamente.";
+            mensaje = "✅ Cambios guardados correctamente.";
             listaServicios.Clear();
             listaSubdiv.Clear();
+
+            // Recargar para ver datos actualizados
+            await CargarServiciosYSubdivisiones();
         }
         catch (Exception ex)
         {
@@ -176,6 +210,6 @@
 
     private void Volver()
     {
-        Navigation.NavigateTo("/registro");
+        Navigation.NavigateTo("/entidades");
     }
 }

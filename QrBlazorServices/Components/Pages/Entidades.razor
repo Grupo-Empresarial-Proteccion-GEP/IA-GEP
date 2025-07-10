@@ -6,6 +6,7 @@
 @using System.Data
 @using Radzen
 @using Radzen.Blazor
+@using QrBlazorServices.Clases
 
 <RadzenTemplateForm Data="@entidad" Submit="@GuardarEntidad" TItem="Entidad">
     <div class="p-4">
@@ -99,29 +100,7 @@
     private List<string> tiposEntidad = new() { "Entidad Pública", "Entidad Privada", "Entidad Mixta", "Entidad Sin Ánimo de Lucro" };
     private List<string> tiposDocumento = new() { "Cédula de Ciudadanía", "Tarjeta de Identidad", "PEP", "Permiso por Protección Temporal", "NIT" };
 
-    public class Entidad
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-        public string Tipo { get; set; }
-        public string TipoDocumento { get; set; }
-        public string NumeroDocumento { get; set; }
-        public string Departamento { get; set; }
-        public string Ciudad { get; set; }
-        public string Direccion { get; set; }
-        public string Telefono { get; set; }
-        public string Correo { get; set; }
-    }
 
-    public class Subdivision
-    {
-        public string NombreSubdiv { get; set; }
-        public string Ciudad { get; set; }
-        public string Direccion { get; set; }
-        public string Telefono { get; set; }
-        public string Correo { get; set; }
-        public string Responsable { get; set; }
-    }
 
     private void AgregarServicio()
     {
