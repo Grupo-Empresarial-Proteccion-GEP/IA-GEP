@@ -7,14 +7,46 @@
 @inject IJSRuntime JSRuntime
 @using System.Text.RegularExpressions
 
-<head>
-    <link href="css/Style.css" rel="stylesheet" />
-</head>
+@using Radzen.Blazor
+@using Radzen
 
-<div class="container" style="max-width: 1200px; margin: auto; height: 700px;">
+<style>
+    rz-textbox input,
+    rz-textarea textarea {
+        border: 1px solid #ced4da !important;
+        border-radius: 5px;
+    }
+
+    .box-panel {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        height: 600px;
+        overflow-y: auto;
+    }
+
+    .fieldset-custom {
+        border: 1px solid #ccc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .legend {
+        font-weight: bold;
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        padding: 0 0.5rem;
+    }
+</style>
+
+<div class="container" style="max-width: 1200px; margin: auto; height: 700px; transform: scale(0.95); transform-origin: top center;">
     <div class="row justify-content-center h-100">
         <div class="col-12">
-
 
             <fieldset class="fieldset-custom h-100 d-flex flex-column">
 
@@ -22,19 +54,17 @@
                     <h6 class="fw-bold fs-6">📄 Banco de Documentos</h6>
                 </div>
 
-                <legend class="legend"><!--🧠--> Banco de Conversaciones</legend>
-
+                <legend class="legend">Banco de Conversaciones</legend>
 
                 <div class="row gx-3 gy-3 h-100 w-100 mx-0">
 
                     <!-- CONTENEDOR DE SESIONES -->
-                    <div class="col-md-6 h-100">
+                    <div class="col-md-6">
+                        <div class="box-panel fieldset-custom d-flex flex-column overflow-hidden">
+                            <legend class="legend">Sesiones</legend>
 
-                        <div class="fieldset-custom d-flex flex-column overflow-hidden" style="height: 600px; background-color: white;">
-                            <legend class="legend"><!--📋--> Sesiones</legend>
-
-                            <InputText @bind-Value="filtroUsuario" class="form-control mb-2" placeholder="Filtrar por usuario" /> <!--🔍-->
-                            <InputText @bind-Value="filtroTipoDocumento" class="form-control mb-3" placeholder="Filtrar por tipo de documento" /> <!--📄-->
+                            <RadzenTextBox @bind-Value="filtroUsuario" Placeholder="Filtrar por usuario" Style="width: 100%; margin-bottom: 10px;" />
+                            <RadzenTextBox @bind-Value="filtroTipoDocumento" Placeholder="Filtrar por tipo de documento" Style="width: 100%; margin-bottom: 15px;" />
 
                             <div class="flex-grow-1 overflow-auto">
                                 <table class="table table-sm table-hover">
@@ -69,9 +99,9 @@
                     </div>
 
                     <!-- CONTENEDOR DEL CHAT -->
-                    <div class="col-md-6 h-100">
-                        <div class="fieldset-custom d-flex flex-column overflow-hidden" style="height: 600px; background-color: white;">
-                            <legend class="legend"><!--💬--> Historial de Conversación</legend>
+                    <div class="col-md-6">
+                        <div class="box-panel fieldset-custom d-flex flex-column overflow-hidden">
+                            <legend class="legend">Historial de Conversación</legend>
 
                             <!-- CONTENEDOR SCROLLEABLE -->
                             <div class="flex-grow-1 overflow-auto px-3">
@@ -85,10 +115,8 @@
 
                                         string LimpiarContenido(string texto)
                                         {
-                                            // 1. Eliminar bloques <blockquote>…</blockquote>
                                             texto = Regex.Replace(texto, @"<blockquote[^>]*>[\s\S]*?<\/blockquote>", "", RegexOptions.IgnoreCase);
 
-                                            // 2. Frases clave a eliminar (más generalizadas)
                                             var frasesClave = new[]
                                             {
                                 "por favor genera la respuesta como html",
@@ -109,11 +137,9 @@
                                 " No uses bloques de código ni markdown."
                                 };
 
-                                            // 3. Dividir en líneas y filtrar
                                             var lineas = texto.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                                             var filtradas = lineas
-                                            .Where(linea => !frasesClave.Any(f =>
-                                            linea.ToLowerInvariant().Contains(f)))
+                                            .Where(linea => !frasesClave.Any(f => linea.ToLowerInvariant().Contains(f)))
                                             .ToArray();
 
                                             return string.Join("\n", filtradas).Trim();
@@ -123,17 +149,16 @@
                                         ? LimpiarContenido(contenidoOriginal)
                                         : contenidoOriginal;
 
-
                                         var isUser = rol == "user";
 
                                         <div class="d-flex mb-4 @(isUser ? "justify-content-start" : "justify-content-end")">
                                             <div class="chat-bubble p-3" style="
-                            background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
-                            border-radius: 1rem;
-                            max-width: 90%;
-                            box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
-                            word-wrap: break-word;
-                            white-space: normal;">
+                                                background-color:@(isUser ? "#f0f0f0" : "#d1e7ff");
+                                                border-radius: 1rem;
+                                                max-width: 90%;
+                                                box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+                                                word-wrap: break-word;
+                                                white-space: normal;">
                                                 <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.5rem;">
                                                     <strong>@rol</strong> • @fecha
                                                 </div>
@@ -152,20 +177,17 @@
 
                             <!-- BOTÓN DE DESCARGA DEBAJO DEL CHAT -->
                             <div class="d-flex justify-content-end pt-2">
-                                <button class="btn btn-custom" @onclick="DescargarDocSimple">
-                                    <!--⬇️--> Descargar
-                                </button>
+                                <RadzenButton Text="Descargar" Click="@DescargarDocSimple" ButtonStyle="ButtonStyle.Primary" />
                             </div>
                         </div>
                     </div>
                 </div>
-
-
-
             </fieldset>
         </div>
     </div>
 </div>
+
+
 
 
 
