@@ -31,7 +31,7 @@
                     <RadzenFieldset Text="Buscar Usuario">
                         <div class="d-flex gap-2">
                             <RadzenTextBox Placeholder="Buscar por documento" Style="width: 100%;" @bind-Value="nombreBuscado" />
-                            <RadzenButton Icon="search" Text="Buscar" Click="@BuscarClientePorDocumento" Disabled="@buscandoCliente" Style="width: 20%; margin-bottom: 10px;" />
+                            <RadzenButton Icon="search" Text="Buscar" Click="@BuscarClientePorDocumento" Disabled="@buscandoCliente" />
                         </div>
                     </RadzenFieldset>
 
@@ -85,7 +85,7 @@
                     </RadzenFieldset>
 
                     <RadzenFieldset Text="Resultado" Style="margin-top: 1.5rem; flex-grow: 1;">
-                        <div style="height: 675; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+                        <div style="height:680px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
                             @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
                             {
                                 <p><strong>Sugerencias Generadas:</strong></p>
@@ -113,48 +113,6 @@
                         <RadzenButton Text="Descargar como Word" Click="@DescargarDocSimple" />
                         <RadzenButton Text="Mostrar Historial" Click="@(() => showModal = true)" ButtonStyle="ButtonStyle.Secondary" />
                     </div>
-
-                    @if (showModal)
-                    {
-                        <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-                                     background-color: rgba(0, 0, 0, 0.5); display: flex;
-                                     justify-content: center; align-items: center; z-index: 9999;">
-                            <div style="background: white; padding: 20px; border-radius: 10px;
-                                        width: 50%; max-height: 50vh; overflow-y: auto;
-                                        box-shadow: 0 0 10px #000; box-sizing: border-box;">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5>📚 Historial de Chat</h5>
-                                    <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
-                                </div>
-
-                                @if (ChatService.ChatHistory?.Any() == true)
-                                {
-                                    @foreach (var mensaje in ChatService.ChatHistory)
-                                    {
-                                        <div class="p-3 border rounded bg-light shadow-sm mb-3">
-                                            @if (mensaje.Role == "user")
-                                            {
-                                                <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
-                                                <p>@LimpiarInstrucciones(mensaje.Content)</p>
-                                            }
-                                            else if (mensaje.Role == "assistant")
-                                            {
-                                                <p class="fw-bold text-success">🤖 Asistente:</p>
-                                                <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
-                                                    @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
-                                                    <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                }
-                                else
-                                {
-                                    <p class="text-muted">No hay historial disponible.</p>
-                                }
-                            </div>
-                        </div>
-                    }
                 </div>
             </div>
         </RadzenCard>
@@ -185,37 +143,54 @@
 
 @if (showModal)
 {
-    <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-                                     background-color: rgba(0, 0, 0, 0.5); display: flex;
-                                     justify-content: center; align-items: center; z-index: 9999;">
-        <div style="background: white; padding: 20px; border-radius: 10px;
-                                        width: 50%; max-height: 50vh; overflow-y: auto;
-                                        box-shadow: 0 0 10px #000; box-sizing: border-box;">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5>📚 Historial de Chat</h5>
+    <div style="
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 9999;">
+
+        <div style="
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 60%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            ">
+            <!-- Encabezado -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="m-0">📚 Historial de Chat</h5>
                 <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
             </div>
 
+            <!-- Contenido del historial -->
             @if (ChatService.ChatHistory?.Any() == true)
             {
-                @foreach (var mensaje in ChatService.ChatHistory)
-                {
-                    <div class="p-3 border rounded bg-light shadow-sm mb-3">
-                        @if (mensaje.Role == "user")
-                        {
-                            <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
-                            <p>@LimpiarInstrucciones(mensaje.Content)</p>
-                        }
-                        else if (mensaje.Role == "assistant")
-                        {
-                            <p class="fw-bold text-success">🤖 Asistente:</p>
-                            <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
-                                @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
-                                <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
-                            </div>
-                        }
-                    </div>
-                }
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var mensaje in ChatService.ChatHistory)
+                    {
+                        <div class="p-3 border rounded bg-light shadow-sm">
+                            @if (mensaje.Role == "user")
+                            {
+                                <p class="fw-bold text-primary mb-1">🧑‍💻 Tú:</p>
+                                <p class="mb-0">@LimpiarInstrucciones(mensaje.Content)</p>
+                            }
+                            else if (mensaje.Role == "assistant")
+                            {
+                                <p class="fw-bold text-success mb-1">🤖 Asistente:</p>
+                                <div style="cursor: pointer;"
+                                     @onclick="() => SeleccionarRespuesta(mensaje.Content)">
+                                    @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+                                    <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             }
             else
             {
@@ -225,9 +200,11 @@
     </div>
 }
 
+
 @code {
     private bool showModal = false;
 }
+
 
 @if (cargantwo)
 {

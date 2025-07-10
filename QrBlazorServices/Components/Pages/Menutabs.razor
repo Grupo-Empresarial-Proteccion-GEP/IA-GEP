@@ -19,9 +19,9 @@
         <RadzenButton Text="Registro De Servicios"
                       Click="@(args => CambiarFormulario("EntidadesEXis"))"
                       ButtonStyle="@(formActivo == "EntidadesEXis" ? ButtonStyle.Primary : ButtonStyle.Light)" />
-        <RadzenButton Text="Banco"
-                      Click="@(args => CambiarFormulario("Banco"))"
-                      ButtonStyle="@(formActivo == "Banco" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="IA Documental"
+                      Click="@(args => CambiarFormulario("Destroyer Gemini"))"
+                      ButtonStyle="@(formActivo == "Destroyer Gemini" ? ButtonStyle.Primary : ButtonStyle.Light)" />
     </div>
 
     <!-- Contenedor escalado -->
@@ -36,8 +36,8 @@
                 case "EntidadesEXis":
                     <EntidadesEXis />
                     break;
-                case "Banco":
-                    <Banco />
+                case "Destroyer Gemini":
+                    <DestroyerGemini />
                     break;
             }
 
