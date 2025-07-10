@@ -1,4 +1,4 @@
-﻿namespace QrBlazorServices.Controllers
+﻿namespace QrBlazorServices.Clases
 {
     public class QrCode
     {
