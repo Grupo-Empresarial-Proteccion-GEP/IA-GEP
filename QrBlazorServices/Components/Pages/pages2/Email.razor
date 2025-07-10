@@ -3,45 +3,43 @@
 @inject EmailService EmailService
 @rendermode InteractiveServer
 
-@* Asegúrate de tener esta línea en el <head> de tu página o Layout *@
-<link href="css/Style.css" rel="stylesheet" />
+@using Radzen.Blazor
+@using Radzen
 
 <EditForm Model="@correo" OnValidSubmit="Enviar">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh; transform: scale(0.9); transform-origin: top center;">
         <div class="col-md-6">
-            <fieldset class="fieldset-custom">
-                <legend class="legend">Enviar Correo</legend>
-
-                <div class="form-group">
-                    <label>Remitente (Gmail):</label>
-                    <InputText class="form-control" @bind-Value="correo.Remitente" />
+            <RadzenFieldset Text="Enviar Correo">
+                <div class="mb-1">
+                    <label class="form-label">Remitente (Gmail):</label>
+                    <RadzenTextBox @bind-Value="correo.Remitente" Style="width: 100%;" />
                 </div>
 
-                <div class="form-group">
-                    <label>Contraseña de aplicación:</label>
-                    <InputText class="form-control" type="password" @bind-Value="correo.Contrasena" />
+                <div class="mb-1">
+                    <label class="form-label">Contraseña de aplicación:</label>
+                    <RadzenTextBox @bind-Value="correo.Contrasena" Type="password" Style="width: 100%;" />
                 </div>
 
-                <div class="form-group">
-                    <label>Destinatario:</label>
-                    <InputText class="form-control" @bind-Value="correo.Destinatario" />
+                <div class="mb-1">
+                    <label class="form-label">Destinatario:</label>
+                    <RadzenTextBox @bind-Value="correo.Destinatario" Style="width: 100%;" />
                 </div>
 
-                <div class="form-group">
-                    <label>Asunto:</label>
-                    <InputText class="form-control" @bind-Value="correo.Asunto" />
+                <div class="mb-1">
+                    <label class="form-label">Asunto:</label>
+                    <RadzenTextBox @bind-Value="correo.Asunto" Style="width: 100%;" />
                 </div>
 
-                <div class="form-group">
-                    <label>Mensaje:</label>
-                    <InputTextArea class="form-control" @bind-Value="correo.Mensaje" style="height: 150px; resize: none;" />
+                <div class="mb-1">
+                    <label class="form-label">Mensaje:</label>
+                    <RadzenTextArea @bind-Value="correo.Mensaje" Style="width: 100%; height: 150px; resize: none;" />
                 </div>
 
-                <div class="form-group mb-2">
-                    <label>Adjuntar archivo:</label>
+                <div class="">
+                    <label class="form-label">Adjuntar archivo:</label>
                     <InputFile OnChange="OnFileSelected" class="form-control1" />
                     @if (correo.Adjuntos.Count > 0)
                     {
@@ -49,17 +47,18 @@
                     }
                 </div>
 
-                <button class="btn btn-primary mt-2 btn-custom" type="submit">Enviar</button>
+                <RadzenButton Text="Enviar" ButtonStyle="ButtonStyle.Primary" Type="Submit" Style="margin-top: 10px;" />
 
                 @if (!string.IsNullOrEmpty(mensaje))
                 {
                     <div class="alert alert-info mt-3">@mensaje</div>
                 }
-
-            </fieldset>
+            </RadzenFieldset>
         </div>
     </div>
 </EditForm>
+
+
 
 
 @code {
