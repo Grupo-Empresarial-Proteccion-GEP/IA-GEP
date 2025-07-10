@@ -1,4 +1,4 @@
-﻿@page "/RS"
+﻿@page "/rz"
 @inject GeminiService GeminiService
 @using static System.Net.WebRequestMethods;
 @inject HttpClient Http
@@ -15,192 +15,184 @@
 @using System.Text
 
 
-<head>
-    <!-- Bootstrap CSS -->
-    <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />-->
-
-    <!-- Tu estilo personalizado -->
-    <link href="css/Style.css" rel="stylesheet" />
-</head>
+@using Radzen.Blazor
+@using Radzen
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
+    <div class="p-4" style="background-color: #f5f5f5; transform: scale(0.85); transform-origin: top center;">
+        <RadzenCard Style="padding: 20px;">
+            <div class="text-center mb-4">
+                <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
+            </div>
 
-    <div style="background-color: #f5f5f5;">
-        <div class="scale-wrapper">
-            <div class="container-fluid card p-4">
+            <div class="row gy-4">
+                <!-- COLUMNA IZQUIERDA -->
+                <div class="col-lg-6">
+                    <RadzenFieldset Text="Buscar Usuario">
+                        <div class="d-flex gap-2">
+                            <RadzenTextBox Placeholder="Buscar por documento" Style="width: 100%;" @bind-Value="nombreBuscado" />
+                            <RadzenButton Icon="search" Text="Buscar" Click="@BuscarClientePorDocumento" Disabled="@buscandoCliente" Style="width: 20%; margin-bottom: 10px;" />
+                        </div>
+                    </RadzenFieldset>
 
-                <div class="text-center mb-4">
-                    <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
-                </div>
-
-
-                <!-- CONTENEDOR GENERAL EN DOS COLUMNAS -->
-                <div class="row gy-4">
-                    <!-- COLUMNA IZQUIERDA -->
-                    <div class="col-lg-6">
-                        <!-- Busqueda De Doc -->
-                        <fieldset class="fieldset-custom mb-3">
-                            <!-- Se agregó 'mb-4' para separación -->
-                            <legend class="legend"> <!--📄--> Buscar Usuario </legend>
-                            <div class="d-flex mb-3 gap-2">
-                                <InputText @bind-Value="nombreBuscado" class="form-control" placeholder="Buscar por documento" />
-                                <button class="btn-custom btn-secondary" @onclick="BuscarClientePorDocumento" type="button" disabled="@buscandoCliente">
-                                    @(buscandoCliente ? "Buscando..." : "Buscar")
-                                </button>
-                            </div>
-                        </fieldset>
-
-                        <!-- Receptor y Emisor -->
-                        <div class="row gy-3">
-                            <!-- Receptor -->
-                            <div class="col-md-6">
-                                <fieldset class="fieldset-custom">
-                                    <legend class="legend"><!--👤--> Receptor</legend>
-                                    <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Receptor" />
-                                    <select class="form-control mb-2" @bind="Documento_R">
-                                        <option value="">Tipo de documento</option>
-                                        <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
-                                        <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
-                                        <option value="PEP">PEP</option>
-                                        <option value="Permiso por Protección Temporal">Permiso Temporal</option>
-                                        <option value="NIT">NIT</option>
-                                    </select>
-                                    <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_R" />
-                                    <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_R" />
-                                    <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_R" />
-                                    <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_R" />
-                                </fieldset>
-                            </div>
-
-                            <!-- Emisor -->
-                            <div class="col-md-6">
-                                <fieldset class="fieldset-custom">
-                                    <legend class="legend"> <!--🏢--> Emisor   </legend>
-                                    <InputText class="form-control mb-2" placeholder="Nombre" @bind-Value="Emisor" />
-                                    <select class="form-control mb-2" @bind="Documento_E">
-                                        <option value="">Tipo de documento</option>
-                                        <option value="Cédula de Ciudadanía">Cédula de Ciudadanía</option>
-                                        <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
-                                        <option value="PEP">PEP</option>
-                                        <option value="Permiso por Protección Temporal">Permiso Temporal</option>
-                                        <option value="NIT">NIT</option>
-                                    </select>
-
-                                    <InputText class="form-control mb-2" placeholder="Número de documento" @bind-Value="NumeroDoc_E" />
-                                    <InputText class="form-control mb-2" placeholder="Dirección" @bind-Value="Direccion_E" />
-                                    <InputText class="form-control mb-2" placeholder="Teléfono" @bind-Value="Telefono_E" />
-                                    <InputText class="form-control mb-2" placeholder="Correo" @bind-Value="Correo_E" />
-                                </fieldset>
-                            </div>
+                    <div class="row">
+                        <!-- Receptor -->
+                        <div class="col-md-6">
+                            <RadzenFieldset Text="Receptor">
+                                <RadzenTextBox Placeholder="Nombre" @bind-Value="Receptor" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenDropDown Placeholder="Tipo de documento" @bind-Value="Documento_R" Data="@tiposDocumento" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Número de documento" @bind-Value="NumeroDoc_R" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Dirección" @bind-Value="Direccion_R" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Teléfono" @bind-Value="Telefono_R" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Correo" @bind-Value="Correo_R" Style="width: 100%; margin-bottom: 10px;" />
+                            </RadzenFieldset>
                         </div>
 
-                        <!-- Info Documento -->
-                        <fieldset class="fieldset-custom mt-3">
-                            <legend class="legend"> <!--📄--> Información del Documento </legend>
-                            <select class="form-control mb-2" @bind="TipoDocumento">
-                                <option value="">Tipo</option>
-                                <option value="DERECHO DE PETICIÓN">Derecho de Petición</option>
-                                <option value="CARTA LABORAL">Carta Laboral</option>
-                                <option value="CONSTANCIA">Constancia</option>
-                                <option value="RECURSO DE REPOSICIÓN">Recurso de Reposición</option>
-                                <option value="SOLICITUD GENERAL">Solicitud General</option>
-                            </select>
-                            <InputText class="form-control mb-2" placeholder="Ciudad" @bind-Value="Ciudad" />
-                            <InputText class="form-control mb-2" placeholder="Asunto" @bind-Value="Asunto" />
-                        </fieldset>
-
-                        <!-- Descripción -->
-                        <fieldset class="fieldset-custom mt-3">
-                            <legend class="legend"><!--🤖--> Selección de IA</legend>
-                            <select class="form-select mb-3" @onchange="e => CambiarIA(e.Value?.ToString())">
-                                <option value="openai">OpenAI (GPT)</option>
-                                <option value="gemini">Gemini (Google)</option>
-                            </select>
-
-                            <legend class="legend"><!--✍️--> Descripción para la IA</legend>
-                            <InputTextArea class="form-control" style="min-height: 180px;" placeholder="Describe claramente qué quieres generar o analizar..." @bind-Value="UserPrompt" />
-                        </fieldset>
+                        <!-- Emisor -->
+                        <div class="col-md-6">
+                            <RadzenFieldset Text="Emisor">
+                                <RadzenTextBox Placeholder="Nombre" @bind-Value="Emisor" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenDropDown Placeholder="Tipo de documento" @bind-Value="Documento_E" Data="@tiposDocumento" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Número de documento" @bind-Value="NumeroDoc_E" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Dirección" @bind-Value="Direccion_E" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Teléfono" @bind-Value="Telefono_E" Style="width: 100%; margin-bottom: 10px;" />
+                                <RadzenTextBox Placeholder="Correo" @bind-Value="Correo_E" Style="width: 100%; margin-bottom: 10px;" />
+                            </RadzenFieldset>
+                        </div>
                     </div>
 
-                    <div class="col-lg-6 d-flex flex-column fieldset-custom">
-                        <fieldset class="fieldset-custom flex-grow-1 d-flex flex-column border-0 p-0 m-0" style="background: transparent;">
+                    <RadzenFieldset Text="Información del Documento">
+                        <RadzenDropDown Placeholder="Tipo de documento" @bind-Value="TipoDocumento" Data="@tiposDocumentoDoc" Style="width: 100%; margin-bottom: 10px;" />
+                        <RadzenTextBox Placeholder="Ciudad" @bind-Value="Ciudad" Style="width: 100%; margin-bottom: 10px;" />
+                        <RadzenTextBox Placeholder="Asunto" @bind-Value="Asunto" Style="width: 100%; margin-bottom: 10px;" />
+                    </RadzenFieldset>
 
-                            <!-- 📎 Adjuntar archivo -->
-                            <div class="">    </div>
-                            <legend class="legend"><!--📎--> Adjuntar archivo</legend>
-                            <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control1 mb-3" disabled="@cargantwo" />
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-primary btn-custom" @onclick="EnviarYLimpiarDespues" type="button" disabled="@cargando">@(cargando ? "Generando..." : "Generar Documento IA")</button>
-                                <button class="btn btn-outline-primary btn-custom" @onclick="EnviarYLimpiarDespues2" type="button" disabled="@cargantwo">@(cargantwo ? "Analizando..." : "Analizar Documento")</button>
-                            </div>
+                    <RadzenFieldset Text="Descripción para la IA">
+                        <RadzenDropDown Placeholder="Seleccionar IA" @bind-Value="IASeleccionada" Data="@iasDisponibles" Style="width: 100%; margin-bottom: 10px;"
+                                        Change="@(value => CambiarIA(value?.ToString()))" />
+                        <RadzenTextArea @bind-Value="UserPrompt" Placeholder="Describe claramente qué quieres generar o analizar..." Style="width: 100%; min-height: 180px;" />
+                    </RadzenFieldset>
+                </div>
 
-                            <legend class="legend  mt-3"><!--🪪--> Resultado</legend>
-                            <!-- Contenedor principal de la respuesta -->
-                            <div class="form-control mb-3 flex-grow-1" style="min-height: 200px; overflow-y: auto;">
+                <!-- COLUMNA DERECHA -->
+                <div class="col-lg-6 d-flex flex-column">
+                    <RadzenFieldset Text="Adjuntar archivo">
+                        <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
+                        <div class="d-flex gap-2">
+                            <RadzenButton Text="Generar Documento IA" Click="@EnviarYLimpiarDespues" Disabled="@cargando" Style="flex: 1;" />
+                            <RadzenButton Text="Analizar Documento" Click="@EnviarYLimpiarDespues2" Disabled="@cargantwo" ButtonStyle="ButtonStyle.Secondary" Style="flex: 1;" />
+                        </div>
+                    </RadzenFieldset>
 
-                                @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
+                    <RadzenFieldset Text="Resultado" Style="margin-top: 1.5rem; flex-grow: 1;">
+                        <div style="height: 675; overflow-y: auto; border: 1px solid #ccc; padding: 10px;">
+                            @if (opcionesGeneradas?.Any() == true && mostrarSugerencias)
+                            {
+                                <p><strong>Sugerencias Generadas:</strong></p>
+                                @foreach (var opcion in opcionesGeneradas)
                                 {
-                                    <legend class="legend">Sugerencias Generadas</legend>
-                                    <p><strong>Selecciona la(s) sugerencia(s):</strong></p>
-                                    <ul class="list-unstyled">
-                                        @foreach (var opcion in opcionesGeneradas)
-                                        {
-                                            <li class="form-check">
-                                                <input class="form-check-input" type="checkbox"
-                                                       @onchange="(e => OnCheckboxChanged(opcion, (bool)((ChangeEventArgs)e).Value))" />
-                                                <label class="form-check-label">@opcion</label>
-                                            </li>
-                                        }
-                                    </ul>
+                                    <RadzenCheckBox TValue="bool" ValueChanged="(val => OnCheckboxChanged(opcion, val))" /> @opcion
+
+                                    <br />
                                 }
-                                else if (!string.IsNullOrWhiteSpace(ResponseText))
-                                {
-                                    <div contenteditable="true"
-                                         @ref="editorRef"
-                                         @onblur="ActualizarTextoEditable">
-                                        @((MarkupString)ResponseText)
-                                    </div>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(ResponseText))
+                            {
+                                <div contenteditable="true" @ref="editorRef" @onblur="ActualizarTextoEditable">
+                                    @((MarkupString)ResponseText)
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Aún no hay contenido generado.</p>
+                            }
+                        </div>
+                    </RadzenFieldset>
 
+                    <div class="d-flex gap-3 mt-3">
+                        <RadzenButton Text="Descargar como Word" Click="@DescargarDocSimple" />
+                        <RadzenButton Text="Mostrar Historial" Click="@(() => showModal = true)" ButtonStyle="ButtonStyle.Secondary" />
+                    </div>
+
+                    @if (showModal)
+                    {
+                        <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                                     background-color: rgba(0, 0, 0, 0.5); display: flex;
+                                     justify-content: center; align-items: center; z-index: 9999;">
+                            <div style="background: white; padding: 20px; border-radius: 10px;
+                                        width: 50%; max-height: 50vh; overflow-y: auto;
+                                        box-shadow: 0 0 10px #000; box-sizing: border-box;">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5>📚 Historial de Chat</h5>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
+                                </div>
+
+                                @if (ChatService.ChatHistory?.Any() == true)
+                                {
+                                    @foreach (var mensaje in ChatService.ChatHistory)
+                                    {
+                                        <div class="p-3 border rounded bg-light shadow-sm mb-3">
+                                            @if (mensaje.Role == "user")
+                                            {
+                                                <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
+                                                <p>@LimpiarInstrucciones(mensaje.Content)</p>
+                                            }
+                                            else if (mensaje.Role == "assistant")
+                                            {
+                                                <p class="fw-bold text-success">🤖 Asistente:</p>
+                                                <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
+                                                    @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
+                                                    <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
                                 }
                                 else
                                 {
-                                    <p class="text-muted">Aún no hay contenido generado.</p>
+                                    <p class="text-muted">No hay historial disponible.</p>
                                 }
                             </div>
-
-                            <!-- Botones -->
-                            <div class="form-group d-flex gap-3">
-                                <button @onclick="DescargarDocSimple" class="btn btn-primary btn-custom" type="button">Descargar como Word</button>
-                                <button @onclick="() => showModal = true" class="btn btn-secondary btn-custom" type="button">Mostrar Historial</button>
-                            </div>
-
-                            <!-- Historial -->
-                            <div id="historial-container" class="historial mt-3" style="@HistorialStyle">
-                                <h5>Historial de Chat:</h5>
-                                <div style="max-height: 200px; overflow-y: auto;">
-                                </div>
-                            </div>
-
-                           
-                        </fieldset>
-                    </div>
+                        </div>
+                    }
                 </div>
             </div>
-        </div>
+        </RadzenCard>
     </div>
-
 </EditForm>
+
+@code {
+    private List<string> tiposDocumento = new()
+    {
+        "Cédula de Ciudadanía", "Tarjeta de Identidad", "PEP", "Permiso por Protección Temporal", "NIT"
+    };
+
+    private List<string> tiposDocumentoDoc = new()
+    {
+        "DERECHO DE PETICIÓN", "CARTA LABORAL", "CONSTANCIA", "RECURSO DE REPOSICIÓN", "SOLICITUD GENERAL"
+    };
+
+    private List<string> iasDisponibles = new()
+    {
+        "openai", "gemini"
+    };
+
+    private string IASeleccionada = "openai";
+}
+
+
+
 
 @if (showModal)
 {
     <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-                 background-color: rgba(0, 0, 0, 0.5); display: flex;
-                 justify-content: center; align-items: center; z-index: 9999;">
+                                     background-color: rgba(0, 0, 0, 0.5); display: flex;
+                                     justify-content: center; align-items: center; z-index: 9999;">
         <div style="background: white; padding: 20px; border-radius: 10px;
-                    width: 50%; max-height: 50vh; overflow-y: auto;
-                    box-shadow: 0 0 10px #000; box-sizing: border-box;">
+                                        width: 50%; max-height: 50vh; overflow-y: auto;
+                                        box-shadow: 0 0 10px #000; box-sizing: border-box;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5><!--📚--> Historial de Chat </h5>
+                <h5>📚 Historial de Chat</h5>
                 <button class="btn btn-sm btn-danger" @onclick="() => showModal = false">X</button>
             </div>
 
@@ -208,7 +200,7 @@
             {
                 @foreach (var mensaje in ChatService.ChatHistory)
                 {
-                    <div class="p-3 border rounded bg-light shadow-sm mb-2">
+                    <div class="p-3 border rounded bg-light shadow-sm mb-3">
                         @if (mensaje.Role == "user")
                         {
                             <p class="fw-bold text-primary">🧑‍💻 Tú:</p>
@@ -217,7 +209,6 @@
                         else if (mensaje.Role == "assistant")
                         {
                             <p class="fw-bold text-success">🤖 Asistente:</p>
-
                             <div @onclick="() => SeleccionarRespuesta(mensaje.Content)" style="cursor: pointer;">
                                 @((MarkupString)ExtraerContenidoHtml(LimpiarInstrucciones(mensaje.Content)))
                                 <div class="text-end text-muted small"><em>📎 Click para volver a mostrar</em></div>
@@ -345,11 +336,11 @@
     int espera = 2000; // milisegundos
 
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
-
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
     private string selectedIA = "openai";
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
     private void CambiarIA(string nuevaIA)
     {
         selectedIA = nuevaIA;
