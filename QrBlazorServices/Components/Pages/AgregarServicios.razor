@@ -53,8 +53,9 @@
 
 <div class="mt-4">
 
-    <RadzenButton Text="💾 Guardar Todo" ButtonStyle="ButtonStyle.Success" @onclick="GuardarTodo" />
-    <RadzenButton Text="↩️ Volver" ButtonStyle="ButtonStyle.Secondary" @onclick="Volver" Style="margin-left: 10px;" />
+    <RadzenButton Text="Guardar Todo" ButtonStyle="ButtonStyle.Success" click="@GuardarTodo" />
+    <RadzenButton Text="Volver" ButtonStyle="ButtonStyle.Secondary" Click="@Volver" Style="margin-left: 10px;" />
+    
 </div>
 
 @if (!string.IsNullOrWhiteSpace(mensaje))
