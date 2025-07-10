@@ -259,6 +259,7 @@
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
 @code {
+
     private ElementReference editorRef;
 
     private string? Ciudad;
@@ -301,7 +302,6 @@
 
     private List<string> opcionesGeneradas = new();
     private List<string> opcionesSeleccionadas = new();
-    private List<OpcionCheckbox> opcionesCheckbox = new();
 
 
     string nombreBuscado; // input para búsqueda
@@ -315,6 +315,7 @@
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
     private string selectedIA = "openai";
 
+    private List<OpcionCheckbox> opcionesCheckbox = new();
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
