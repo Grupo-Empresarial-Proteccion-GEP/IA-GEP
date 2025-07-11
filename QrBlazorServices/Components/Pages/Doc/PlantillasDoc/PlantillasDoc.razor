@@ -1,0 +1,137 @@
+﻿@page "/plantilla"
+@inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
+@inject DialogService dialogService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using Radzen
+@using System.Data
+@using System.IO
+@using Microsoft.AspNetCore.Components.Forms
+
+<h3>📄 Registrar Plantilla</h3>
+
+<RadzenFieldset Text="Nueva Plantilla" Style="max-width:600px;">
+    <RadzenTextBox @bind-Value="plantilla.NombreArchivo"
+                   Placeholder="Nombre de la plantilla"
+                   Class="w-100 mb-3" />
+
+    <InputFile OnChange="OnFileUpload"
+               accept=".docx,.pdf,.txt"
+               class="form-control mb-3" />
+
+    @if (!string.IsNullOrWhiteSpace(plantilla.NombreArchivo))
+    {
+        <p><strong>Archivo seleccionado:</strong> @plantilla.NombreArchivo</p>
+    }
+
+    <RadzenButton Text="Registrar Plantilla"
+                  Icon="save"
+                  ButtonStyle="ButtonStyle.Success"
+                  Click="AgregarPlantilla"
+                  Style="margin-top: 10px;" />
+
+    <RadzenButton Text="Botón de prueba"
+                  Icon="check_circle"
+                  ButtonStyle="ButtonStyle.Warning"
+                  Click="ProbarBoton"
+                  Style="margin-top: 10px; margin-left: 10px;" />
+
+    @if (!string.IsNullOrEmpty(mensaje))
+    {
+        <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
+            @mensaje
+        </div>
+    }
+</RadzenFieldset>
+
+@code {
+    Plantilla plantilla = new Plantilla();
+    private string? mensaje;
+
+    private async Task OnFileUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file != null)
+            {
+                using var stream = new MemoryStream();
+                await file.OpenReadStream(maxAllowedSize: 10_000_000).CopyToAsync(stream);
+                plantilla.Contenido = stream.ToArray();
+                plantilla.NombreArchivo = file.Name;
+
+                mensaje = $"✅ Archivo '{file.Name}' cargado correctamente.";
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al leer el archivo: {ex.Message}";
+        }
+    }
+
+
+
+
+    private async Task AgregarPlantilla()
+    {
+        mensaje = "🔁 Ejecutando AgregarPlantilla...";
+        Console.WriteLine($"📌 Entró al método AgregarPlantilla con: {plantilla.NombreArchivo}");
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(plantilla.NombreArchivo))
+            {
+                await dialogService.Alert("⚠️ Debes ingresar o cargar un nombre de archivo.");
+                return;
+            }
+
+            if (plantilla.Contenido == null || plantilla.Contenido.Length == 0)
+            {
+                await dialogService.Alert("⚠️ Debes seleccionar un archivo válido.");
+                return;
+            }
+
+            // ⚠️ Crea manualmente el DataTable para evitar errores de esquema
+            var tabla = new DataTable("Plantilla");
+            tabla.Columns.Add("NombreArchivo", typeof(string));
+            tabla.Columns.Add("Contenido", typeof(byte[]));
+
+            var row = tabla.NewRow();
+            row["NombreArchivo"] = plantilla.NombreArchivo;
+            row["Contenido"] = plantilla.Contenido;
+            tabla.Rows.Add(row);
+
+            // Insertar en la BD
+            await ServicioSoap.InsertarTablaAsync(tabla, "Plantilla", 18);
+
+            mensaje = "✅ Plantilla registrada exitosamente.";
+            plantilla = new(); // Limpiar
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al registrar plantilla: {ex.Message}";
+        }
+    }
+
+
+
+
+
+
+
+
+    private void ProbarBoton()
+    {
+        mensaje = "✅ El botón básico respondió correctamente.";
+        StateHasChanged();
+    }
+
+    public class Plantilla
+    {
+        public string? NombreArchivo { get; set; }
+        public byte[]? Contenido { get; set; }
+    }
+
+}
