@@ -3,50 +3,94 @@
 @inject DialogService dialogService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
+
 @using Radzen
 @using System.Data
 @using System.IO
 @using Microsoft.AspNetCore.Components.Forms
 
-<h3>📄 Registrar Plantilla</h3>
+<h3 class="mb-4">📄 Gestión de Plantillas</h3>
 
-<RadzenFieldset Text="Nueva Plantilla" Style="max-width:600px;">
-    <RadzenTextBox @bind-Value="plantilla.NombreArchivo"
-                   Placeholder="Nombre de la plantilla"
-                   Class="w-100 mb-3" />
+<RadzenRow>
+    <!-- Columna izquierda: Formulario -->
+    <RadzenColumn Width="6">
+        <RadzenFieldset Text="📤 Cargar / Editar Plantilla" Style="max-width: 100%;">
+            <RadzenTextBox @bind-Value="plantilla.NombreArchivo"
+                           Placeholder="Nombre de la plantilla"
+                           Class="w-100 mb-3" />
 
-    <InputFile OnChange="OnFileUpload"
-               accept=".docx,.pdf,.txt"
-               class="form-control mb-3" />
+            <InputFile OnChange="OnFileUpload"
+                       accept=".docx,.pdf,.txt"
+                       class="form-control mb-3" />
 
-    @if (!string.IsNullOrWhiteSpace(plantilla.NombreArchivo))
-    {
-        <p><strong>Archivo seleccionado:</strong> @plantilla.NombreArchivo</p>
-    }
+            <RadzenDropDown Data="@listaPlantillas"
+                            TextProperty="NombreArchivo"
+                            ValueProperty="RutaArchivo"
+                            @bind-Value="rutaSeleccionada"
+                            Change="OnSeleccionPlantilla"
+                            Placeholder="Seleccione una plantilla"
+                            Style="width: 100%; margin-bottom: 10px;" />
 
-    <RadzenButton Text="Registrar Plantilla"
-                  Icon="save"
-                  ButtonStyle="ButtonStyle.Success"
-                  Click="AgregarPlantilla"
-                  Style="margin-top: 10px;" />
+            <div class="mb-3">
+                <RadzenButton Text="Registrar Nueva"
+                              Icon="save"
+                              ButtonStyle="ButtonStyle.Success"
+                              Click="AgregarPlantilla"
+                              Class="me-2" />
+               <!-- <RadzenButton Text="Actualizar"
+                              Icon="edit"
+                              ButtonStyle="ButtonStyle.Warning"
+                              Click="ActualizarPlantilla"
+                              Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)"
+                               Class="me-2" />-->
+              
+                              <RadzenButton Text="Eliminar"
+                              Icon="delete"
+                              ButtonStyle="ButtonStyle.Danger"
+                              Click="EliminarPlantilla"
+                              Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)" />
+            </div>
 
-    <RadzenButton Text="Botón de prueba"
-                  Icon="check_circle"
-                  ButtonStyle="ButtonStyle.Warning"
-                  Click="ProbarBoton"
-                  Style="margin-top: 10px; margin-left: 10px;" />
+            @if (!string.IsNullOrEmpty(mensaje))
+            {
+                <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
+                    @mensaje
+                </div>
+            }
+        </RadzenFieldset>
+    </RadzenColumn>
 
-    @if (!string.IsNullOrEmpty(mensaje))
-    {
-        <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
-            @mensaje
-        </div>
-    }
-</RadzenFieldset>
+    <!-- Columna derecha: Visor -->
+    <RadzenColumn Width="6">
+        <RadzenFieldset Text="🔍 Vista previa del documento" Style="max-width: 100%;">
+            @if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
+            {
+                <div class="d-flex justify-content-center">
+                    @if (rutaSeleccionada.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <iframe src="@rutaSeleccionada"
+                                width="90%" height="500px"
+                                style="border: 1px solid #ccc; border-radius: 8px;" />
+                    }
+                    else if (rutaSeleccionada.EndsWith(".txt"))
+                    {
+                        <a href="@rutaSeleccionada" target="_blank">📝 Ver archivo de texto</a>
+                    }
+                    else
+                    {
+                        <a href="@rutaSeleccionada" target="_blank">📥 Descargar documento</a>
+                    }
+                </div>
+            }
+        </RadzenFieldset>
+    </RadzenColumn>
+</RadzenRow>
 
 @code {
-    Plantilla plantilla = new Plantilla();
+    Plantilla plantilla = new();
+    List<Plantilla> listaPlantillas = new();
     private string? mensaje;
+    private string? rutaSeleccionada;
 
     private async Task OnFileUpload(InputFileChangeEventArgs e)
     {
@@ -55,59 +99,48 @@
             var file = e.File;
             if (file != null)
             {
-                using var stream = new MemoryStream();
+                string folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "plantillas");
+                Directory.CreateDirectory(folderPath);
+
+                string filePath = Path.Combine(folderPath, file.Name);
+
+                using var stream = new FileStream(filePath, FileMode.Create);
                 await file.OpenReadStream(maxAllowedSize: 10_000_000).CopyToAsync(stream);
-                plantilla.Contenido = stream.ToArray();
+
                 plantilla.NombreArchivo = file.Name;
+                plantilla.RutaArchivo = $"/plantillas/{file.Name}";
 
                 mensaje = $"✅ Archivo '{file.Name}' cargado correctamente.";
-                StateHasChanged();
             }
         }
         catch (Exception ex)
         {
-            mensaje = $"❌ Error al leer el archivo: {ex.Message}";
+            mensaje = $"❌ Error al guardar el archivo: {ex.Message}";
         }
     }
 
-
-
-
     private async Task AgregarPlantilla()
     {
-        mensaje = "🔁 Ejecutando AgregarPlantilla...";
-        Console.WriteLine($"📌 Entró al método AgregarPlantilla con: {plantilla.NombreArchivo}");
-
         try
         {
-            if (string.IsNullOrWhiteSpace(plantilla.NombreArchivo))
-            {
-                await dialogService.Alert("⚠️ Debes ingresar o cargar un nombre de archivo.");
-                return;
-            }
-
-            if (plantilla.Contenido == null || plantilla.Contenido.Length == 0)
+            if (string.IsNullOrWhiteSpace(plantilla.NombreArchivo) || string.IsNullOrWhiteSpace(plantilla.RutaArchivo))
             {
                 await dialogService.Alert("⚠️ Debes seleccionar un archivo válido.");
                 return;
             }
 
-            // ⚠️ Crea manualmente el DataTable para evitar errores de esquema
-            var tabla = new DataTable("Plantilla");
-            tabla.Columns.Add("NombreArchivo", typeof(string));
-            tabla.Columns.Add("Contenido", typeof(byte[]));
+            var dt = await ServicioSoap.TraerEsquemaTablaAsync("Plantilla", 18);
 
-            var row = tabla.NewRow();
+            var row = dt.NewRow();
             row["NombreArchivo"] = plantilla.NombreArchivo;
-            row["Contenido"] = plantilla.Contenido;
-            tabla.Rows.Add(row);
+            row["RutaArchivo"] = plantilla.RutaArchivo;
+            dt.Rows.Add(row);
 
-            // Insertar en la BD
-            await ServicioSoap.InsertarTablaAsync(tabla, "Plantilla", 18);
+            await ServicioSoap.InsertarTablaAsync(dt, "Plantilla", 18);
 
             mensaje = "✅ Plantilla registrada exitosamente.";
-            plantilla = new(); // Limpiar
-            StateHasChanged();
+            plantilla = new();
+            await CargarPlantillas();
         }
         catch (Exception ex)
         {
@@ -115,23 +148,104 @@
         }
     }
 
-
-
-
-
-
-
-
-    private void ProbarBoton()
+    private async Task CargarPlantillas()
     {
-        mensaje = "✅ El botón básico respondió correctamente.";
-        StateHasChanged();
+        try
+        {
+            var dt = await ServicioSoap.TraerConsultaAsync("SELECT NombreArchivo, RutaArchivo FROM Plantilla", 18);
+            listaPlantillas = dt.Rows.Cast<DataRow>().Select(row => new Plantilla
+            {
+                NombreArchivo = row["NombreArchivo"].ToString(),
+                RutaArchivo = row["RutaArchivo"].ToString()
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al cargar plantillas: {ex.Message}";
+        }
+    }
+
+    private void OnSeleccionPlantilla(object value)
+    {
+        rutaSeleccionada = value?.ToString();
+        var seleccionada = listaPlantillas.FirstOrDefault(p => p.RutaArchivo == rutaSeleccionada);
+        if (seleccionada != null)
+        {
+            plantilla.NombreArchivo = seleccionada.NombreArchivo;
+            plantilla.RutaArchivo = seleccionada.RutaArchivo;
+        }
+    }
+
+    private async Task EliminarPlantilla()
+    {
+        if (string.IsNullOrWhiteSpace(rutaSeleccionada))
+        {
+            await dialogService.Alert("⚠️ Selecciona una plantilla para eliminar.");
+            return;
+        }
+
+        try
+        {
+            // Eliminar registro en base de datos
+            await ServicioSoap.TraerConsultaAsync(
+                $"DELETE FROM Plantilla WHERE RutaArchivo = '{rutaSeleccionada}'", 18);
+
+            // Convertir la ruta relativa a ruta física absoluta
+            var pathAbsoluto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaSeleccionada.TrimStart('/'));
+
+            // Verificar si el archivo existe y eliminarlo
+            if (File.Exists(pathAbsoluto))
+            {
+                File.Delete(pathAbsoluto);
+            }
+
+            mensaje = "✅ Plantilla eliminada correctamente.";
+            plantilla = new();
+            rutaSeleccionada = null;
+            await CargarPlantillas();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al eliminar plantilla: {ex.Message}";
+        }
+    }
+
+
+    private async Task ActualizarPlantilla()
+    {
+        if (string.IsNullOrWhiteSpace(rutaSeleccionada))
+        {
+            await dialogService.Alert("⚠️ Selecciona una plantilla para actualizar.");
+            return;
+        }
+
+        try
+        {
+            await ServicioSoap.ActualizarCampoAsync(
+                "Plantilla",
+                "NombreArchivo",
+                plantilla.NombreArchivo,
+                $"RutaArchivo = '{rutaSeleccionada}'",
+                18
+            );
+
+            mensaje = "✅ Plantilla actualizada correctamente.";
+            await CargarPlantillas();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al actualizar plantilla: {ex.Message}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarPlantillas();
     }
 
     public class Plantilla
     {
         public string? NombreArchivo { get; set; }
-        public byte[]? Contenido { get; set; }
+        public string? RutaArchivo { get; set; }
     }
-
 }
