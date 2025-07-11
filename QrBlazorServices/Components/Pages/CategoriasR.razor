@@ -1,0 +1,194 @@
+﻿@page "/Documentos"
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+@using System.Data
+@using Radzen
+@using Radzen.Blazor
+
+<div class="row">
+    <!-- Columna izquierda: Registrar Categoría -->
+    <div class="col-md-6">
+        <RadzenFieldset Text="Registrar Categoría" Style="margin-bottom: 20px;">
+            <RadzenTextBox @bind-Value="categoria.Nombre"
+                           Placeholder="Nombre de la Categoría"
+                           Class="w-100 mb-3" />
+            <RadzenButton Text="Guardar Categoría"
+                          ButtonStyle="ButtonStyle.Success"
+                          Click="@GuardarCategoria"
+                          Icon="save" />
+        </RadzenFieldset>
+    </div>
+
+    <!-- Columna derecha: Subcategorías -->
+    <div class="col-md-6">
+        <RadzenFieldset Text="Subcategorías de esta Categoría">
+            <RadzenDropDown @bind-Value="categoriaSeleccionadaId"
+                            Data="@categoriasExistentes"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Placeholder="Selecciona una categoría"
+                            Class="w-100 mb-3" />
+
+            <RadzenTextBox @bind-Value="nombreSubcategoriaTemp"
+                           Placeholder="Nombre de la Subcategoría"
+                           Class="w-100 mb-3" />
+
+            <RadzenButton Icon="add_circle"
+                          Text="Agregar Subcategoría"
+                          Click="@AgregarSubcategoriaTemporal"
+                          ButtonStyle="ButtonStyle.Secondary" />
+
+            <ul class="mt-3">
+                @foreach (var s in subcategoriasTemporales)
+                {
+                    <li>
+                        @s.Nombre
+                        <RadzenButton Icon="close"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Size="ButtonSize.Small"
+                                      Click="@(args => EliminarSubcategoriaTemporal(s))" />
+                    </li>
+                }
+            </ul>
+
+            <RadzenButton Text="Guardar Subcategorías"
+                          Click="@GuardarSubcategorias"
+                          ButtonStyle="ButtonStyle.Success"
+                          Icon="save"
+                          Style="margin-top: 15px;" />
+        </RadzenFieldset>
+    </div>
+</div>
+
+
+@if (!string.IsNullOrWhiteSpace(mensaje))
+{
+    <RadzenAlert Severity="AlertSeverity.Success" Style="margin-top: 20px;">@mensaje</RadzenAlert>
+}
+
+@code {
+    // Categoría actual a guardar
+    private Categoria categoria = new();
+
+    // Lista de categorías existentes (para el DropDown)
+    private List<Categoria> categoriasExistentes = new();
+
+    // Subcategoría temporal
+    private string nombreSubcategoriaTemp = "";
+    private int categoriaSeleccionadaId;
+
+    // Lista temporal de subcategorías a guardar
+    private List<SubCategoria> subcategoriasTemporales = new();
+
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarCategorias();
+    }
+
+    private async Task CargarCategorias()
+    {
+        categoriasExistentes.Clear();
+        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT * FROM Categoria", 18);
+        foreach (DataRow row in dt.Rows)
+        {
+            categoriasExistentes.Add(new Categoria
+            {
+                Id = Convert.ToInt32(row["Id"]),
+                Nombre = row["Nombre"].ToString()
+            });
+        }
+    }
+
+    private async Task GuardarCategoria()
+    {
+        try
+        {
+            DataTable tabla = new("Categoria");
+            tabla.Columns.Add("Id", typeof(int));
+            tabla.Columns.Add("Nombre", typeof(string));
+
+            var row = tabla.NewRow();
+            row["Id"] = 0;
+            row["Nombre"] = categoria.Nombre;
+            tabla.Rows.Add(row);
+
+            await ServicioUsuario.InsertarTablaAsync(tabla, "Categoria", 18);
+            mensaje = "✅ Categoría registrada correctamente.";
+            categoria = new();
+
+            await CargarCategorias(); // recarga el dropdown
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al registrar categoría: {ex.Message}";
+        }
+    }
+
+    private void AgregarSubcategoriaTemporal()
+    {
+        if (!string.IsNullOrWhiteSpace(nombreSubcategoriaTemp) && categoriaSeleccionadaId > 0)
+        {
+            subcategoriasTemporales.Add(new SubCategoria
+            {
+                CategoriaId = categoriaSeleccionadaId,
+                Nombre = nombreSubcategoriaTemp
+            });
+            nombreSubcategoriaTemp = string.Empty;
+        }
+    }
+
+    private void EliminarSubcategoriaTemporal(SubCategoria s)
+    {
+        subcategoriasTemporales.Remove(s);
+    }
+
+    private async Task GuardarSubcategorias()
+    {
+        try
+        {
+            if (!subcategoriasTemporales.Any())
+            {
+                mensaje = "⚠️ No hay subcategorías para guardar.";
+                return;
+            }
+
+            DataTable tabla = new("SubCategoria");
+            tabla.Columns.Add("Id", typeof(int));
+            tabla.Columns.Add("CategoriaId", typeof(int));
+            tabla.Columns.Add("Nombre", typeof(string));
+
+            foreach (var sub in subcategoriasTemporales)
+            {
+                var row = tabla.NewRow();
+                row["Id"] = 0;
+                row["CategoriaId"] = sub.CategoriaId;
+                row["Nombre"] = sub.Nombre;
+                tabla.Rows.Add(row);
+            }
+
+            await ServicioUsuario.InsertarTablaAsync(tabla, "SubCategoria", 18);
+            mensaje = "✅ Subcategorías registradas correctamente.";
+            subcategoriasTemporales.Clear();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al registrar subcategorías: {ex.Message}";
+        }
+    }
+
+    public class Categoria
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+    }
+
+    public class SubCategoria
+    {
+        public int Id { get; set; }
+        public int CategoriaId { get; set; }
+        public string Nombre { get; set; }
+    }
+}

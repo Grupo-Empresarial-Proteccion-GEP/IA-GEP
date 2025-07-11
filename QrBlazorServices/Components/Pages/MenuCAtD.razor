@@ -1,0 +1,55 @@
+﻿@page "/menuCat"
+@using AccesoDatos
+@using System.Data
+@inject NavigationManager Navigation
+@inject AccesoDatosSoapClient ServicioUsuario
+@rendermode InteractiveServer
+@using QrBlazorServices.Components.Pages
+@using Radzen
+@using Radzen.Blazor
+
+
+<div class="d-flex flex-column align-items-center w-100">
+
+    <!-- Barra de navegación con estilo Radzen -->
+    <div class="d-flex mb-3 gap-2 justify-content-center">
+        <RadzenButton Text="Registro De Categorias"
+                      Click="@(args => CambiarFormulario("CategoriasR"))"
+                      ButtonStyle="@(formActivo == "EntidCategoriasRades" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="Categorrias Existentes"
+                      Click="@(args => CambiarFormulario("ManejoCat"))"
+                      ButtonStyle="@(formActivo == "ManejoCat" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="IA Documental"
+                      Click="@(args => CambiarFormulario("Destroyer Gemini"))"
+                      ButtonStyle="@(formActivo == "Destroyer Gemini" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+    </div>
+
+    <!-- Contenedor escalado -->
+    <div class="w-100 d-flex justify-content-center">
+        <div style="transform: scale(0.96); transform-origin: top center; width: 100%;">
+
+            @switch (formActivo)
+            {
+                case "CategoriasR":
+                    <CategoriasR />
+                    break;
+                case "ManejoCat":
+                    <ManejoCat />
+                    break;
+                case "Destroyer Gemini":
+                    <DestroyerGemini/>
+                    break;
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string formActivo = "Entidades";
+
+    void CambiarFormulario(string nombre)
+    {
+        formActivo = nombre;
+    }
+}
