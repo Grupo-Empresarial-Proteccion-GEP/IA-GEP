@@ -19,6 +19,16 @@
                            Placeholder="Nombre de la plantilla"
                            Class="w-100 mb-3" />
 
+            <RadzenTextBox @bind-Value="plantilla.Version"
+                           Placeholder="Versión"
+                           Class="w-100 mb-3" />
+
+            <RadzenDropDown @bind-Value="plantilla.Estado"
+                            Data="@estadosDisponibles"
+                            Placeholder="Seleccione el estado"
+                            AllowCustom="true"
+                            Class="w-100 mb-3" />
+
             <InputFile OnChange="OnFileUpload"
                        accept=".docx,.pdf,.txt"
                        class="form-control mb-3" />
@@ -37,14 +47,15 @@
                               ButtonStyle="ButtonStyle.Success"
                               Click="AgregarPlantilla"
                               Class="me-2" />
-               <!-- <RadzenButton Text="Actualizar"
+
+                <RadzenButton Text="Actualizar"
                               Icon="edit"
                               ButtonStyle="ButtonStyle.Warning"
                               Click="ActualizarPlantilla"
                               Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)"
-                               Class="me-2" />-->
-              
-                              <RadzenButton Text="Eliminar"
+                              Class="me-2" />
+
+                <RadzenButton Text="Eliminar"
                               Icon="delete"
                               ButtonStyle="ButtonStyle.Danger"
                               Click="EliminarPlantilla"
@@ -68,9 +79,7 @@
                 <div class="d-flex justify-content-center">
                     @if (rutaSeleccionada.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
                     {
-                        <iframe src="@rutaSeleccionada"
-                                width="90%" height="500px"
-                                style="border: 1px solid #ccc; border-radius: 8px;" />
+                        <iframe src="@rutaSeleccionada" width="90%" height="500px" style="border: 1px solid #ccc; border-radius: 8px;" />
                     }
                     else if (rutaSeleccionada.EndsWith(".txt"))
                     {
@@ -89,6 +98,7 @@
 @code {
     Plantilla plantilla = new();
     List<Plantilla> listaPlantillas = new();
+    List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
     private string? mensaje;
     private string? rutaSeleccionada;
 
@@ -130,10 +140,11 @@
             }
 
             var dt = await ServicioSoap.TraerEsquemaTablaAsync("Plantilla", 18);
-
             var row = dt.NewRow();
             row["NombreArchivo"] = plantilla.NombreArchivo;
             row["RutaArchivo"] = plantilla.RutaArchivo;
+            row["Version"] = plantilla.Version ?? (object)DBNull.Value;
+            row["Estado"] = plantilla.Estado ?? (object)DBNull.Value;
             dt.Rows.Add(row);
 
             await ServicioSoap.InsertarTablaAsync(dt, "Plantilla", 18);
@@ -152,11 +163,13 @@
     {
         try
         {
-            var dt = await ServicioSoap.TraerConsultaAsync("SELECT NombreArchivo, RutaArchivo FROM Plantilla", 18);
+            var dt = await ServicioSoap.TraerConsultaAsync("SELECT NombreArchivo, RutaArchivo, Version, Estado FROM Plantilla", 18);
             listaPlantillas = dt.Rows.Cast<DataRow>().Select(row => new Plantilla
             {
                 NombreArchivo = row["NombreArchivo"].ToString(),
-                RutaArchivo = row["RutaArchivo"].ToString()
+                RutaArchivo = row["RutaArchivo"].ToString(),
+                Version = row["Version"].ToString(),
+                Estado = row["Estado"].ToString(),
             }).ToList();
         }
         catch (Exception ex)
@@ -173,6 +186,8 @@
         {
             plantilla.NombreArchivo = seleccionada.NombreArchivo;
             plantilla.RutaArchivo = seleccionada.RutaArchivo;
+            plantilla.Version = seleccionada.Version;
+            plantilla.Estado = estadosDisponibles.Contains(seleccionada.Estado) ? seleccionada.Estado : null;
         }
     }
 
@@ -186,14 +201,9 @@
 
         try
         {
-            // Eliminar registro en base de datos
-            await ServicioSoap.TraerConsultaAsync(
-                $"DELETE FROM Plantilla WHERE RutaArchivo = '{rutaSeleccionada}'", 18);
+            await ServicioSoap.TraerConsultaAsync($"DELETE FROM Plantilla WHERE RutaArchivo = '{rutaSeleccionada}'", 18);
 
-            // Convertir la ruta relativa a ruta física absoluta
             var pathAbsoluto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaSeleccionada.TrimStart('/'));
-
-            // Verificar si el archivo existe y eliminarlo
             if (File.Exists(pathAbsoluto))
             {
                 File.Delete(pathAbsoluto);
@@ -210,7 +220,6 @@
         }
     }
 
-
     private async Task ActualizarPlantilla()
     {
         if (string.IsNullOrWhiteSpace(rutaSeleccionada))
@@ -221,13 +230,9 @@
 
         try
         {
-            await ServicioSoap.ActualizarCampoAsync(
-                "Plantilla",
-                "NombreArchivo",
-                plantilla.NombreArchivo,
-                $"RutaArchivo = '{rutaSeleccionada}'",
-                18
-            );
+            await ServicioSoap.ActualizarCampoAsync("Plantilla", "NombreArchivo", plantilla.NombreArchivo, $"RutaArchivo = '{rutaSeleccionada}'", 18);
+            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Version", plantilla.Version ?? "", $"RutaArchivo = '{rutaSeleccionada}'", 18);
+            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Estado", plantilla.Estado ?? "", $"RutaArchivo = '{rutaSeleccionada}'", 18);
 
             mensaje = "✅ Plantilla actualizada correctamente.";
             await CargarPlantillas();
@@ -247,5 +252,7 @@
     {
         public string? NombreArchivo { get; set; }
         public string? RutaArchivo { get; set; }
+        public string? Version { get; set; }
+        public string? Estado { get; set; }
     }
 }

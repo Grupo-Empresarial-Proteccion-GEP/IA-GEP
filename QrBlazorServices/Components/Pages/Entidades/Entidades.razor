@@ -17,22 +17,41 @@
                 <!-- Columna 1 -->
                 <div class="col-md-6">
                     <RadzenLabel Text="Entidad " />
-                    <RadzenTextBox Name="Nombre" @bind-Value="entidad.Nombre" Placeholder="Nombre de la entidad" Class="w-100 mb-3" />
+
+                    <RadzenFormField Text="Nombre de la entidad" Class="w-100 mb-2">
+                    <RadzenTextBox Name="Nombre" @bind-Value="entidad.Nombre" Placeholder="Nombre de la entidad" Class="w-100" />
+                    </RadzenFormField>
 
                     <RadzenDropDown Name="TipoEntidad" Placeholder="Tipo de Entidad"
-                                    @bind-Value="entidad.Tipo" Class="w-100 mb-3"
+                                    @bind-Value="entidad.Tipo" Class="w-100 mb-1"
                                     Data="@tiposEntidad" />
                     <RadzenDropDown Name="TipoDocumento" Placeholder="Tipo de Documento"
-                                    @bind-Value="entidad.TipoDocumento" Class="w-100 mb-3"
+                                    @bind-Value="entidad.TipoDocumento" Class="w-100 mb-1"
                                     Data="@tiposDocumento" />
 
-                    <RadzenTextBox Name="NumeroDocumento" @bind-Value="entidad.NumeroDocumento" Placeholder="Número de Documento" Class="w-100 mb-3" />
-                    <RadzenTextBox Name="Departamento" @bind-Value="entidad.Departamento" Placeholder="Departamento" Class="w-100 mb-3" />
+                    <RadzenFormField Text="Número de Documento" Class="w-100 mb-1">
+                    <RadzenTextBox Name="NumeroDocumento" @bind-Value="entidad.NumeroDocumento" Placeholder="Número de Documento" Class="w-100 " />
+                    </RadzenFormField>
+                    
+                    <RadzenFormField Text="Departamento" Class="w-100 mb-1">
+                    <RadzenTextBox Name="Departamento" @bind-Value="entidad.Departamento" Placeholder="Departamento" Class="w-100 " />
+                    </RadzenFormField>
 
-                    <RadzenTextBox Name="Ciudad" @bind-Value="entidad.Ciudad" Placeholder="Ciudad" Class="w-100 mb-3" />
-                    <RadzenTextBox Name="Direccion" @bind-Value="entidad.Direccion" Placeholder="Dirección" Class="w-100 mb-3" />
-                    <RadzenTextBox Name="Telefono" @bind-Value="entidad.Telefono" Placeholder="Teléfono" Class="w-100 mb-3" />
-                    <RadzenTextBox Name="Correo" @bind-Value="entidad.Correo" Placeholder="Correo Electrónico" Class="w-100 mb-3" />
+                    <RadzenFormField Text="Ciudad" Class="w-100 mb-1">
+                    <RadzenTextBox Name="Ciudad" @bind-Value="entidad.Ciudad" Placeholder="Ciudad" Class="w-100 " />
+                    </RadzenFormField>
+
+                    <RadzenFormField Text="Dirección" Class="w-100 mb-1">
+                    <RadzenTextBox Name="Direccion" @bind-Value="entidad.Direccion" Placeholder="Dirección" Class="w-100" />
+                    </RadzenFormField>
+
+                    <RadzenFormField Text="Teléfono" Class="w-100 mb-1">
+                    <RadzenTextBox Name="Telefono" @bind-Value="entidad.Telefono" Placeholder="Teléfono" Class="w-100" />
+                    </RadzenFormField>
+
+                    <RadzenFormField Text="Correo Electrónico" Class="w-100 mb-1">
+                    <RadzenTextBox Name="Correo" @bind-Value="entidad.Correo" Placeholder="Correo Electrónico" Class="w-100" />
+                    </RadzenFormField>
                 </div>
 
                 <!-- Columna 2 (solo si es nuevo) -->
@@ -41,7 +60,9 @@
                     <div class="col-md-6">
                         <RadzenLabel Text="Servicios" />
 
-                        <RadzenTextBox @bind-Value="nuevoServicio" Placeholder="Servicios Ej: Capacitación" Class="w-100 mb-3" />
+                        <RadzenFormField Text="Nombre subdivisión" Class="w-100 mb-2">
+                        <RadzenTextBox @bind-Value="nuevoServicio" Placeholder="Servicios Ej: Capacitación" Class="w-100" />
+                        </RadzenFormField>
 
                         <RadzenButton Icon="add_circle" Text="Agregar Servicio" Click="@AgregarServicio" ButtonStyle="ButtonStyle.Secondary" />
 
@@ -56,14 +77,36 @@
                             }
                         </ul>
 
-                        <RadzenLabel Text="Subdivisiones (opcional)" class="mt-3" />
-                        <RadzenTextBox @bind-Value="subdiv.NombreSubdiv" Placeholder="Nombre subdivisión" Class="w-100 mb-2" />
-                        <RadzenTextBox @bind-Value="subdiv.Ciudad" Placeholder="Ciudad" Class="w-100 mb-2" />
-                        <RadzenTextBox @bind-Value="subdiv.Direccion" Placeholder="Dirección" Class="w-100 mb-2" />
-                        <RadzenTextBox @bind-Value="subdiv.Telefono" Placeholder="Teléfono" Class="w-100 mb-2" />
-                        <RadzenTextBox @bind-Value="subdiv.Correo" Placeholder="Correo" Class="w-100 mb-2" />
-                        <RadzenTextBox @bind-Value="subdiv.Responsable" Placeholder="Responsable" Class="w-100 mb-2" />
+                        <RadzenLabel Text="Subdivisiones (opcional)"  />
+
+                        <RadzenFormField Text="Nombre subdivisión" Class="w-100 mb-1">
+                        <RadzenTextBox @bind-Value="subdiv.NombreSubdiv" Placeholder="Nombre subdivisión" Class="w-100" />
+                        </RadzenFormField>
+
+                        <RadzenFormField Text="Ciudad" Class="w-100 mb-1">
+                        <RadzenTextBox @bind-Value="subdiv.Ciudad" Placeholder="Ciudad" Class="w-100 " />
+                        </RadzenFormField>
+
+                        <RadzenFormField Text="Dirección" Class="w-100 mb-1">
+                        <RadzenTextBox @bind-Value="subdiv.Direccion" Placeholder="Dirección" Class="w-100" />
+                        </RadzenFormField>
+
+                        <RadzenFormField Text="Correo" Class="w-100 mb-1">
+                        <RadzenTextBox @bind-Value="subdiv.Telefono" Placeholder="Teléfono" Class="w-100 " />
+                        </RadzenFormField>
+
+
+                        <RadzenFormField Text="Correo" Class="w-100 mb-1">
+                        <RadzenTextBox @bind-Value="subdiv.Correo" Placeholder="Correo" Class="w-100 " />
+                        </RadzenFormField>
+
+                        <RadzenFormField Text="Responsable" Class="w-100 mb-2">
+                        <RadzenTextBox @bind-Value="subdiv.Responsable" Placeholder="Responsable" Class="w-100"  />
+                        </RadzenFormField>
+                        
+                        
                         <RadzenButton Icon="add_circle" Text="Agregar Subdivisión" Click="@AgregarSubdiv" ButtonStyle="ButtonStyle.Secondary" />
+
 
                         <ul class="mt-2">
                             @foreach (var sd in listaSubdiv)
