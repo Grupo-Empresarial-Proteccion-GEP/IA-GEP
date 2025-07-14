@@ -7,177 +7,148 @@
 @using Radzen.Blazor
 @using QrBlazorServices.Clases
 
-<div class="row">
-    <!-- Columna izquierda: Registrar Categoría -->
-    <div class="col-md-6">
-        <RadzenFieldset Text="Registrar Categoría" Style="margin-bottom: 20px;">
-            <RadzenTextBox @bind-Value="categoria.Nombre"
-                           Placeholder="Nombre de la Categoría"
-                           Class="w-100 mb-3" />
-            <RadzenButton Text="Guardar Categoría"
-                          ButtonStyle="ButtonStyle.Success"
-                          Click="@GuardarCategoria"
-                          Icon="save" />
+<h3 class="mb-3">🗂️ Gestión de Nodos de Categoría/Subcategoría</h3>
+
+<RadzenRow>
+    <!-- Columna izquierda: Tabla y creación -->
+    <RadzenColumn Width="6">
+        <RadzenFieldset Text="Nodos existentes">
+            <RadzenDataGrid Data="@nodosExistentes" TItem="NodoCategoria" RowSelect="SeleccionarNodo" AllowPaging="false">
+                <Columns>
+                    <RadzenDataGridColumn TItem="NodoCategoria" Property="Id" Title="#" Width="50px" />
+                    <RadzenDataGridColumn TItem="NodoCategoria" Property="Nombre" Title="Nombre" />
+                    <RadzenDataGridColumn TItem="NodoCategoria" Title="Tipo">
+                        <Template Context="n">
+                            @if (n.EsCategoria)
+                            {
+                                <span class="badge bg-primary">Categoría</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Subcategoría</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
         </RadzenFieldset>
-    </div>
 
-    <!-- Columna derecha: Subcategorías -->
-    <div class="col-md-6">
-        <RadzenFieldset Text="Subcategorías de esta Categoría">
-            <RadzenDropDown @bind-Value="categoriaSeleccionadaId"
-                            Data="@categoriasExistentes"
-                            TextProperty="Nombre"
-                            ValueProperty="Id"
-                            Placeholder="Selecciona una categoría"
-                            Class="w-100 mb-3" />
-
-            <RadzenTextBox @bind-Value="nombreSubcategoriaTemp"
-                           Placeholder="Nombre de la Subcategoría"
-                           Class="w-100 mb-3" />
-
-            <RadzenButton Icon="add_circle"
-                          Text="Agregar Subcategoría"
-                          Click="@AgregarSubcategoriaTemporal"
-                          ButtonStyle="ButtonStyle.Secondary" />
-
-            <ul class="mt-3">
-                @foreach (var s in subcategoriasTemporales)
-                {
-                    <li>
-                        @s.Nombre
-                        <RadzenButton Icon="close"
-                                      ButtonStyle="ButtonStyle.Danger"
-                                      Size="ButtonSize.Small"
-                                      Click="@(args => EliminarSubcategoriaTemporal(s))" />
-                    </li>
-                }
-            </ul>
-
-            <RadzenButton Text="Guardar Subcategorías"
-                          Click="@GuardarSubcategorias"
-                          ButtonStyle="ButtonStyle.Success"
-                          Icon="save"
-                          Style="margin-top: 15px;" />
+        <RadzenFieldset Text="Nuevo Nodo">
+            <RadzenTextBox @bind-Value="nuevoNodo.Nombre" Placeholder="Nombre del nodo" Class="w-100 mb-2" />
+            <RadzenDropDown Data="@nodosExistentes" @bind-Value="nuevoNodo.PadreId"
+                            TextProperty="Nombre" ValueProperty="Id"
+                            Placeholder="(Opcional) Nodo padre" Class="w-100 mb-2" />
+            <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
+            <RadzenButton Text="Guardar" ButtonStyle="ButtonStyle.Success" Click="@GuardarNodo" Icon="save" Style="margin-top: 10px;" />
         </RadzenFieldset>
-    </div>
-</div>
+    </RadzenColumn>
 
+    <!-- Columna derecha: Vista jerárquica -->
+    <RadzenColumn Width="6">
+        <RadzenFieldset Text="@tituloSubnodos">
+            <RadzenTree Data="@nodosRaiz" Style="max-height: 400px; overflow-y: auto;">
+                <RadzenTreeLevel TextProperty="Nombre" ChildrenProperty="Hijos" />
+            </RadzenTree>
+        </RadzenFieldset>
+
+    </RadzenColumn>
+</RadzenRow>
 
 @if (!string.IsNullOrWhiteSpace(mensaje))
 {
-    <RadzenAlert Severity="AlertSeverity.Success" Style="margin-top: 20px;">@mensaje</RadzenAlert>
+    <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 15px;">@mensaje</RadzenAlert>
 }
 
+
 @code {
-    // Categoría actual a guardar
-    private Categoria categoria = new();
+    // ... otras variables y métodos
 
-    // Lista de categorías existentes (para el DropDown)
-    private List<Categoria> categoriasExistentes = new();
+    private string tituloSubnodos => $"Subnodos de {nodoSeleccionado?.Nombre ?? "..."}";
+}
 
-    // Subcategoría temporal
-    private string nombreSubcategoriaTemp = "";
-    private int categoriaSeleccionadaId;
 
-    // Lista temporal de subcategorías a guardar
-    private List<SubCategoria> subcategoriasTemporales = new();
+@code {
+    public class NodoCategoria
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; } = "";
+        public int? PadreId { get; set; }
+        public bool EsCategoria { get; set; }
 
+        public List<NodoCategoria> Hijos { get; set; } = new();
+    }
+
+    private NodoCategoria nuevoNodo = new();
+    private NodoCategoria? nodoSeleccionado;
+    private List<NodoCategoria> nodosExistentes = new();
+    private List<NodoCategoria> nodosRaiz = new();
     private string mensaje;
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarCategorias();
+        await CargarNodos();
     }
 
-    private async Task CargarCategorias()
+    private async Task CargarNodos()
     {
-        categoriasExistentes.Clear();
-        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT * FROM Categoria", 18);
-        foreach (DataRow row in dt.Rows)
+        nodosExistentes.Clear();
+        nodosRaiz.Clear();
+
+        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT Id, Nombre, PadreId, EsCategoria FROM NodoCategoria", 18);
+
+        nodosExistentes = dt.Rows.Cast<DataRow>().Select(row => new NodoCategoria
         {
-            categoriasExistentes.Add(new Categoria
-            {
-                Id = Convert.ToInt32(row["Id"]),
-                Nombre = row["Nombre"].ToString()
-            });
+            Id = Convert.ToInt32(row["Id"]),
+            Nombre = row["Nombre"].ToString() ?? "",
+            PadreId = row["PadreId"] != DBNull.Value ? Convert.ToInt32(row["PadreId"]) : (int?)null,
+            EsCategoria = Convert.ToBoolean(row["EsCategoria"])
+        }).ToList();
+
+        var nodosPadres = nodosExistentes.Where(n => n.PadreId == null).ToList();
+
+        foreach (var raiz in nodosPadres)
+        {
+            nodosRaiz.Add(ConstruirJerarquia(raiz));
         }
     }
 
-    private async Task GuardarCategoria()
+    private NodoCategoria ConstruirJerarquia(NodoCategoria nodo)
+    {
+        nodo.Hijos = nodosExistentes.Where(n => n.PadreId == nodo.Id).Select(ConstruirJerarquia).ToList();
+        return nodo;
+    }
+
+    private async Task GuardarNodo()
     {
         try
         {
-            DataTable tabla = new("Categoria");
+            var tabla = new DataTable("NodoCategoria");
             tabla.Columns.Add("Id", typeof(int));
             tabla.Columns.Add("Nombre", typeof(string));
+            tabla.Columns.Add("PadreId", typeof(int));
+            tabla.Columns.Add("EsCategoria", typeof(bool));
 
             var row = tabla.NewRow();
             row["Id"] = 0;
-            row["Nombre"] = categoria.Nombre;
+            row["Nombre"] = nuevoNodo.Nombre;
+            row["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
+            row["EsCategoria"] = nuevoNodo.EsCategoria;
+
             tabla.Rows.Add(row);
+            await ServicioUsuario.InsertarTablaAsync(tabla, "NodoCategoria", 18);
 
-            await ServicioUsuario.InsertarTablaAsync(tabla, "Categoria", 18);
-            mensaje = "✅ Categoría registrada correctamente.";
-            categoria = new();
-
-            await CargarCategorias(); // recarga el dropdown
+            mensaje = "✅ Nodo guardado correctamente.";
+            nuevoNodo = new();
+            await CargarNodos();
         }
         catch (Exception ex)
         {
-            mensaje = $"❌ Error al registrar categoría: {ex.Message}";
+            mensaje = $"❌ Error al guardar nodo: {ex.Message}";
         }
     }
 
-    private void AgregarSubcategoriaTemporal()
+    private async Task SeleccionarNodo(NodoCategoria nodo)
     {
-        if (!string.IsNullOrWhiteSpace(nombreSubcategoriaTemp) && categoriaSeleccionadaId > 0)
-        {
-            subcategoriasTemporales.Add(new SubCategoria
-            {
-                CategoriaId = categoriaSeleccionadaId,
-                Nombre = nombreSubcategoriaTemp
-            });
-            nombreSubcategoriaTemp = string.Empty;
-        }
+        nodoSeleccionado = nodo;
     }
-
-    private void EliminarSubcategoriaTemporal(SubCategoria s)
-    {
-        subcategoriasTemporales.Remove(s);
-    }
-
-    private async Task GuardarSubcategorias()
-    {
-        try
-        {
-            if (!subcategoriasTemporales.Any())
-            {
-                mensaje = "⚠️ No hay subcategorías para guardar.";
-                return;
-            }
-
-            DataTable tabla = new("SubCategoria");
-            tabla.Columns.Add("Id", typeof(int));
-            tabla.Columns.Add("CategoriaId", typeof(int));
-            tabla.Columns.Add("Nombre", typeof(string));
-
-            foreach (var sub in subcategoriasTemporales)
-            {
-                var row = tabla.NewRow();
-                row["Id"] = 0;
-                row["CategoriaId"] = sub.CategoriaId;
-                row["Nombre"] = sub.Nombre;
-                tabla.Rows.Add(row);
-            }
-
-            await ServicioUsuario.InsertarTablaAsync(tabla, "SubCategoria", 18);
-            mensaje = "✅ Subcategorías registradas correctamente.";
-            subcategoriasTemporales.Clear();
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"❌ Error al registrar subcategorías: {ex.Message}";
-        }
-    }
-
 }

@@ -1,7 +1,11 @@
 ﻿@page "/tipoEntidades"
 @inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
-@inject DialogService dialogService
+
+
 @rendermode InteractiveServer
+
+@inject DialogService dialogService
+
 
 @using Radzen
 @using System.Data
@@ -33,24 +37,49 @@
                           Disabled="@(!tipoEntidad.Id.HasValue)"
                           Class="me-2" />
 
-            <RadzenButton Text="Eliminar"
-                          Icon="delete"
-                          ButtonStyle="ButtonStyle.Danger"
-                          Click="EliminarTipoEntidad"
-                          Disabled="@(!tipoEntidad.Id.HasValue)" />
+
         </RadzenFieldset>
         
     </RadzenColumn>
 
     <RadzenColumn Width="6">
-        <RadzenDataGrid Data="@listaTipos" TItem="TipoEntidad" RowSelect="SeleccionarTipo" class="mt-2" ShowPagingSummary="false" AllowPaging="false">
-            <Columns>
-                <RadzenDataGridColumn TItem="TipoEntidad" Property="Id" Title="#" Width="50px" />
-                <RadzenDataGridColumn TItem="TipoEntidad" Property="Nombre" Title="Nombre" />
-            </Columns>
-        </RadzenDataGrid>
+            <RadzenDataGrid TItem="TipoEntidad"
+                            Data="@listaTipos"
+                            AllowPaging="true" PageSize="10"
+                            AllowSorting="true"
+                            FilterMode="FilterMode.Simple"
+                            ShowPagingSummary="true"
+                            Style="width: 100%;"
+                            class="mb-4">
+                <Columns>
+                    <RadzenDataGridColumn TItem="TipoEntidad" Property="Id" Title="#" Width="50px" />
+                    <RadzenDataGridColumn TItem="TipoEntidad" Property="Nombre" Title="Nombre" />
+                    <RadzenDataGridColumn TItem="TipoEntidad" Title="Acciones" Width="120px">
+                   
+                        <Template Context="item">
+                        <RadzenButton Icon="edit"
+                                      ButtonStyle="ButtonStyle.Warning"
+                                      Size="ButtonSize.Small"
+                                      Click="@(args => EditarDesdeGrid(item))"
+                                      Style="margin-right: 5px" />
+
+                        <RadzenButton Icon="delete"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Size="ButtonSize.Small"
+                                      Click="@(args => EliminarDesdeGrid(item))" />
+                    </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        
     </RadzenColumn>
+
 </RadzenRow>
+
+<RadzenDialog />
+
+
+
 
 @if (!string.IsNullOrWhiteSpace(mensaje))
 {
@@ -58,6 +87,9 @@
         @mensaje
     </div>
 }
+
+
+
 
 @code {
     TipoEntidad tipoEntidad = new();
@@ -129,14 +161,11 @@
     }
 
 
-    private async Task EliminarTipoEntidad()
+    private async Task EliminarTipoEntidadPorId(int id)
     {
-        if (!tipoEntidad.Id.HasValue)
-            return;
-
         try
         {
-            await ServicioSoap.TraerConsultaAsync($"DELETE FROM TipoEntidad WHERE Id = {tipoEntidad.Id}", 18);
+            await ServicioSoap.TraerConsultaAsync($"DELETE FROM TipoEntidad WHERE Id = {id}", 18);
             mensaje = "✅ Tipo de entidad eliminado correctamente.";
             tipoEntidad = new();
             await CargarTipos();
@@ -147,14 +176,41 @@
         }
     }
 
-    private void SeleccionarTipo(TipoEntidad seleccionado)
+
+    private async Task EliminarDesdeGrid(TipoEntidad item)
     {
-        tipoEntidad = new TipoEntidad
+        var confirmar = await dialogService.Confirm(
+            $"¿Deseas eliminar el tipo de entidad \"{item.Nombre}\"?",
+            "Confirmar eliminación",
+            new ConfirmOptions { OkButtonText = "Sí", CancelButtonText = "Cancelar" });
+
+        if (confirmar == true)
         {
-            Id = seleccionado.Id,
-            Nombre = seleccionado.Nombre
-        };
+            try
+            {
+                await ServicioSoap.TraerConsultaAsync($"DELETE FROM TipoEntidad WHERE Id = {item.Id}", 18);
+                mensaje = "✅ Tipo de entidad eliminado correctamente.";
+                tipoEntidad = new();
+                await CargarTipos();
+            }
+            catch (Exception ex)
+            {
+                mensaje = $"❌ Error al eliminar: {ex.Message}";
+            }
+        }
     }
+
+
+
+
+
+    private void EditarDesdeGrid(TipoEntidad item)
+    {
+        tipoEntidad.Id = item.Id;
+        tipoEntidad.Nombre = item.Nombre;
+    }
+
+
 
     public class TipoEntidad
     {
