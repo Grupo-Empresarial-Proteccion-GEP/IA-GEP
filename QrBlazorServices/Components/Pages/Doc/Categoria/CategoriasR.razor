@@ -9,8 +9,10 @@
 
 <h3 class="mb-3">🗂️ Gestión de Nodos de Categoría/Subcategoría</h3>
 
+
+
 <RadzenRow>
-    <!-- Columna izquierda: Tabla y creación -->
+    <!-- Columna izquierda -->
     <RadzenColumn Width="6">
         <RadzenFieldset Text="Nodos existentes">
             <RadzenDataGrid Data="@nodosExistentes" TItem="NodoCategoria" RowSelect="SeleccionarNodo" AllowPaging="false">
@@ -29,28 +31,48 @@
                             }
                         </Template>
                     </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="NodoCategoria" Title="Acciones" Width="160px">
+                        <Template Context="n">
+                            <RadzenButton Icon="edit" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Warning" Style="margin-right: 5px"
+                                          Click="() => CargarNodoParaEditar(n)" />
+                            <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger"
+                                          Click="() => EliminarNodo(n)" />
+                        </Template>
+                    </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
         </RadzenFieldset>
 
-        <RadzenFieldset Text="Nuevo Nodo">
+        <RadzenFieldset Text="@((editando ? "Editar Nodo" : "Nuevo Nodo"))">
             <RadzenTextBox @bind-Value="nuevoNodo.Nombre" Placeholder="Nombre del nodo" Class="w-100 mb-2" />
-            <RadzenDropDown Data="@nodosExistentes" @bind-Value="nuevoNodo.PadreId"
-                            TextProperty="Nombre" ValueProperty="Id"
-                            Placeholder="(Opcional) Nodo padre" Class="w-100 mb-2" />
+
+
+            <RadzenDropDown TValue="int?"
+                            Data="@nodosExistentes"
+                            @bind-Value="nuevoNodo.PadreId"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            AllowClear="true"
+                            Placeholder="(Opcional) Nodo padre"
+                            Class="w-100 mb-2" />
+
+
             <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
             <RadzenButton Text="Guardar" ButtonStyle="ButtonStyle.Success" Click="@GuardarNodo" Icon="save" Style="margin-top: 10px;" />
+            @if (editando)
+            {
+                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Secondary" Click="@CancelarEdicion" Style="margin-top: 10px; margin-left:10px;" />
+            }
         </RadzenFieldset>
     </RadzenColumn>
 
-    <!-- Columna derecha: Vista jerárquica -->
+    <!-- Columna derecha -->
     <RadzenColumn Width="6">
         <RadzenFieldset Text="@tituloSubnodos">
             <RadzenTree Data="@nodosRaiz" Style="max-height: 400px; overflow-y: auto;">
                 <RadzenTreeLevel TextProperty="Nombre" ChildrenProperty="Hijos" />
             </RadzenTree>
         </RadzenFieldset>
-
     </RadzenColumn>
 </RadzenRow>
 
@@ -59,22 +81,18 @@
     <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 15px;">@mensaje</RadzenAlert>
 }
 
-
 @code {
-    // ... otras variables y métodos
 
-    private string tituloSubnodos => $"Subnodos de {nodoSeleccionado?.Nombre ?? "..."}";
-}
+    private List<NodoCategoria> nodosExistentesConOpcionVacia =>
+    new List<NodoCategoria> { new NodoCategoria { Id = 0, Nombre = "(Sin padre)" } }
+    .Concat(nodosExistentes.Where(n => n.Id != nuevoNodo.Id)).ToList();
 
-
-@code {
     public class NodoCategoria
     {
         public int Id { get; set; }
         public string Nombre { get; set; } = "";
         public int? PadreId { get; set; }
         public bool EsCategoria { get; set; }
-
         public List<NodoCategoria> Hijos { get; set; } = new();
     }
 
@@ -83,6 +101,9 @@
     private List<NodoCategoria> nodosExistentes = new();
     private List<NodoCategoria> nodosRaiz = new();
     private string mensaje;
+    private bool editando = false;
+
+    private string tituloSubnodos => $"Subnodos de {nodoSeleccionado?.Nombre ?? "..."}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,6 +143,12 @@
     {
         try
         {
+            if (nuevoNodo.PadreId == nuevoNodo.Id)
+            {
+                mensaje = "❌ Un nodo no puede ser su propio padre.";
+                return;
+            }
+
             var tabla = new DataTable("NodoCategoria");
             tabla.Columns.Add("Id", typeof(int));
             tabla.Columns.Add("Nombre", typeof(string));
@@ -129,22 +156,71 @@
             tabla.Columns.Add("EsCategoria", typeof(bool));
 
             var row = tabla.NewRow();
-            row["Id"] = 0;
+            row["Id"] = nuevoNodo.Id; // 0 si es nuevo, valor si se edita
             row["Nombre"] = nuevoNodo.Nombre;
             row["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
             row["EsCategoria"] = nuevoNodo.EsCategoria;
 
             tabla.Rows.Add(row);
-            await ServicioUsuario.InsertarTablaAsync(tabla, "NodoCategoria", 18);
 
-            mensaje = "✅ Nodo guardado correctamente.";
+            if (editando)
+                await ServicioUsuario.ActualizarFilasAsync(tabla, 18);
+            else
+                await ServicioUsuario.InsertarTablaAsync(tabla, "NodoCategoria", 18);
+
+            mensaje = editando ? "✅ Nodo actualizado correctamente." : "✅ Nodo guardado correctamente.";
             nuevoNodo = new();
+            editando = false;
             await CargarNodos();
         }
         catch (Exception ex)
         {
             mensaje = $"❌ Error al guardar nodo: {ex.Message}";
         }
+    }
+
+    private async Task EliminarNodo(NodoCategoria nodo)
+    {
+        try
+        {
+            if (nodosExistentes.Any(n => n.PadreId == nodo.Id))
+            {
+                mensaje = "❌ No se puede eliminar un nodo que tiene hijos.";
+                return;
+            }
+
+            var tabla = new DataTable("NodoCategoria");
+            tabla.Columns.Add("Id", typeof(int));
+            var row = tabla.NewRow();
+            row["Id"] = nodo.Id;
+            tabla.Rows.Add(row);
+
+            await ServicioUsuario.EliminarFilaAsync(tabla, 18);
+            mensaje = "✅ Nodo eliminado correctamente.";
+            await CargarNodos();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al eliminar nodo: {ex.Message}";
+        }
+    }
+
+    private void CargarNodoParaEditar(NodoCategoria nodo)
+    {
+        nuevoNodo = new NodoCategoria
+        {
+            Id = nodo.Id,
+            Nombre = nodo.Nombre,
+            PadreId = nodo.PadreId,
+            EsCategoria = nodo.EsCategoria
+        };
+        editando = true;
+    }
+
+    private void CancelarEdicion()
+    {
+        nuevoNodo = new();
+        editando = false;
     }
 
     private async Task SeleccionarNodo(NodoCategoria nodo)

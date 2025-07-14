@@ -1,0 +1,206 @@
+﻿@page "/rdocumento"
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+
+@using QrBlazorServices.Clases
+@using System.Data
+@using Radzen
+@using Radzen.Blazor
+
+@rendermode InteractiveServer
+
+<h3>Registro de Documento</h3>
+
+<RadzenForm TItem="Documento" Data="@documento" Submit="@GuardarDocumento">
+    <div class="row">
+        <div class="col-md-6">
+            <RadzenLabel Text="Nombre del Documento" />
+            <RadzenTextBox @bind-Value="documento.Nombre" Style="width:100%" />
+        </div>
+
+        <div class="col-md-6">
+            <RadzenLabel Text="Referencia" />
+            <RadzenTextBox @bind-Value="documento.Referencia" Style="width:100%" />
+        </div>
+
+        <div class="col-md-6">
+            <RadzenLabel Text="Versión" />
+            <RadzenTextBox @bind-Value="documento.Version" Style="width:100%" />
+        </div>
+
+        <div class="col-md-6">
+            <RadzenLabel Text="Plantilla" />
+            <RadzenDropDown @bind-Value="documento.PlantillaId"
+                            Data="@plantillas"
+                            TextProperty="NombreArchivo"
+                            ValueProperty="Id"
+                            Style="width:100%" />
+        </div>
+
+        <div class="col-md-6">
+            <RadzenLabel Text="Categoría" />
+            <RadzenDropDown @bind-Value="categoriaSeleccionadaId"
+                            Data="@categorias"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Change="@(args => FiltrarSubcategorias((int)args))"
+                            Style="width:100%" />
+        </div>
+
+        <div class="col-md-6">
+            <RadzenLabel Text="Subcategoría" />
+            <RadzenDropDown @bind-Value="subCategoriaSeleccionadaId"
+                            Data="@subcategoriasFiltradas"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Style="width:100%" />
+        </div>
+
+        <div class="col-12 mt-3">
+            <RadzenButton Text="Guardar Documento" Icon="save" ButtonStyle="ButtonStyle.Primary" Type="Submit" />
+        </div>
+    </div>
+</RadzenForm>
+
+@code {
+    Documento documento = new();
+    List<Plantilla> plantillas = new();
+    List<Categoria> categorias = new();
+    List<SubCategoria> todasSubcategorias = new();
+    List<SubCategoria> subcategoriasFiltradas = new();
+
+    int? categoriaSeleccionadaId;
+    int? subCategoriaSeleccionadaId;
+
+    int IdAplicacion = 18;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarPlantillas();
+        await CargarCategorias();
+        await CargarSubcategorias();
+    }
+
+    async Task CargarPlantillas()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("Plantilla", IdAplicacion);
+        plantillas = ds.AsEnumerable().Select(r => new Plantilla
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            NombreArchivo = r["NombreArchivo"].ToString()
+        }).ToList();
+    }
+
+    async Task CargarCategorias()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("Categoria", IdAplicacion);
+        categorias = ds.AsEnumerable().Select(r => new Categoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString()
+        }).ToList();
+    }
+
+    async Task CargarSubcategorias()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("SubCategoria", IdAplicacion);
+        todasSubcategorias = ds.AsEnumerable().Select(r => new SubCategoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            CategoriaId = Convert.ToInt32(r["CategoriaId"])
+        }).ToList();
+    }
+
+    void FiltrarSubcategorias(int categoriaId)
+    {
+        subcategoriasFiltradas = todasSubcategorias.Where(x => x.CategoriaId == categoriaId).ToList();
+        subCategoriaSeleccionadaId = null;
+    }
+
+    async Task GuardarDocumento()
+    {
+        try
+        {
+            DataTable dtDocumento = new();
+            dtDocumento.Columns.Add("Nombre");
+            dtDocumento.Columns.Add("Referencia");
+            dtDocumento.Columns.Add("Version");
+            dtDocumento.Columns.Add("PlantillaId", typeof(int));
+            dtDocumento.Columns.Add("FechaCreacion", typeof(DateTime));
+
+            var fila = dtDocumento.NewRow();
+            fila["Nombre"] = documento.Nombre;
+            fila["Referencia"] = documento.Referencia;
+            fila["Version"] = documento.Version;
+            fila["PlantillaId"] = documento.PlantillaId;
+            fila["FechaCreacion"] = DateTime.Now;
+            dtDocumento.Rows.Add(fila);
+
+            var idGenerado = await ServicioUsuario.InsertarFilaDevuelveConsecutivoAsync(dtDocumento, "Documento", IdAplicacion);
+            int documentoId = Convert.ToInt32(idGenerado);
+
+            if (subCategoriaSeleccionadaId.HasValue)
+            {
+                DataTable dtRelacion = new();
+                dtRelacion.Columns.Add("DocumentoId", typeof(int));
+                dtRelacion.Columns.Add("SubCategoriaId", typeof(int));
+
+                var filaRelacion = dtRelacion.NewRow();
+                filaRelacion["DocumentoId"] = documentoId;
+                filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                dtRelacion.Rows.Add(filaRelacion);
+
+                await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+            }
+
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Éxito",
+                Detail = "Documento guardado correctamente.",
+                Duration = 4000
+            });
+
+            Navigation.NavigateTo("/documentos");
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Error",
+                Detail = "No se pudo guardar el documento: " + ex.Message,
+                Duration = 6000
+            });
+        }
+    }
+
+    public class Documento
+    {
+        public string? Nombre { get; set; }
+        public string? Referencia { get; set; }
+        public string? Version { get; set; }
+        public int? PlantillaId { get; set; }
+    }
+
+    public class Plantilla
+    {
+        public int Id { get; set; }
+        public string? NombreArchivo { get; set; }
+    }
+
+    public class Categoria
+    {
+        public int Id { get; set; }
+        public string? Nombre { get; set; }
+    }
+
+    public class SubCategoria
+    {
+        public int Id { get; set; }
+        public string? Nombre { get; set; }
+        public int CategoriaId { get; set; }
+    }
+}
