@@ -22,11 +22,12 @@
                     <RadzenTextBox Name="Nombre" @bind-Value="entidad.Nombre" Placeholder="Nombre de la entidad" Class="w-100" />
                     </RadzenFormField>
 
-                    <RadzenDropDown @bind-Value="entidad.Tipo"
+                    <RadzenDropDown @bind-Value="entidad.TipoEntidadId"
                                     Data="@tiposEntidad"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
                                     Placeholder="Seleccione el tipo de entidad"
                                     Class="w-100 mb-2" />
-
 
 
                     <RadzenDropDown Name="TipoDocumento" Placeholder="Tipo de Documento"
@@ -150,7 +151,10 @@
     private List<Subdivision> listaSubdiv = new();
     private string mensaje;
 
-    private List<string> tiposEntidad = new();
+    private List<TipoEntidadModel> tiposEntidad = new();
+
+
+
     private List<string> tiposDocumento = new() { "Cédula de Ciudadanía", "Tarjeta de Identidad", "PEP", "Permiso por Protección Temporal", "NIT" };
 
     protected override async Task OnInitializedAsync()
@@ -159,40 +163,36 @@
 
         if (EntidadId.HasValue && EntidadId.Value > 0)
         {
-            // Estamos en modo edición
-            var dt = await ServicioUsuario.TraerConsultaAsync($"SELECT * FROM Entidades WHERE Id = {EntidadId}", 18);
+            // Traer también el nombre del tipo de entidad usando JOIN
+            var query = $@"
+        SELECT
+            e.Id,
+            e.Nombre,
+            e.TipoEntidadId,
+            t.Nombre AS TipoEntidad,
+            e.TipoDocumento,
+            e.NumeroDocumento,
+            e.Departamento,
+            e.Ciudad,
+            e.Direccion,
+            e.Telefono,
+            e.Correo
+        FROM Entidades e
+        INNER JOIN TipoEntidad t ON e.TipoEntidadId = t.Id
+        WHERE e.Id = {EntidadId.Value}
+    ";
+
+            var dt = await ServicioUsuario.TraerConsultaAsync(query, 18);
+
             if (dt.Rows.Count > 0)
             {
                 var row = dt.Rows[0];
                 entidad = new Entidad
-                    {
-                        Id = Convert.ToInt32(row["Id"]),
-                        Nombre = row["Nombre"].ToString(),
-                        Tipo = row["TipoEntidad"].ToString(),
-                        TipoDocumento = row["TipoDocumento"].ToString(),
-                        NumeroDocumento = row["NumeroDocumento"].ToString(),
-                        Departamento = row["Departamento"].ToString(),
-                        Ciudad = row["Ciudad"].ToString(),
-                        Direccion = row["Direccion"].ToString(),
-                        Telefono = row["Telefono"].ToString(),
-                        Correo = row["Correo"].ToString()
-                    };
-            }
-        }
-    }
-
-
-    private async Task CargarEntidad(int id)
-    {
-        var dt = await ServicioUsuario.TraerConsultaAsync($"SELECT * FROM Entidades WHERE Id = {id}", 18);
-        if (dt.Rows.Count > 0)
-        {
-            var row = dt.Rows[0];
-            entidad = new Entidad
                 {
-                    Id = id,
+                    Id = Convert.ToInt32(row["Id"]),
                     Nombre = row["Nombre"].ToString(),
-                    Tipo = row["TipoEntidad"].ToString(),
+                    TipoEntidadId = Convert.ToInt32(row["TipoEntidadId"]),
+                    Tipo = row["TipoEntidad"].ToString(), // <- ahora sí existe en la consulta
                     TipoDocumento = row["TipoDocumento"].ToString(),
                     NumeroDocumento = row["NumeroDocumento"].ToString(),
                     Departamento = row["Departamento"].ToString(),
@@ -201,8 +201,11 @@
                     Telefono = row["Telefono"].ToString(),
                     Correo = row["Correo"].ToString()
                 };
+            }
         }
     }
+
+
 
     private async Task GuardarEntidad()
     {
@@ -211,7 +214,7 @@
             DataTable tablaEntidad = new("Entidades");
             tablaEntidad.Columns.Add("Id", typeof(int));
             tablaEntidad.Columns.Add("Nombre", typeof(string));
-            tablaEntidad.Columns.Add("TipoEntidad", typeof(string));
+            tablaEntidad.Columns.Add("TipoEntidadId", typeof(int));
             tablaEntidad.Columns.Add("TipoDocumento", typeof(string));
             tablaEntidad.Columns.Add("NumeroDocumento", typeof(string));
             tablaEntidad.Columns.Add("Departamento", typeof(string));
@@ -223,7 +226,7 @@
             var fila = tablaEntidad.NewRow();
             fila["Id"] = entidad.Id;
             fila["Nombre"] = entidad.Nombre;
-            fila["TipoEntidad"] = entidad.Tipo;
+            fila["TipoEntidadId"] = entidad.TipoEntidadId;
             fila["TipoDocumento"] = entidad.TipoDocumento;
             fila["NumeroDocumento"] = entidad.NumeroDocumento;
             fila["Departamento"] = entidad.Departamento;
@@ -314,21 +317,25 @@
         }
     }
 
+
     private async Task CargarTiposEntidad()
     {
         try
         {
             var dt = await ServicioUsuario.TraerConsultaAsync("SELECT Id, Nombre FROM TipoEntidad", 18);
             tiposEntidad = dt.Rows.Cast<DataRow>()
-     .Select(row => row["Nombre"].ToString() ?? "")
-     .ToList();
-
+                .Select(row => new TipoEntidadModel
+                {
+                    Id = Convert.ToInt32(row["Id"]),
+                    Nombre = row["Nombre"].ToString() ?? ""
+                }).ToList();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Error al cargar tipos de entidad: {ex.Message}");
         }
     }
+
 
 
     private void AgregarServicio()

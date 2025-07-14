@@ -65,6 +65,9 @@
 
 
 @code {
+    [Parameter]
+    public int EntidadId { get; set; }
+
     private List<Entidad> entidades = new();
   
     private List<Entidad> entidadesFiltradas = new();
@@ -72,35 +75,55 @@
     private string filtroNombre = "";
     private string filtroNumeroDocumento = "";
 
-    protected override async Task OnInitializedAsync()
+protected override async Task OnInitializedAsync()
+{
+    try
     {
-        try
-        {
-            var dt = await ServicioUsuario.TraerConsultaAsync("SELECT * FROM Entidades", 18);
+        var query = @"
+            SELECT
+                e.Id,
+                e.Nombre,
+                t.Nombre AS TipoEntidad,
+                e.TipoEntidadId,
+                e.TipoDocumento,
+                e.NumeroDocumento,
+                e.Departamento,
+                e.Ciudad,
+                e.Direccion,
+                e.Telefono,
+                e.Correo
+            FROM Entidades e
+            JOIN TipoEntidad t ON e.TipoEntidadId = t.Id
+        ";
 
-            if (dt.Rows.Count > 0)
-            {
-                entidades = dt.Rows.Cast<DataRow>().Select(row => new Entidad
-                    {
-                        Id = Convert.ToInt32(row["Id"]),
-                        Nombre = row["Nombre"].ToString(),
-                        Tipo = row["TipoEntidad"].ToString(),
-                        TipoDocumento = row["TipoDocumento"].ToString(),
-                        NumeroDocumento = row["NumeroDocumento"].ToString(),
-                        Departamento = row["Departamento"].ToString(),
-                        Ciudad = row["Ciudad"].ToString(),
-                        Direccion = row["Direccion"].ToString(),
-                        Telefono = row["Telefono"].ToString(),
-                        Correo = row["Correo"].ToString()
-                    }).ToList();
-                entidadesFiltradas = entidades;
-            }
-        }
-        catch (Exception ex)
+        var dt = await ServicioUsuario.TraerConsultaAsync(query, 18);
+
+        if (dt.Rows.Count > 0)
         {
-            Console.WriteLine("❌ Error al cargar entidades: " + ex.Message);
+            entidades = dt.Rows.Cast<DataRow>().Select(row => new Entidad
+            {
+                Id = Convert.ToInt32(row["Id"]),
+                Nombre = row["Nombre"].ToString(),
+                Tipo = row["TipoEntidad"].ToString(),
+                TipoEntidadId = Convert.ToInt32(row["TipoEntidadId"]),
+                TipoDocumento = row["TipoDocumento"].ToString(),
+                NumeroDocumento = row["NumeroDocumento"].ToString(),
+                Departamento = row["Departamento"].ToString(),
+                Ciudad = row["Ciudad"].ToString(),
+                Direccion = row["Direccion"].ToString(),
+                Telefono = row["Telefono"].ToString(),
+                Correo = row["Correo"].ToString()
+            }).ToList();
+
+            entidadesFiltradas = entidades;
         }
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Error al cargar entidades: " + ex.Message);
+    }
+}
+
 
     private void IrAEditarEntidad(Entidad entidad)
     {
