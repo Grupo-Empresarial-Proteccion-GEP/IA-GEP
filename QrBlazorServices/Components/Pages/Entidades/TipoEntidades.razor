@@ -1,0 +1,164 @@
+﻿@page "/tipoEntidades"
+@inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
+@inject DialogService dialogService
+@rendermode InteractiveServer
+
+@using Radzen
+@using System.Data
+
+<h3 class="mb-3">🏷️ Gestión de Tipos de Entidad</h3>
+
+<RadzenRow>
+    <RadzenColumn Width="6">
+
+        <RadzenFieldset Text="📄 Formulario" Style="max-width: 100%;">
+
+            <RadzenFormField Text="Nombre del tipo de entidad" Class="w-100 mb-2">
+            <RadzenTextBox @bind-Value="tipoEntidad.Nombre"
+                           Placeholder="Nombre del tipo de entidad"
+                           Style="width: 100%; margin-bottom: 10px;" />
+            </RadzenFormField>
+
+
+            <RadzenButton Text="Registrar"
+                          Icon="add_circle"
+                          ButtonStyle="ButtonStyle.Success"
+                          Click="RegistrarTipoEntidad"
+                          Class="me-2" />
+
+            <RadzenButton Text="Actualizar"
+                          Icon="edit"
+                          ButtonStyle="ButtonStyle.Warning"
+                          Click="ActualizarTipoEntidad"
+                          Disabled="@(!tipoEntidad.Id.HasValue)"
+                          Class="me-2" />
+
+            <RadzenButton Text="Eliminar"
+                          Icon="delete"
+                          ButtonStyle="ButtonStyle.Danger"
+                          Click="EliminarTipoEntidad"
+                          Disabled="@(!tipoEntidad.Id.HasValue)" />
+        </RadzenFieldset>
+        
+    </RadzenColumn>
+
+    <RadzenColumn Width="6">
+        <RadzenDataGrid Data="@listaTipos" TItem="TipoEntidad" RowSelect="SeleccionarTipo" class="mt-2" ShowPagingSummary="false" AllowPaging="false">
+            <Columns>
+                <RadzenDataGridColumn TItem="TipoEntidad" Property="Id" Title="#" Width="50px" />
+                <RadzenDataGridColumn TItem="TipoEntidad" Property="Nombre" Title="Nombre" />
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenColumn>
+</RadzenRow>
+
+@if (!string.IsNullOrWhiteSpace(mensaje))
+{
+    <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
+        @mensaje
+    </div>
+}
+
+@code {
+    TipoEntidad tipoEntidad = new();
+    List<TipoEntidad> listaTipos = new();
+    string? mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTipos();
+    }
+
+    private async Task CargarTipos()
+    {
+        try
+        {
+            var dt = await ServicioSoap.TraerConsultaAsync("SELECT Id, Nombre FROM TipoEntidad", 18);
+            listaTipos = dt.Rows.Cast<DataRow>().Select(row => new TipoEntidad
+            {
+                Id = Convert.ToInt32(row["Id"]),
+                Nombre = row["Nombre"].ToString()
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al cargar tipos: {ex.Message}";
+        }
+    }
+
+    private async Task RegistrarTipoEntidad()
+    {
+        try
+        {
+            var dt = await ServicioSoap.TraerEsquemaTablaAsync("TipoEntidad", 18);
+            var row = dt.NewRow();
+            row["Nombre"] = tipoEntidad.Nombre;
+            dt.Rows.Add(row);
+
+            await ServicioSoap.InsertarTablaAsync(dt, "TipoEntidad", 18);
+            mensaje = "✅ Tipo de entidad registrado correctamente.";
+            tipoEntidad = new();
+            await CargarTipos();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al registrar: {ex.Message}";
+        }
+    }
+
+    private async Task ActualizarTipoEntidad()
+    {
+        if (!tipoEntidad.Id.HasValue)
+            return;
+
+        try
+        {
+            string condicion = $"Id = {tipoEntidad.Id}";
+            string nombreEscapado = (tipoEntidad.Nombre ?? "").Replace("'", "''");
+
+            await ServicioSoap.ActualizarCampoAsync("TipoEntidad", "Nombre", $"'{nombreEscapado}'", condicion, 18);
+
+            mensaje = "✅ Tipo de entidad actualizado correctamente.";
+            tipoEntidad = new();
+            await CargarTipos();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al actualizar: {ex.Message}";
+        }
+    }
+
+
+    private async Task EliminarTipoEntidad()
+    {
+        if (!tipoEntidad.Id.HasValue)
+            return;
+
+        try
+        {
+            await ServicioSoap.TraerConsultaAsync($"DELETE FROM TipoEntidad WHERE Id = {tipoEntidad.Id}", 18);
+            mensaje = "✅ Tipo de entidad eliminado correctamente.";
+            tipoEntidad = new();
+            await CargarTipos();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al eliminar: {ex.Message}";
+        }
+    }
+
+    private void SeleccionarTipo(TipoEntidad seleccionado)
+    {
+        tipoEntidad = new TipoEntidad
+        {
+            Id = seleccionado.Id,
+            Nombre = seleccionado.Nombre
+        };
+    }
+
+    public class TipoEntidad
+    {
+        public int? Id { get; set; }
+        public string? Nombre { get; set; }
+    }
+}
