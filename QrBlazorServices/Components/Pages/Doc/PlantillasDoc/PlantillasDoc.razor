@@ -230,9 +230,16 @@
 
         try
         {
-            await ServicioSoap.ActualizarCampoAsync("Plantilla", "NombreArchivo", plantilla.NombreArchivo, $"RutaArchivo = '{rutaSeleccionada}'", 18);
-            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Version", plantilla.Version ?? "", $"RutaArchivo = '{rutaSeleccionada}'", 18);
-            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Estado", plantilla.Estado ?? "", $"RutaArchivo = '{rutaSeleccionada}'", 18);
+            var rutaEscapada = rutaSeleccionada.Replace("'", "''");
+            string condicion = $"RutaArchivo = '{rutaEscapada}'";
+
+            string nombreArchivo = plantilla.NombreArchivo?.Replace("'", "''") ?? "";
+            string version = plantilla.Version?.Replace("'", "''") ?? "";
+            string estado = plantilla.Estado?.Replace("'", "''") ?? "";
+
+            await ServicioSoap.ActualizarCampoAsync("Plantilla", "NombreArchivo", $"'{nombreArchivo}'", condicion, 18);
+            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Version", $"'{version}'", condicion, 18);
+            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Estado", $"'{estado}'", condicion, 18);
 
             mensaje = "✅ Plantilla actualizada correctamente.";
             await CargarPlantillas();
@@ -242,6 +249,8 @@
             mensaje = $"❌ Error al actualizar plantilla: {ex.Message}";
         }
     }
+
+
 
     protected override async Task OnInitializedAsync()
     {
