@@ -1,7 +1,6 @@
 ﻿@page "/rdocumento"
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @inject NavigationManager Navigation
-@inject NotificationService NotificationService
 
 @using QrBlazorServices.Clases
 @using System.Data
@@ -19,20 +18,19 @@
             <RadzenTextBox @bind-Value="documento.Nombre"
                            Placeholder="Nombre del documento"
                            Name="Nombre"
-                           Style="width: 100%;"
-                           Class="w-100 mb-2" />
+                           Class="w-100 mb-3" />
             <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio" Style="color:red;" />
 
             <RadzenTextBox @bind-Value="documento.Referencia"
                            Placeholder="Referencia"
-                           Class="w-100 mb-2" />
+                           Class="w-100 mb-3" />
 
             <RadzenDropDown @bind-Value="documento.PlantillaId"
                             Data="@plantillas"
                             TextProperty="NombreArchivo"
                             ValueProperty="Id"
                             Placeholder="Seleccione plantilla"
-                            Class="w-100 mb-2" />
+                            Class="w-100 mb-3" />
 
             <RadzenDropDown @bind-Value="categoriaSeleccionadaId"
                             Data="@categorias"
@@ -40,20 +38,31 @@
                             ValueProperty="Id"
                             Placeholder="Seleccione categoría"
                             Change="@(args => FiltrarSubcategorias((int)args))"
-                            Class="w-100 mb-2" />
+                            Class="w-100 mb-3" />
 
             <RadzenDropDown @bind-Value="subCategoriaSeleccionadaId"
                             Data="@subcategoriasFiltradas"
                             TextProperty="Nombre"
                             ValueProperty="Id"
                             Placeholder="Seleccione subcategoría"
+                            Change="@(args => FiltrarNodos((int)args))"
                             Class="w-100 mb-3" />
 
-            <RadzenButton Text="Registrar Documento"
-                          Icon="save"
-                          ButtonStyle="ButtonStyle.Success"
-                          Click="GuardarDocumento"
-                          Class="me-2" />
+            <RadzenDropDown @bind-Value="nodoSeleccionadoId"
+                            Data="@nodosFiltrados"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Placeholder="Seleccione nodo hijo"
+                            AllowClear="true"
+                            Class="w-100 mb-3" />
+
+            <div class="mb-3">
+                <RadzenButton Text="Registrar Documento"
+                              Icon="save"
+                              ButtonStyle="ButtonStyle.Success"
+                              Click="GuardarDocumento"
+                              Class="me-2" />
+            </div>
 
             @if (!string.IsNullOrEmpty(mensaje))
             {
@@ -61,6 +70,7 @@
                     @mensaje
                 </div>
             }
+
         </RadzenFieldset>
     </RadzenColumn>
 </RadzenRow>
@@ -71,17 +81,22 @@
     List<Categoria> categorias = new();
     List<SubCategoria> todasSubcategorias = new();
     List<SubCategoria> subcategoriasFiltradas = new();
+    List<NodoCategoria> todosNodos = new();
+    List<NodoCategoria> nodosFiltrados = new();
 
     int? categoriaSeleccionadaId;
     int? subCategoriaSeleccionadaId;
+    int? nodoSeleccionadoId;
+
     int IdAplicacion = 18;
-    string mensaje = "";
+    string mensaje;
 
     protected override async Task OnInitializedAsync()
     {
         await CargarPlantillas();
         await CargarCategorias();
         await CargarSubcategorias();
+        await CargarNodos();
     }
 
     async Task CargarPlantillas()
@@ -115,10 +130,29 @@
         }).ToList();
     }
 
+    async Task CargarNodos()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("NodoCategoria", IdAplicacion);
+        todosNodos = ds.AsEnumerable().Select(r => new NodoCategoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            PadreId = Convert.ToInt32(r["PadreId"])
+        }).ToList();
+    }
+
     void FiltrarSubcategorias(int categoriaId)
     {
         subcategoriasFiltradas = todasSubcategorias.Where(x => x.CategoriaId == categoriaId).ToList();
         subCategoriaSeleccionadaId = null;
+        nodoSeleccionadoId = null;
+        nodosFiltrados.Clear();
+    }
+
+    void FiltrarNodos(int subcategoriaId)
+    {
+        nodosFiltrados = todosNodos.Where(x => x.PadreId == subcategoriaId).ToList();
+        nodoSeleccionadoId = null;
     }
 
     async Task GuardarDocumento()
@@ -131,8 +165,11 @@
                 return;
             }
 
-            // ✅ Traer el esquema real de la tabla Documento
-            var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+            var dtDocumento = new DataTable("Documento");
+            dtDocumento.Columns.Add("Nombre", typeof(string));
+            dtDocumento.Columns.Add("Referencia", typeof(string));
+            dtDocumento.Columns.Add("PlantillaId", typeof(int));
+            dtDocumento.Columns.Add("FechaCreacion", typeof(DateTime));
 
             var fila = dtDocumento.NewRow();
             fila["Nombre"] = documento.Nombre.Trim();
@@ -141,34 +178,34 @@
             fila["FechaCreacion"] = DateTime.Now;
             dtDocumento.Rows.Add(fila);
 
-            // ✅ Ahora sí puedes usar InsertarTablaAsync
-            await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
+            var idGenerado = await ServicioUsuario.InsertarFilaDevuelveConsecutivoAsync(dtDocumento, "Documento", IdAplicacion);
+            int documentoId = Convert.ToInt32(idGenerado);
 
-            // ✅ Buscar el último documento insertado
-            var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
-            int documentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
-
-            // Si hay subcategoría, registrar relación
+            // Relación con SubCategoría y NodoCategoria
             if (subCategoriaSeleccionadaId.HasValue)
             {
-                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                var dtRelacion = new DataTable("DocumentoCategoria");
+                dtRelacion.Columns.Add("DocumentoId", typeof(int));
+                dtRelacion.Columns.Add("SubCategoriaId", typeof(int));
+                dtRelacion.Columns.Add("NodoCategoriaId", typeof(int)); // NUEVO CAMPO
+
                 var filaRelacion = dtRelacion.NewRow();
                 filaRelacion["DocumentoId"] = documentoId;
                 filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                filaRelacion["NodoCategoriaId"] = nodoSeleccionadoId ?? (object)DBNull.Value;
                 dtRelacion.Rows.Add(filaRelacion);
 
                 await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
             }
 
             mensaje = "✅ Documento registrado correctamente.";
-            documento = new(); // limpiar
+            documento = new(); // limpiar campos
         }
         catch (Exception ex)
         {
             mensaje = $"❌ Error al guardar documento: {ex.Message}";
         }
     }
-
 
     public class Documento
     {
@@ -194,5 +231,12 @@
         public int Id { get; set; }
         public string? Nombre { get; set; }
         public int CategoriaId { get; set; }
+    }
+
+    public class NodoCategoria
+    {
+        public int Id { get; set; }
+        public string? Nombre { get; set; }
+        public int PadreId { get; set; }
     }
 }
