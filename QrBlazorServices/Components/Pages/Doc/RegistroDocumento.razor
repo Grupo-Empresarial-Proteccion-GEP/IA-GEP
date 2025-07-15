@@ -19,19 +19,20 @@
             <RadzenTextBox @bind-Value="documento.Nombre"
                            Placeholder="Nombre del documento"
                            Name="Nombre"
-                           Class="w-100 mb-3" />
+                           Style="width: 100%;"
+                           Class="w-100 mb-2" />
             <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio" Style="color:red;" />
 
             <RadzenTextBox @bind-Value="documento.Referencia"
                            Placeholder="Referencia"
-                           Class="w-100 mb-3" />
+                           Class="w-100 mb-2" />
 
             <RadzenDropDown @bind-Value="documento.PlantillaId"
                             Data="@plantillas"
                             TextProperty="NombreArchivo"
                             ValueProperty="Id"
                             Placeholder="Seleccione plantilla"
-                            Class="w-100 mb-3" />
+                            Class="w-100 mb-2" />
 
             <RadzenDropDown @bind-Value="categoriaSeleccionadaId"
                             Data="@categorias"
@@ -39,7 +40,7 @@
                             ValueProperty="Id"
                             Placeholder="Seleccione categoría"
                             Change="@(args => FiltrarSubcategorias((int)args))"
-                            Class="w-100 mb-3" />
+                            Class="w-100 mb-2" />
 
             <RadzenDropDown @bind-Value="subCategoriaSeleccionadaId"
                             Data="@subcategoriasFiltradas"
@@ -48,13 +49,11 @@
                             Placeholder="Seleccione subcategoría"
                             Class="w-100 mb-3" />
 
-            <div class="mb-3">
-                <RadzenButton Text="Registrar Documento"
-                              Icon="save"
-                              ButtonStyle="ButtonStyle.Success"
-                              Click="GuardarDocumento"
-                              Class="me-2" />
-            </div>
+            <RadzenButton Text="Registrar Documento"
+                          Icon="save"
+                          ButtonStyle="ButtonStyle.Success"
+                          Click="GuardarDocumento"
+                          Class="me-2" />
 
             @if (!string.IsNullOrEmpty(mensaje))
             {
@@ -76,7 +75,7 @@
     int? categoriaSeleccionadaId;
     int? subCategoriaSeleccionadaId;
     int IdAplicacion = 18;
-    string mensaje = string.Empty;
+    string mensaje = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -126,36 +125,33 @@
     {
         try
         {
-            // Validación explícita
             if (string.IsNullOrWhiteSpace(documento.Nombre))
             {
                 mensaje = "❌ El nombre del documento es obligatorio.";
                 return;
             }
 
-            var dtDocumento = new DataTable("Documento");
-            dtDocumento.Columns.Add("Nombre", typeof(string));
-            dtDocumento.Columns.Add("Referencia", typeof(string));
-            dtDocumento.Columns.Add("PlantillaId", typeof(int));
-            dtDocumento.Columns.Add("FechaCreacion", typeof(DateTime));
+            // ✅ Traer el esquema real de la tabla Documento
+            var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
 
             var fila = dtDocumento.NewRow();
-            fila["Nombre"] = documento.Nombre!.Trim();
+            fila["Nombre"] = documento.Nombre.Trim();
             fila["Referencia"] = documento.Referencia ?? string.Empty;
             fila["PlantillaId"] = documento.PlantillaId ?? 0;
             fila["FechaCreacion"] = DateTime.Now;
-
             dtDocumento.Rows.Add(fila);
 
-            var idGenerado = await ServicioUsuario.InsertarFilaDevuelveConsecutivoAsync(dtDocumento, "Documento", IdAplicacion);
-            int documentoId = Convert.ToInt32(idGenerado);
+            // ✅ Ahora sí puedes usar InsertarTablaAsync
+            await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
 
+            // ✅ Buscar el último documento insertado
+            var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
+            int documentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+
+            // Si hay subcategoría, registrar relación
             if (subCategoriaSeleccionadaId.HasValue)
             {
-                var dtRelacion = new DataTable("DocumentoCategoria");
-                dtRelacion.Columns.Add("DocumentoId", typeof(int));
-                dtRelacion.Columns.Add("SubCategoriaId", typeof(int));
-
+                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
                 var filaRelacion = dtRelacion.NewRow();
                 filaRelacion["DocumentoId"] = documentoId;
                 filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
@@ -165,13 +161,14 @@
             }
 
             mensaje = "✅ Documento registrado correctamente.";
-            documento = new(); // Reset formulario
+            documento = new(); // limpiar
         }
         catch (Exception ex)
         {
             mensaje = $"❌ Error al guardar documento: {ex.Message}";
         }
     }
+
 
     public class Documento
     {
