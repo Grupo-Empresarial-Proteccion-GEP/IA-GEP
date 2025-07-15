@@ -9,12 +9,12 @@
 @using System.IO
 @using Microsoft.AspNetCore.Components.Forms
 
-<h3 class="mb-4">📄 Gestión de Plantillas</h3>
+<h3 class="mb-4">Gestión de Plantillas</h3>
 
 <RadzenRow>
     <!-- Columna izquierda: Formulario -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="📤 Cargar / Editar Plantilla" Style="max-width: 100%;">
+        <RadzenFieldset Text="Cargar / Editar Plantilla" Style="max-width: 100%;">
             <RadzenTextBox @bind-Value="plantilla.NombreArchivo"
                            Placeholder="Nombre de la plantilla"
                            Class="w-100 mb-3" />
@@ -73,7 +73,7 @@
 
     <!-- Columna derecha: Visor -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="🔍 Vista previa del documento" Style="max-width: 100%;">
+        <RadzenFieldset Text="Vista previa del documento" Style="max-width: 100%;">
             @if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
             {
                 <div class="d-flex justify-content-center">
@@ -83,11 +83,11 @@
                     }
                     else if (rutaSeleccionada.EndsWith(".txt"))
                     {
-                        <a href="@rutaSeleccionada" target="_blank">📝 Ver archivo de texto</a>
+                        <a href="@rutaSeleccionada" target="_blank"> Ver archivo de texto</a>
                     }
                     else
                     {
-                        <a href="@rutaSeleccionada" target="_blank">📥 Descargar documento</a>
+                        <a href="@rutaSeleccionada" target="_blank"> Descargar documento</a>
                     }
                 </div>
             }
