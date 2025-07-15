@@ -10,58 +10,61 @@
 
 @rendermode InteractiveServer
 
-<h3>Registro de Documento</h3>
+<h3>📄 Registro de Documento</h3>
 
-<RadzenForm TItem="Documento" Data="@documento" Submit="@GuardarDocumento">
-    <div class="row">
-        <div class="col-md-6">
-            <RadzenLabel Text="Nombre del Documento" />
-            <RadzenTextBox @bind-Value="documento.Nombre" Style="width:100%" />
-        </div>
+<RadzenRow>
+    <RadzenColumn Width="6">
+        <RadzenFieldset Text="Datos del Documento" Style="max-width: 100%;">
 
-        <div class="col-md-6">
-            <RadzenLabel Text="Referencia" />
-            <RadzenTextBox @bind-Value="documento.Referencia" Style="width:100%" />
-        </div>
+            <RadzenTextBox @bind-Value="documento.Nombre"
+                           Placeholder="Nombre del documento"
+                           Name="Nombre"
+                           Class="w-100 mb-3" />
+            <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio" Style="color:red;" />
 
-        <div class="col-md-6">
-            <RadzenLabel Text="Versión" />
-            <RadzenTextBox @bind-Value="documento.Version" Style="width:100%" />
-        </div>
+            <RadzenTextBox @bind-Value="documento.Referencia"
+                           Placeholder="Referencia"
+                           Class="w-100 mb-3" />
 
-        <div class="col-md-6">
-            <RadzenLabel Text="Plantilla" />
             <RadzenDropDown @bind-Value="documento.PlantillaId"
                             Data="@plantillas"
                             TextProperty="NombreArchivo"
                             ValueProperty="Id"
-                            Style="width:100%" />
-        </div>
+                            Placeholder="Seleccione plantilla"
+                            Class="w-100 mb-3" />
 
-        <div class="col-md-6">
-            <RadzenLabel Text="Categoría" />
             <RadzenDropDown @bind-Value="categoriaSeleccionadaId"
                             Data="@categorias"
                             TextProperty="Nombre"
                             ValueProperty="Id"
+                            Placeholder="Seleccione categoría"
                             Change="@(args => FiltrarSubcategorias((int)args))"
-                            Style="width:100%" />
-        </div>
+                            Class="w-100 mb-3" />
 
-        <div class="col-md-6">
-            <RadzenLabel Text="Subcategoría" />
             <RadzenDropDown @bind-Value="subCategoriaSeleccionadaId"
                             Data="@subcategoriasFiltradas"
                             TextProperty="Nombre"
                             ValueProperty="Id"
-                            Style="width:100%" />
-        </div>
+                            Placeholder="Seleccione subcategoría"
+                            Class="w-100 mb-3" />
 
-        <div class="col-12 mt-3">
-            <RadzenButton Text="Guardar Documento" Icon="save" ButtonStyle="ButtonStyle.Primary" Type="Submit" />
-        </div>
-    </div>
-</RadzenForm>
+            <div class="mb-3">
+                <RadzenButton Text="Registrar Documento"
+                              Icon="save"
+                              ButtonStyle="ButtonStyle.Success"
+                              Click="GuardarDocumento"
+                              Class="me-2" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(mensaje))
+            {
+                <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
+                    @mensaje
+                </div>
+            }
+        </RadzenFieldset>
+    </RadzenColumn>
+</RadzenRow>
 
 @code {
     Documento documento = new();
@@ -72,8 +75,8 @@
 
     int? categoriaSeleccionadaId;
     int? subCategoriaSeleccionadaId;
-
     int IdAplicacion = 18;
+    string mensaje = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,19 +126,25 @@
     {
         try
         {
-            DataTable dtDocumento = new();
-            dtDocumento.Columns.Add("Nombre");
-            dtDocumento.Columns.Add("Referencia");
-            dtDocumento.Columns.Add("Version");
+            // Validación explícita
+            if (string.IsNullOrWhiteSpace(documento.Nombre))
+            {
+                mensaje = "❌ El nombre del documento es obligatorio.";
+                return;
+            }
+
+            var dtDocumento = new DataTable("Documento");
+            dtDocumento.Columns.Add("Nombre", typeof(string));
+            dtDocumento.Columns.Add("Referencia", typeof(string));
             dtDocumento.Columns.Add("PlantillaId", typeof(int));
             dtDocumento.Columns.Add("FechaCreacion", typeof(DateTime));
 
             var fila = dtDocumento.NewRow();
-            fila["Nombre"] = documento.Nombre;
-            fila["Referencia"] = documento.Referencia;
-            fila["Version"] = documento.Version;
-            fila["PlantillaId"] = documento.PlantillaId;
+            fila["Nombre"] = documento.Nombre!.Trim();
+            fila["Referencia"] = documento.Referencia ?? string.Empty;
+            fila["PlantillaId"] = documento.PlantillaId ?? 0;
             fila["FechaCreacion"] = DateTime.Now;
+
             dtDocumento.Rows.Add(fila);
 
             var idGenerado = await ServicioUsuario.InsertarFilaDevuelveConsecutivoAsync(dtDocumento, "Documento", IdAplicacion);
@@ -143,7 +152,7 @@
 
             if (subCategoriaSeleccionadaId.HasValue)
             {
-                DataTable dtRelacion = new();
+                var dtRelacion = new DataTable("DocumentoCategoria");
                 dtRelacion.Columns.Add("DocumentoId", typeof(int));
                 dtRelacion.Columns.Add("SubCategoriaId", typeof(int));
 
@@ -155,25 +164,12 @@
                 await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
             }
 
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Éxito",
-                Detail = "Documento guardado correctamente.",
-                Duration = 4000
-            });
-
-            Navigation.NavigateTo("/documentos");
+            mensaje = "✅ Documento registrado correctamente.";
+            documento = new(); // Reset formulario
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Error",
-                Detail = "No se pudo guardar el documento: " + ex.Message,
-                Duration = 6000
-            });
+            mensaje = $"❌ Error al guardar documento: {ex.Message}";
         }
     }
 
@@ -181,7 +177,6 @@
     {
         public string? Nombre { get; set; }
         public string? Referencia { get; set; }
-        public string? Version { get; set; }
         public int? PlantillaId { get; set; }
     }
 
