@@ -13,7 +13,12 @@
     <!-- Columna izquierda -->
     <RadzenColumn Width="6">
         <RadzenFieldset Text="Nodos existentes">
-            <RadzenDataGrid Data="@nodosExistentes" TItem="NodoCategoria" RowSelect="SeleccionarNodo" AllowPaging="false">
+            <RadzenDataGrid Data="@nodosExistentes" TItem="NodoCategoria" AllowPaging="true" PageSize="8"
+                AllowSorting="true"
+                FilterMode="FilterMode.Simple"
+                ShowPagingSummary="true"
+                class="mb-4">
+
                 <Columns>
                     <RadzenDataGridColumn TItem="NodoCategoria" Property="Id" Title="#" Width="50px" />
                     <RadzenDataGridColumn TItem="NodoCategoria" Property="Nombre" Title="Nombre" />
@@ -43,9 +48,17 @@
 
         <RadzenFieldset Text="@((editando ? "Editar Nodo" : "Nuevo Nodo"))">
             <RadzenTextBox @bind-Value="nuevoNodo.Nombre" Placeholder="Nombre del nodo" Class="w-100 mb-2" />
-            <RadzenDropDown Data="@nodosExistentes.Where(n => n.Id != nuevoNodo.Id).ToList()" @bind-Value="nuevoNodo.PadreId"
-                            TextProperty="Nombre" ValueProperty="Id"
-                            Placeholder="(Opcional) Nodo padre" Class="w-100 mb-2" />
+
+            <RadzenDropDown Data="@nodosExistentes.Where(n => n.Id != nuevoNodo.Id).ToList()"
+                            @bind-Value="nuevoNodo.PadreId"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Placeholder="(Opcional) Nodo padre"
+                            AllowClear="true"
+                            Class="w-100 mb-2" />
+
+
+
             <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
             <RadzenButton Text="Guardar" ButtonStyle="ButtonStyle.Success" Click="@GuardarNodo" Icon="save" Style="margin-top: 10px;" />
             @if (editando)
@@ -71,6 +84,7 @@
 }
 
 @code {
+
     public class NodoCategoria
     {
         public int Id { get; set; }
@@ -127,7 +141,6 @@
     {
         try
         {
-            // Paso 1: Insertar en NodoCategoria (siempre)
             var tablaNodo = new DataTable("NodoCategoria");
             tablaNodo.Columns.Add("Id", typeof(int));
             tablaNodo.Columns.Add("Nombre", typeof(string));
@@ -135,54 +148,62 @@
             tablaNodo.Columns.Add("EsCategoria", typeof(bool));
 
             var rowNodo = tablaNodo.NewRow();
-            rowNodo["Id"] = 0;
+            rowNodo["Id"] = nuevoNodo.Id;
             rowNodo["Nombre"] = nuevoNodo.Nombre;
             rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
             rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
             tablaNodo.Rows.Add(rowNodo);
 
-            await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
-
-            // Paso 2: Si es categoría raíz, guardar también en Categoria
-            if (nuevoNodo.EsCategoria)
+            if (editando)
             {
-                var tablaCat = new DataTable("Categoria");
-                tablaCat.Columns.Add("Id", typeof(int));
-                tablaCat.Columns.Add("Nombre", typeof(string));
-                tablaCat.Columns.Add("PadreId", typeof(int));
-
-                var rowCat = tablaCat.NewRow();
-                rowCat["Id"] = 0;
-                rowCat["Nombre"] = nuevoNodo.Nombre;
-                rowCat["PadreId"] = DBNull.Value;
-
-                tablaCat.Rows.Add(rowCat);
-                await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+                // 👉 Actualiza el nodo
+                await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
+                mensaje = "✅ Nodo actualizado correctamente.";
             }
-            else if (nuevoNodo.PadreId.HasValue)
+            else
             {
-                // Paso 3: Si es subcategoría, intenta insertarla solo si el Padre está en Categoria
-                var existeCategoria = await ExisteCategoria(nuevoNodo.PadreId.Value);
-                if (existeCategoria)
+                // 👉 Inserta nuevo nodo
+                await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
+                mensaje = "✅ Nodo guardado correctamente.";
+
+                if (nuevoNodo.EsCategoria)
                 {
-                    var tablaSub = new DataTable("SubCategoria");
-                    tablaSub.Columns.Add("Id", typeof(int));
-                    tablaSub.Columns.Add("CategoriaId", typeof(int));
-                    tablaSub.Columns.Add("Nombre", typeof(string));
+                    var tablaCat = new DataTable("Categoria");
+                    tablaCat.Columns.Add("Id", typeof(int));
+                    tablaCat.Columns.Add("Nombre", typeof(string));
+                    tablaCat.Columns.Add("PadreId", typeof(int));
 
-                    var rowSub = tablaSub.NewRow();
-                    rowSub["Id"] = 0;
-                    rowSub["CategoriaId"] = nuevoNodo.PadreId;
-                    rowSub["Nombre"] = nuevoNodo.Nombre;
+                    var rowCat = tablaCat.NewRow();
+                    rowCat["Id"] = 0;
+                    rowCat["Nombre"] = nuevoNodo.Nombre;
+                    rowCat["PadreId"] = DBNull.Value;
+                    tablaCat.Rows.Add(rowCat);
 
-                    tablaSub.Rows.Add(rowSub);
-                    await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                    await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
                 }
-                // Si no existe en Categoria, se omite el insert en SubCategoria, permitiendo jerarquía libre
+                else if (nuevoNodo.PadreId.HasValue)
+                {
+                    var existeCategoria = await ExisteCategoria(nuevoNodo.PadreId.Value);
+                    if (existeCategoria)
+                    {
+                        var tablaSub = new DataTable("SubCategoria");
+                        tablaSub.Columns.Add("Id", typeof(int));
+                        tablaSub.Columns.Add("CategoriaId", typeof(int));
+                        tablaSub.Columns.Add("Nombre", typeof(string));
+
+                        var rowSub = tablaSub.NewRow();
+                        rowSub["Id"] = 0;
+                        rowSub["CategoriaId"] = nuevoNodo.PadreId;
+                        rowSub["Nombre"] = nuevoNodo.Nombre;
+                        tablaSub.Rows.Add(rowSub);
+
+                        await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                    }
+                }
             }
 
-            mensaje = "✅ Nodo guardado correctamente.";
             nuevoNodo = new();
+            editando = false;
             await CargarNodos();
         }
         catch (Exception ex)
@@ -190,6 +211,7 @@
             mensaje = $"❌ Error al guardar nodo: {ex.Message}";
         }
     }
+
 
     // Verifica si un ID existe en la tabla Categoria
     private async Task<bool> ExisteCategoria(int idCategoria)
