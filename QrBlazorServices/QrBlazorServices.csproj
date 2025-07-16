@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\Pages\Correo\Plantilla Correos\" />
+    <Folder Include="wwwroot\uploads\" />
     <Folder Include="wwwroot\Plantillas\" />
   </ItemGroup>
 
