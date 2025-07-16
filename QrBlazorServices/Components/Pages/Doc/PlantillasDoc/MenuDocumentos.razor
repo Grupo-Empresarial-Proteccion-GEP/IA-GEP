@@ -20,9 +20,12 @@
         <RadzenButton Text="Cantegoria Documentos"
                       Click="@(args => CambiarFormulario("CategoriasR"))"
                       ButtonStyle="@(formActivo == "CategoriasR" ? ButtonStyle.Primary : ButtonStyle.Light)" />
-        <!--<RadzenButton Text="Tipo De Entidades"
-                      Click="@(args => CambiarFormulario("Tipo De Entidades"))"
-                       ButtonStyle="@(formActivo == "Tipo De Entidades" ? ButtonStyle.Primary : ButtonStyle.Light)" />-->
+        <RadzenButton Text="Registro Documentos"
+                      Click="@(args => CambiarFormulario("RegistroDocumento"))"
+                      ButtonStyle="@(formActivo == "RegistroDocumento" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="Ver Documentos"
+                      Click="@(args => CambiarFormulario("VerDocumentos"))"
+                      ButtonStyle="@(formActivo == "VerDocumentos" ? ButtonStyle.Primary : ButtonStyle.Light)" />
     </div>
 
     <!-- Contenedor escalado -->
@@ -37,9 +40,12 @@
                 case "CategoriasR":
                     <CategoriasR/>
                     break;
-                    <!--case "Tipo De Entidades":
-                    <TipoEntidades/>
-                    break; -->
+                case "RegistroDocumento":
+                    <RegistroDocumento />
+                    break;
+                case "VerDocumentos":
+                    <VerDocumentos />
+                    break;
             }
 
         </div>

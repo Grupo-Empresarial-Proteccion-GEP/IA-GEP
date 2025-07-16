@@ -1,12 +1,9 @@
 ﻿@page "/tipoEntidades"
 @inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
-
-
 @rendermode InteractiveServer
-
 @inject DialogService dialogService
 
-
+@using QrBlazorServices.Clases
 @using Radzen
 @using System.Data
 
@@ -212,9 +209,4 @@
 
 
 
-    public class TipoEntidad
-    {
-        public int? Id { get; set; }
-        public string? Nombre { get; set; }
-    }
 }

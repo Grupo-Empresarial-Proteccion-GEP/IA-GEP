@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
+@using QrBlazorServices.Clases
 @using Radzen
 @using System.Data
 @using System.IO
@@ -257,11 +258,5 @@
         await CargarPlantillas();
     }
 
-    public class Plantilla
-    {
-        public string? NombreArchivo { get; set; }
-        public string? RutaArchivo { get; set; }
-        public string? Version { get; set; }
-        public string? Estado { get; set; }
-    }
+
 }
