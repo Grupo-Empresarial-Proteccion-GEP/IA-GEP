@@ -137,9 +137,10 @@
         {
             Id = Convert.ToInt32(r["Id"]),
             Nombre = r["Nombre"].ToString(),
-            PadreId = Convert.ToInt32(r["PadreId"])
+            PadreId = r["PadreId"] == DBNull.Value ? 0 : Convert.ToInt32(r["PadreId"]) // Manejo seguro de NULL
         }).ToList();
     }
+
 
     void FiltrarSubcategorias(int categoriaId)
     {
@@ -151,9 +152,32 @@
 
     void FiltrarNodos(int subcategoriaId)
     {
-        nodosFiltrados = todosNodos.Where(x => x.PadreId == subcategoriaId).ToList();
+        // Buscar el nodo padre relacionado al nombre de la subcategoría
+        var subcategoria = todasSubcategorias.FirstOrDefault(x => x.Id == subcategoriaId);
+        if (subcategoria == null)
+        {
+            nodosFiltrados.Clear();
+            return;
+        }
+
+        // Buscar nodo cuyo nombre coincida con el de la subcategoría
+        var nodoPadre = todosNodos.FirstOrDefault(n =>
+            n.Nombre != null &&
+            subcategoria.Nombre != null &&
+            n.Nombre.Trim().Equals(subcategoria.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (nodoPadre != null)
+        {
+            nodosFiltrados = todosNodos.Where(n => n.PadreId == nodoPadre.Id).ToList();
+        }
+        else
+        {
+            nodosFiltrados.Clear();
+        }
+
         nodoSeleccionadoId = null;
     }
+
 
     async Task GuardarDocumento()
     {
@@ -165,11 +189,8 @@
                 return;
             }
 
-            var dtDocumento = new DataTable("Documento");
-            dtDocumento.Columns.Add("Nombre", typeof(string));
-            dtDocumento.Columns.Add("Referencia", typeof(string));
-            dtDocumento.Columns.Add("PlantillaId", typeof(int));
-            dtDocumento.Columns.Add("FechaCreacion", typeof(DateTime));
+            // ✅ Traer el esquema real de la tabla Documento
+            var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
 
             var fila = dtDocumento.NewRow();
             fila["Nombre"] = documento.Nombre.Trim();
@@ -178,34 +199,34 @@
             fila["FechaCreacion"] = DateTime.Now;
             dtDocumento.Rows.Add(fila);
 
-            var idGenerado = await ServicioUsuario.InsertarFilaDevuelveConsecutivoAsync(dtDocumento, "Documento", IdAplicacion);
-            int documentoId = Convert.ToInt32(idGenerado);
+            // ✅ Ahora sí puedes usar InsertarTablaAsync
+            await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
 
-            // Relación con SubCategoría y NodoCategoria
+            // ✅ Buscar el último documento insertado
+            var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
+            int documentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+
+            // Si hay subcategoría, registrar relación
             if (subCategoriaSeleccionadaId.HasValue)
             {
-                var dtRelacion = new DataTable("DocumentoCategoria");
-                dtRelacion.Columns.Add("DocumentoId", typeof(int));
-                dtRelacion.Columns.Add("SubCategoriaId", typeof(int));
-                dtRelacion.Columns.Add("NodoCategoriaId", typeof(int)); // NUEVO CAMPO
-
+                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
                 var filaRelacion = dtRelacion.NewRow();
                 filaRelacion["DocumentoId"] = documentoId;
                 filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                filaRelacion["NodoCategoriaId"] = nodoSeleccionadoId ?? (object)DBNull.Value;
                 dtRelacion.Rows.Add(filaRelacion);
 
                 await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
             }
 
             mensaje = "✅ Documento registrado correctamente.";
-            documento = new(); // limpiar campos
+            documento = new(); // limpiar
         }
         catch (Exception ex)
         {
             mensaje = $"❌ Error al guardar documento: {ex.Message}";
         }
     }
+
 
     public class Documento
     {
@@ -224,6 +245,8 @@
     {
         public int Id { get; set; }
         public string? Nombre { get; set; }
+        public int? NodoId { get; set; } // si existe relación explícita
+
     }
 
     public class SubCategoria
@@ -237,6 +260,7 @@
     {
         public int Id { get; set; }
         public string? Nombre { get; set; }
-        public int PadreId { get; set; }
+        public int? PadreId { get; set; } // Hacerlo nullable
     }
+
 }
