@@ -213,6 +213,8 @@
                 var filaRelacion = dtRelacion.NewRow();
                 filaRelacion["DocumentoId"] = documentoId;
                 filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                filaRelacion["NodoCategoriaId"] = nodoSeleccionadoId ?? (object)DBNull.Value;
+
                 dtRelacion.Rows.Add(filaRelacion);
 
                 await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
