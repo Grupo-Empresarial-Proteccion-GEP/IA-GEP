@@ -23,7 +23,7 @@
                            Placeholder="Nombre del documento"
                            Name="Nombre"
                            Class="w-100 mb-3" />
-            <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio" Style="color:red;" />
+            
 
             <RadzenTextBox @bind-Value="documento.Referencia"
                            Placeholder="Referencia"
@@ -230,9 +230,20 @@
         {
             if (string.IsNullOrWhiteSpace(documento.Nombre))
             {
-                mensaje = "❌ El nombre del documento es obligatorio.";
+                mensaje += "❌ El nombre del documento es obligatorio.\n";
+            }
+
+            if (string.IsNullOrWhiteSpace(documento.Referencia))
+            {
+                mensaje += "❌ El nombre de la Referencia es obligatorio.\n";
+            }
+
+            // Si hay errores, salir
+            if (!string.IsNullOrEmpty(mensaje))
+            {
                 return;
             }
+
 
             if (DocumentoId.HasValue)
             {
