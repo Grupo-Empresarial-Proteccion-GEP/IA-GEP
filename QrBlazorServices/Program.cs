@@ -1,7 +1,8 @@
+﻿using System.ServiceModel;
 using AccesoDatos;
+using Microsoft.AspNetCore.Http.Features;
 using QrBlazorServices.Components;
 using Radzen;
-using System.ServiceModel;
 
 namespace QrBlazorServices
 {
@@ -11,58 +12,67 @@ namespace QrBlazorServices
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            builder.Services.AddRazorComponents()
-                .AddInteractiveServerComponents();
-
-
-            // Add services to the container.
+            // ============================================
+            // 🧩 Servicios
+            // ============================================
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
             builder.Services.AddRadzenComponents();
-
             builder.Services.AddRazorPages();
-
             builder.Services.AddHttpClient();
 
+            // Servicios SOAP
+            builder.Services.AddScoped<AccesoDatosSoapClient>(sp =>
+                new AccesoDatosSoapClient(
+                    AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12));
+
             builder.Services.AddScoped<EmailService>();
-            builder.Services.AddScoped<AccesoDatos.AccesoDatosSoapClient>(sp =>
-    new AccesoDatos.AccesoDatosSoapClient(
-        AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12));
+            builder.Services.AddScoped<GeminiService>();
+            builder.Services.AddScoped<otraIA>();
 
-            builder.Services.AddScoped<GeminiService>();     // OpenAI
-            builder.Services.AddScoped<otraIA>();             // Google Gemini
-
-            // Indicar cu�l IA usar por defecto (por ejemplo GeminiService)
+            // Selección de servicio IA por defecto
             builder.Services.AddScoped<ILanguageModelService>(provider =>
                 provider.GetRequiredService<GeminiService>());
 
-            // ChatService ahora podr� inyectar ILanguageModelService correctamente
             builder.Services.AddScoped<ChatService>();
 
-
+            // Blazor Server y SignalR configurado para archivos grandes
             builder.Services.AddServerSideBlazor()
                 .AddCircuitOptions(options =>
                 {
                     options.DetailedErrors = true;
+                })
+                .AddHubOptions(options =>
+                {
+                    options.MaximumReceiveMessageSize = 50 * 1024 * 1024; // 50 MB
                 });
 
+            // Aumentar límite de formularios multipart (archivos)
+            builder.Services.Configure<FormOptions>(options =>
+            {
+                options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB
+            });
 
+            // Configuración de Kestrel para aceptar archivos grandes
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.Limits.MaxRequestBodySize = 50 * 1024 * 1024; // 50 MB
+            });
 
+            // ============================================
+            // 🚀 Construcción de la App
+            // ============================================
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
-
             app.UseStaticFiles();
             app.UseAntiforgery();
 
