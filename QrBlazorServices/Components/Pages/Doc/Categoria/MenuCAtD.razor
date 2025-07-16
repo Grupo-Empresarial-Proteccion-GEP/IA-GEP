@@ -16,9 +16,7 @@
         <RadzenButton Text="Registro De Categorias"
                       Click="@(args => CambiarFormulario("CategoriasR"))"
                       ButtonStyle="@(formActivo == "EntidCategoriasRades" ? ButtonStyle.Primary : ButtonStyle.Light)" />
-        <RadzenButton Text="Categorrias Existentes"
-                      Click="@(args => CambiarFormulario("ManejoCat"))"
-                      ButtonStyle="@(formActivo == "ManejoCat" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+
         <RadzenButton Text="IA Documental"
                       Click="@(args => CambiarFormulario("Destroyer Gemini"))"
                       ButtonStyle="@(formActivo == "Destroyer Gemini" ? ButtonStyle.Primary : ButtonStyle.Light)" />
@@ -33,9 +31,7 @@
                 case "CategoriasR":
                     <CategoriasR />
                     break;
-                case "ManejoCat":
-                    <ManejoCat />
-                    break;
+
                 case "Destroyer Gemini":
                     <DestroyerGemini/>
                     break;

@@ -7,6 +7,8 @@
 @using Radzen.Blazor
 @using QrBlazorServices.Clases
 
+@inject NotificationService notificationService
+
 <h3 class="mb-3">🗂️ Gestión de Nodos de Categoría/Subcategoría</h3>
 
 <RadzenRow>
@@ -98,8 +100,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        nuevoNodo = new NodoCategoria(); // <-- esto es clave para que EditForm y validadores no fallen
         await CargarNodos();
     }
+
 
     private async Task CargarNodos()
     {
@@ -132,6 +136,18 @@
 
     private async Task GuardarNodo()
     {
+        if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
+        {
+            notificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Campo requerido",
+                Detail = "El nombre del nodo no puede estar vacío.",
+                Duration = 4000
+            });
+            return;
+        }
+
         try
         {
             var tablaNodo = new DataTable("NodoCategoria");
