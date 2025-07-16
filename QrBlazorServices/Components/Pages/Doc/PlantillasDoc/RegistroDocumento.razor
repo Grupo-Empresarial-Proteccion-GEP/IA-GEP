@@ -1,0 +1,400 @@
+﻿@page "/rdocumento"
+@page "/rdocumento/{DocumentoId:int}"  
+
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject NavigationManager Navigation
+
+@using QrBlazorServices.Clases
+@using System.Data
+@using Radzen
+@using Radzen.Blazor
+@using QrBlazorServices.Clases
+
+
+@rendermode InteractiveServer
+
+<h3>📄 Registro de Documento</h3>
+
+<RadzenRow>
+    <!-- Columna izquierda -->
+    <RadzenColumn Width="6">
+        <RadzenFieldset Text="Datos del Documento" Style="max-width: 100%;">
+            <RadzenTextBox @bind-Value="documento.Nombre"
+                           Placeholder="Nombre del documento"
+                           Name="Nombre"
+                           Class="w-100 mb-3" />
+            <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio" Style="color:red;" />
+
+            <RadzenTextBox @bind-Value="documento.Referencia"
+                           Placeholder="Referencia"
+                           Class="w-100 mb-3" />
+
+            <RadzenDropDown @bind-Value="documento.PlantillaId"
+                            Data="@plantillas"
+                            TextProperty="NombreArchivo"
+                            ValueProperty="Id"
+                            Placeholder="Seleccione plantilla"
+                            Class="w-100 mb-3" />
+
+            <RadzenDropDown @bind-Value="categoriaSeleccionadaId"
+                            Data="@categorias"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Placeholder="Seleccione categoría"
+                            Change="@(args => FiltrarSubcategorias((int)args))"
+                            Class="w-100 mb-3" />
+
+            <RadzenDropDown @bind-Value="subCategoriaSeleccionadaId"
+                            Data="@subcategoriasFiltradas"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Placeholder="Seleccione subcategoría"
+                            Change="@(args => FiltrarNodos((int)args))"
+                            Class="w-100 mb-3" />
+        </RadzenFieldset>
+    </RadzenColumn>
+
+    <!-- Columna derecha -->
+    <RadzenColumn Width="6">
+        <RadzenFieldset Text="Jerarquía de Nodos" Style="max-width: 100%;">
+            <RadzenDropDown @bind-Value="nodoSeleccionadoId"
+                            Data="@nodosFiltrados"
+                            TextProperty="Nombre"
+                            ValueProperty="Id"
+                            Placeholder="Seleccione Nodo Categoria"
+                            AllowClear="true"
+                            Change="@(args => InicializarJerarquiaDesdeNodo((int?)args))"
+                            Class="w-100 mb-3" />
+
+            @if (nivelesDinamicos.Any())
+            {
+                @for (int i = 0; i < nivelesDinamicos.Count; i++)
+                {
+                    var nivel = i;
+                    <RadzenDropDown @bind-Value="nivelesDinamicos[nivel].NodoSeleccionadoId"
+                                    Data="@nivelesDinamicos[nivel].Hijos"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    Placeholder="Seleccione SubNodo Categoria"
+                                    Change="@(args => ManejarCambioNodo(nivel, (int?)args))"
+                                    Class="w-100 mb-2" />
+                }
+            }
+
+            <div class="">
+                <RadzenButton Text="Registrar Documento"
+                              Icon="save"
+                              ButtonStyle="ButtonStyle.Success"
+                              Click="GuardarDocumento"
+                              Class="me-2" />
+
+                <RadzenButton Text="Volver" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(mensaje))
+            {
+                <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
+                    @mensaje
+                </div>
+            }
+        </RadzenFieldset>
+    </RadzenColumn>
+</RadzenRow>
+
+
+@code {
+    Documento documento = new();
+    List<Plantilla> plantillas = new();
+    List<Categoria> categorias = new();
+    List<SubCategoria> todasSubcategorias = new();
+    List<SubCategoria> subcategoriasFiltradas = new();
+    List<NodoCategoria> todosNodos = new();
+    List<NodoCategoria> nodosFiltrados = new();
+
+    int? nodoNivel1Id, nodoNivel2Id, nodoNivel3Id, nodoSeleccionadoFinalId;
+
+    List<NodoSeleccion> nivelesDinamicos = new();
+
+    [Parameter]
+    public int? DocumentoId { get; set; }
+
+
+    int? nodoJerarquicoSeleccionadoId;
+
+
+    int? categoriaSeleccionadaId;
+    int? subCategoriaSeleccionadaId;
+    int? nodoSeleccionadoId;
+
+    int IdAplicacion = 18;
+    string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarPlantillas();
+        await CargarCategorias();
+        await CargarSubcategorias();
+        await CargarNodos();
+
+        if (DocumentoId.HasValue)
+        {
+            await CargarDocumentoParaEditar(DocumentoId.Value);
+        }
+    }
+
+    async Task CargarPlantillas()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("Plantilla", IdAplicacion);
+        plantillas = ds.AsEnumerable().Select(r => new Plantilla
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            NombreArchivo = r["NombreArchivo"].ToString()
+        }).ToList();
+    }
+
+    async Task CargarCategorias()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("Categoria", IdAplicacion);
+        categorias = ds.AsEnumerable().Select(r => new Categoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString()
+        }).ToList();
+    }
+
+    async Task CargarSubcategorias()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("SubCategoria", IdAplicacion);
+        todasSubcategorias = ds.AsEnumerable().Select(r => new SubCategoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            CategoriaId = Convert.ToInt32(r["CategoriaId"])
+        }).ToList();
+    }
+
+    async Task CargarNodos()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("NodoCategoria", IdAplicacion);
+        todosNodos = ds.AsEnumerable().Select(r => new NodoCategoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            PadreId = r["PadreId"] == DBNull.Value ? 0 : Convert.ToInt32(r["PadreId"]) // Manejo seguro de NULL
+        }).ToList();
+        
+
+    }
+
+
+    void FiltrarSubcategorias(int categoriaId)
+    {
+        subcategoriasFiltradas = todasSubcategorias.Where(x => x.CategoriaId == categoriaId).ToList();
+        subCategoriaSeleccionadaId = null;
+        nodoSeleccionadoId = null;
+        nodosFiltrados.Clear();
+    }
+
+    void FiltrarNodos(int subcategoriaId)
+    {
+        // Buscar el nodo padre relacionado al nombre de la subcategoría
+        var subcategoria = todasSubcategorias.FirstOrDefault(x => x.Id == subcategoriaId);
+        if (subcategoria == null)
+        {
+            nodosFiltrados.Clear();
+            return;
+        }
+
+        // Buscar nodo cuyo nombre coincida con el de la subcategoría
+        var nodoPadre = todosNodos.FirstOrDefault(n =>
+            n.Nombre != null &&
+            subcategoria.Nombre != null &&
+            n.Nombre.Trim().Equals(subcategoria.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (nodoPadre != null)
+        {
+            nodosFiltrados = todosNodos.Where(n => n.PadreId == nodoPadre.Id).ToList();
+        }
+        else
+        {
+            nodosFiltrados.Clear();
+        }
+
+        nodoSeleccionadoId = null;
+    }
+
+
+    async Task GuardarDocumento()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(documento.Nombre))
+            {
+                mensaje = "❌ El nombre del documento es obligatorio.";
+                return;
+            }
+
+            if (DocumentoId.HasValue)
+            {
+                // 🟡 ACTUALIZAR
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
+
+                fila["Id"] = DocumentoId.Value;
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["Referencia"] = documento.Referencia ?? string.Empty;
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
+
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
+
+                // 🔄 Actualiza DocumentoCategoria (opcional: puedes eliminar y volver a insertar para simplificar)
+                if (subCategoriaSeleccionadaId.HasValue)
+                {
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+
+                    var filaRelacion = dtRelacion.NewRow();
+                    filaRelacion["DocumentoId"] = DocumentoId.Value;
+                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                    filaRelacion["NodoCategoriaId"] = nivelesDinamicos.LastOrDefault(x => x.NodoSeleccionadoId.HasValue)?.NodoSeleccionadoId ?? (object)DBNull.Value;
+
+                    dtRelacion.Rows.Add(filaRelacion);
+
+                    // Elimina relaciones anteriores (por simplicidad)
+                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
+                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                }
+
+                mensaje = "✅ Documento actualizado correctamente.";
+            }
+            else
+            {
+                // ✅ INSERTAR NUEVO
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["Referencia"] = documento.Referencia ?? string.Empty;
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
+                fila["FechaCreacion"] = DateTime.Now;
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
+
+                var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
+                int documentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+
+                if (subCategoriaSeleccionadaId.HasValue)
+                {
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                    var filaRelacion = dtRelacion.NewRow();
+                    filaRelacion["DocumentoId"] = documentoId;
+                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                    filaRelacion["NodoCategoriaId"] = nivelesDinamicos.LastOrDefault(x => x.NodoSeleccionadoId.HasValue)?.NodoSeleccionadoId ?? (object)DBNull.Value;
+                    dtRelacion.Rows.Add(filaRelacion);
+                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                }
+
+                mensaje = "✅ Documento registrado correctamente.";
+                documento = new(); // limpia formulario
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al guardar documento: {ex.Message}";
+        }
+    }
+
+
+
+    void InicializarJerarquiaDesdeNodo(int? nodoRaizId)
+    {
+        nivelesDinamicos.Clear();
+
+        if (!nodoRaizId.HasValue)
+            return;
+
+        var hijos = todosNodos.Where(n => n.PadreId == nodoRaizId).ToList();
+
+        if (hijos.Any())
+        {
+            nivelesDinamicos.Add(new NodoSeleccion
+            {
+                NodoSeleccionadoId = null,
+                Hijos = hijos
+            });
+        }
+    }
+
+
+    void ManejarCambioNodo(int nivel, int? nodoId)
+    {
+        if (nivel >= nivelesDinamicos.Count)
+            return; // Evita index out of range
+
+        // ✅ Actualiza el valor seleccionado del nivel actual
+        nivelesDinamicos[nivel].NodoSeleccionadoId = nodoId;
+
+        // ✅ Elimina niveles posteriores
+        if (nivelesDinamicos.Count > nivel + 1)
+            nivelesDinamicos.RemoveRange(nivel + 1, nivelesDinamicos.Count - (nivel + 1));
+
+        if (nodoId == null)
+            return;
+
+        // ✅ Busca hijos del nodo seleccionado
+        var hijos = todosNodos.Where(n => n.PadreId == nodoId).ToList();
+
+        if (hijos.Any())
+        {
+            nivelesDinamicos.Add(new NodoSeleccion
+            {
+                NodoSeleccionadoId = null,
+                Hijos = hijos
+            });
+        }
+
+        StateHasChanged(); // 🔄 fuerza actualización segura
+    }
+
+    async Task CargarDocumentoParaEditar(int id)
+    {
+        var consulta = await ServicioUsuario.TraerConsultaAsync(
+            $"SELECT d.Id, d.Nombre, d.Referencia, d.PlantillaId, dc.SubCategoriaId, dc.NodoCategoriaId " +
+            $"FROM Documento d LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId WHERE d.Id = {id}", IdAplicacion);
+
+        if (consulta.Rows.Count > 0)
+        {
+            var row = consulta.Rows[0];
+
+            documento = new Documento
+            {
+                Nombre = row["Nombre"].ToString(),
+                Referencia = row["Referencia"].ToString(),
+                PlantillaId = row["PlantillaId"] == DBNull.Value ? null : Convert.ToInt32(row["PlantillaId"])
+            };
+
+            subCategoriaSeleccionadaId = row["SubCategoriaId"] == DBNull.Value ? null : Convert.ToInt32(row["SubCategoriaId"]);
+            nodoSeleccionadoId = row["NodoCategoriaId"] == DBNull.Value ? null : Convert.ToInt32(row["NodoCategoriaId"]);
+
+            // Filtrar subcategorías y nodos de forma segura
+            if (subCategoriaSeleccionadaId is int subCatId)
+            {
+                var sub = todasSubcategorias.FirstOrDefault(x => x.Id == subCatId);
+                if (sub != null)
+                {
+                    categoriaSeleccionadaId = sub.CategoriaId;
+                    FiltrarSubcategorias(sub.CategoriaId);
+                    FiltrarNodos(subCatId);
+                }
+            }
+
+            // Cargar jerarquía dinámica
+            if (nodoSeleccionadoId is int nodoId)
+            {
+                InicializarJerarquiaDesdeNodo(nodoId);
+            }
+        }
+    }
+
+    private void IrAInicio() => Navigation.NavigateTo("/ver");
+
+}
