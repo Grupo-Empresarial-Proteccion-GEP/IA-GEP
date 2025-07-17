@@ -153,50 +153,40 @@
         }
     }
 
-private async Task Enviar()
-{
-    try
+    private async Task Enviar()
     {
-        string cuerpoFinal = correo.Mensaje;
-
-        if (!string.IsNullOrWhiteSpace(correo.Imagen))
+        try
         {
-            string imagenHtml;
+            string cuerpoFinal = correo.Mensaje;
 
-            if (correo.Imagen.StartsWith("data:image/"))
+            if (!string.IsNullOrWhiteSpace(correo.Imagen))
             {
-                // Ya está en formato base64, se usa directamente
-                imagenHtml = $"<img src='{correo.Imagen}' style='max-width:100%;'><br><br>";
-            }
-            else
-            {
-                // Es una URL, se intenta convertir a base64
-                var imagenBase64 = await ConvertirImagenUrlABase64(correo.Imagen);
-                imagenHtml = !string.IsNullOrEmpty(imagenBase64)
-                    ? $"<img src='{imagenBase64}' style='max-width:100%;'><br><br>"
-                    : string.Empty;
+                if (!correo.Imagen.StartsWith("data:image/"))
+                {
+                    // Si es URL, intenta convertirla
+                    correo.Imagen = await ConvertirImagenUrlABase64(correo.Imagen);
+                }
             }
 
-            cuerpoFinal = $"{imagenHtml}{correo.Mensaje}";
+            var correoEnviar = new CorreoModel
+            {
+                Remitente = correo.Remitente,
+                Contrasena = correo.Contrasena,
+                Destinatario = correo.Destinatario,
+                Asunto = correo.Asunto,
+                Mensaje = correo.Mensaje,       // El mensaje plano, sin imagen embebida
+                Imagen = correo.Imagen,         // Ahora sí pasamos la imagen base64
+                Adjuntos = correo.Adjuntos
+            };
+
+            await EmailService.EnviarCorreo(correoEnviar);
+            mensaje = "✅ Correo enviado correctamente.";
         }
-
-        var correoEnviar = new CorreoModel
+        catch (Exception ex)
         {
-            Remitente = correo.Remitente,
-            Contrasena = correo.Contrasena,
-            Destinatario = correo.Destinatario,
-            Asunto = correo.Asunto,
-            Mensaje = cuerpoFinal,
-            Adjuntos = correo.Adjuntos
-        };
+            mensaje = $"❌ Error al enviar: {ex.Message}";
+        }
+    }
 
-        await EmailService.EnviarCorreo(correoEnviar);
-        mensaje = "✅ Correo enviado correctamente.";
-    }
-    catch (Exception ex)
-    {
-        mensaje = $"❌ Error al enviar: {ex.Message}";
-    }
-}
 
 }
