@@ -1,139 +1,149 @@
-﻿@page "/registro"
-@page "/registro/{PlantillaId:int?}"
+﻿@page "/registroplantilla"
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject IWebHostEnvironment env
+@using QrBlazorServices.Clases
+@using System.Data
+@using QrBlazorServices.Clases
+@rendermode InteractiveServer
 
-@using Microsoft.AspNetCore.Components.Forms
-@inject IPlantillaService Servicio
-@inject NavigationManager Navigation
-
-<h3 class="mb-4">📄 Gestión de Plantillas</h3>
+<h3>📧 Registro de Plantilla de Correo</h3>
 
 <RadzenRow>
     <!-- Columna izquierda: Formulario -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="📤 Cargar / Editar Plantilla" Style="max-width: 100%;">
-
-            <RadzenTextBox @bind-Value="plantilla.Nombre"
-                           Placeholder="Nombre de la plantilla"
-                           Name="Nombre"
-                           Class="w-100 mb-3" />
-            <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio" Style="color: red" />
-
-            <RadzenTextBox @bind-Value="plantilla.Referencia"
-                           Placeholder="Referencia"
-                           Name="Referencia"
-                           Class="w-100 mb-3" />
-            <RadzenRequiredValidator Component="Referencia" Text="La referencia es obligatoria" Style="color: red" />
-
-            <RadzenTextBox @bind-Value="plantilla.Version"
-                           Placeholder="Versión"
-                           Name="Version"
+        <RadzenFieldset Text="📤 Datos de la Plantilla" Style="max-width: 100%;">
+            <RadzenTextBox @bind-Value="plantilla.Nombre" Placeholder="Nombre" Class="w-100 mb-2" />
+            <RadzenTextBox @bind-Value="plantilla.Asunto" Placeholder="Asunto" Class="w-100 mb-2" />
+            <RadzenTextBox @bind-Value="plantilla.Tipo" Placeholder="Tipo (Ej: Bienvenida)" Class="w-100 mb-2" />
+            <RadzenTextArea @bind-Value="plantilla.Cuerpo"
+                            Placeholder="Cuerpo del correo (puede contener {VARIABLES})"
+                            Rows="8" Class="w-100 mb-2" />
+            <RadzenTextBox @bind-Value="plantilla.Variables"
+                           Placeholder="Variables disponibles: {NOMBRE}, {FECHA}, etc."
                            Class="w-100 mb-3" />
 
-            <InputFile OnChange="OnFileChange" />
+            <InputFile OnChange="OnImageSelected" accept="image/*" Class="w-100 mb-2" style="margin-bottom: 1rem;" />
 
-            @if (!string.IsNullOrEmpty(plantilla.Imagen))
-            {
-                <img src="@plantilla.Imagen" style="max-width: 100%; margin-top: 1rem;" />
-            }
 
-            <RadzenButton Text="💾 Guardar Plantilla"
-                          Icon="save"
-                          Style="margin-top: 1rem;"
-                          Click="GuardarOActualizarPlantilla"
-                          ButtonStyle="ButtonStyle.Primary" />
+            <div style="display: flex; flex-direction: column; align-items: start;">
+                @if (!string.IsNullOrEmpty(plantilla.Imagen))
+                {
+                    <p class="text-muted">Vista previa de la imagen:</p>
+                    <img src="@plantilla.Imagen" style="max-width: 75%; max-height: 125px;" />
+                }
 
-            @if (!string.IsNullOrWhiteSpace(mensaje))
-            {
-                <p class="mt-3">@mensaje</p>
-            }
+                <RadzenButton Text="Guardar Plantilla"
+                              Icon="save"
+                              ButtonStyle="ButtonStyle.Success"
+                              Class="mt-3"
+                              Click="GuardarPlantilla" />
+            </div>
+
+
         </RadzenFieldset>
     </RadzenColumn>
 
-    <!-- Columna derecha: Vista previa PDF -->
+    <!-- Columna derecha: Tabla -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="Vista previa del documento" Style="max-width: 100%;">
-            @if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
-            {
-                <div class="d-flex justify-content-center">
-                    <iframe src="@rutaSeleccionada"
-                            width="100%"
-                            height="600px"
-                            style="border: none;"></iframe>
-                </div>
-            }
-            else
-            {
-                <p>No hay vista previa disponible.</p>
-            }
-        </RadzenFieldset>
+        <h4 class="mt-4">📋 Plantillas registradas</h4>
+
+        <RadzenDataGrid Data="@plantillas" TItem="PlantillaCorreo" Class="w-100" AllowPaging="true" PageSize="5">
+            <Columns>
+                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Nombre" Title="Nombre" />
+                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Asunto" Title="Asunto" />
+                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Tipo" Title="Tipo" />
+                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="FechaCreacion" Title="Creación" FormatString="{0:yyyy-MM-dd HH:mm}" />
+                <RadzenDataGridColumn TItem="PlantillaCorreo" Title="Imagen">
+                    <Template Context="row">
+                        @if (!string.IsNullOrEmpty(row.Imagen))
+                        {
+                            <img src="@row.Imagen" style="max-height: 40px;" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="PlantillaCorreo" Title="Acciones">
+                    <Template Context="row">
+
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                                      Click="@(() => CargarPlantillaParaEditar(row))" Style="margin-right: 5px;" />
+
+
+                        <RadzenButton Icon="delete"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Size="ButtonSize.Small"
+                                      Click="@(() => EliminarPlantilla(row.Id))" />
+
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
     </RadzenColumn>
 </RadzenRow>
 
-@code {
-    [Parameter]
-    public int? PlantillaId { get; set; }
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
+        @mensaje
+    </div>
+}
 
-    private Plantilla plantilla = new();
-    private string mensaje;
-    private string rutaSeleccionada;
+@code {
+
+
+    PlantillaCorreo plantilla = new();
+    List<PlantillaCorreo> plantillas = new();
+    string mensaje;
+    int IdAplicacion = 18;
 
     protected override async Task OnInitializedAsync()
     {
-        if (PlantillaId.HasValue)
-        {
-            await CargarPlantillaExistente(PlantillaId.Value);
-        }
+        await CargarPlantillas();
     }
 
-    private async Task CargarPlantillaExistente(int id)
+    bool ValidarPlantilla()
     {
+        if (string.IsNullOrWhiteSpace(plantilla.Nombre)) { mensaje = "❌ El campo 'Nombre' es obligatorio."; return false; }
+        if (string.IsNullOrWhiteSpace(plantilla.Asunto)) { mensaje = "❌ El campo 'Asunto' es obligatorio."; return false; }
+        if (string.IsNullOrWhiteSpace(plantilla.Cuerpo)) { mensaje = "❌ El campo 'Cuerpo' es obligatorio."; return false; }
+        if (string.IsNullOrWhiteSpace(plantilla.Tipo)) { mensaje = "❌ El campo 'Tipo' es obligatorio."; return false; }
+        if (string.IsNullOrWhiteSpace(plantilla.Variables)) { mensaje = "❌ El campo 'Variables' es obligatorio."; return false; }
+
+        return true;
+    }
+
+    async Task GuardarPlantilla()
+    {
+        if (!ValidarPlantilla()) return;
+
         try
         {
-            var resultado = await Servicio.ObtenerPlantillaPorIdAsync(id);
-            if (resultado != null)
+            var tabla = await ServicioUsuario.TraerEsquemaTablaAsync("PlantillaCorreo", IdAplicacion);
+            var fila = tabla.NewRow();
+
+            fila["Nombre"] = plantilla.Nombre.Trim();
+            fila["Asunto"] = plantilla.Asunto ?? string.Empty;
+            fila["Cuerpo"] = plantilla.Cuerpo ?? string.Empty;
+            fila["Tipo"] = plantilla.Tipo ?? string.Empty;
+            fila["Variables"] = plantilla.Variables ?? string.Empty;
+            fila["Imagen"] = plantilla.Imagen ?? string.Empty;
+            fila["FechaCreacion"] = DateTime.Now;
+
+            if (plantilla.Id > 0) // ← Estamos editando
             {
-                plantilla = resultado;
-                rutaSeleccionada = resultado.Imagen;
-                mensaje = $"📄 Editando plantilla: {plantilla.Nombre}";
+                fila["Id"] = plantilla.Id;
+                tabla.Rows.Add(fila);
+                await ServicioUsuario.ActualizarFilasAsync(tabla, IdAplicacion);
+                mensaje = "✅ Plantilla actualizada correctamente.";
             }
             else
             {
-                mensaje = "❌ No se encontró la plantilla.";
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"❌ Error al cargar plantilla: {ex.Message}";
-        }
-    }
-
-    private async Task GuardarOActualizarPlantilla()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(plantilla.Nombre) || string.IsNullOrWhiteSpace(plantilla.Referencia))
-            {
-                mensaje = "❌ El nombre y la referencia son obligatorios.";
-                return;
+                tabla.Rows.Add(fila);
+                await ServicioUsuario.InsertarTablaAsync(tabla, "PlantillaCorreo", IdAplicacion);
+                mensaje = "✅ Plantilla registrada correctamente.";
             }
 
-            bool resultado;
-
-            if (PlantillaId.HasValue)
-            {
-                resultado = await Servicio.ActualizarPlantillaAsync(plantilla);
-                mensaje = resultado ? "✅ Plantilla actualizada con éxito." : "❌ Error al actualizar.";
-            }
-            else
-            {
-                resultado = await Servicio.InsertarPlantillaAsync(plantilla);
-                mensaje = resultado ? "✅ Plantilla registrada con éxito." : "❌ Error al registrar.";
-            }
-
-            if (resultado)
-            {
-                Navigation.NavigateTo("/lista-plantillas", forceLoad: true);
-            }
+            plantilla = new(); // limpiar
+            await CargarPlantillas();
         }
         catch (Exception ex)
         {
@@ -141,21 +151,90 @@
         }
     }
 
-    private async Task OnFileChange(InputFileChangeEventArgs e)
+
+    async Task CargarPlantillas()
     {
-        var archivo = e.File;
-        if (archivo != null)
+        var tabla = await ServicioUsuario.TraerTablaAsync("PlantillaCorreo", IdAplicacion);
+        plantillas = tabla.AsEnumerable().Select(r => new PlantillaCorreo
         {
-            var nombre = Path.GetFileName(archivo.Name);
-            var ruta = Path.Combine("wwwroot", "plantillas", nombre);
-            var pathFisico = Path.Combine(Directory.GetCurrentDirectory(), ruta);
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            Asunto = r["Asunto"].ToString(),
+            Cuerpo = r["Cuerpo"].ToString(),
+            Tipo = r["Tipo"].ToString(),
+            Variables = r["Variables"].ToString(),
+            Imagen = r.Table.Columns.Contains("Imagen") ? r["Imagen"].ToString() : null,
+            FechaCreacion = r["FechaCreacion"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(r["FechaCreacion"])
+        }).ToList();
+    }
 
-            using var stream = archivo.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB
-            using var fs = File.Create(pathFisico);
-            await stream.CopyToAsync(fs);
-
-            plantilla.Imagen = $"/plantillas/{nombre}";
-            rutaSeleccionada = plantilla.Imagen;
+    async Task EliminarPlantilla(int id)
+    {
+        try
+        {
+            await ServicioUsuario.EliminarListadeLlavesAsync("PlantillaCorreo", "Id", id.ToString(), IdAplicacion);
+            mensaje = "✅ Plantilla eliminada correctamente.";
+            await CargarPlantillas();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al eliminar: {ex.Message}";
         }
     }
+
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            mensaje = $"📥 Archivo recibido: {file?.Name ?? "null"}";
+
+            if (file == null)
+            {
+                mensaje += "\n❌ No se seleccionó ningún archivo.";
+                return;
+            }
+
+            if (!file.ContentType.StartsWith("image/"))
+            {
+                mensaje += $"\n❌ Tipo de archivo no permitido: {file.ContentType}";
+                return;
+            }
+
+            const long maxFileSize = 512 * 1024; // 512 KB
+            if (file.Size > maxFileSize)
+            {
+                mensaje += $"\n❌ Imagen demasiado grande: {file.Size / 1024} KB. Máximo: {maxFileSize / 1024} KB.";
+                return;
+            }
+
+            using var stream = file.OpenReadStream(maxFileSize);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+
+            plantilla.Imagen = $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
+            mensaje += "\n✅ Imagen cargada correctamente.";
+        }
+        catch (Exception ex)
+        {
+            mensaje += $"\n❌ Error al procesar la imagen: {ex.Message}";
+        }
+    }
+
+    void CargarPlantillaParaEditar(PlantillaCorreo seleccionada)
+    {
+        plantilla = new PlantillaCorreo
+        {
+            Id = seleccionada.Id,
+            Nombre = seleccionada.Nombre,
+            Asunto = seleccionada.Asunto,
+            Cuerpo = seleccionada.Cuerpo,
+            Tipo = seleccionada.Tipo,
+            Variables = seleccionada.Variables,
+            Imagen = seleccionada.Imagen,
+            FechaCreacion = seleccionada.FechaCreacion
+        };
+    }
+
 }
