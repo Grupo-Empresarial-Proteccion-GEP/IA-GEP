@@ -1,0 +1,52 @@
+﻿@page "/MenuCorreos"
+@using AccesoDatos
+@using System.Data
+@inject NavigationManager Navigation
+@inject AccesoDatosSoapClient ServicioUsuario
+@rendermode InteractiveServer
+@using QrBlazorServices.Components.Pages
+@using Radzen
+@using Radzen.Blazor
+@using QrBlazorServices.Components.Pages.Correo.Plantilla_Correos
+
+
+<div class="d-flex flex-column align-items-center w-100">
+
+    <!-- Barra de navegación con estilo Radzen -->
+    <div class="d-flex mb-3 gap-2 justify-content-center">
+        <RadzenButton Text="Plantillas Correos"
+                      Click="@(args => CambiarFormulario("RegistroPlantillaCorreo"))"
+                      ButtonStyle="@(formActivo == "RegistroPlantillaCorreo.razor" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="Envio De Correos"
+                      Click="@(args => CambiarFormulario("Email"))"
+                      ButtonStyle="@(formActivo == "Email" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+      
+    </div>
+
+    <!-- Contenedor escalado -->
+    <div class="w-100 d-flex justify-content-center">
+        <div style="transform: scale(0.96); transform-origin: top center; width: 100%;">
+
+            @switch (formActivo)
+            {
+                case "RegistroPlantillaCorreo":
+                    <RegistroPlantillaCorreo />
+                    break;
+                case "Email":
+                    <Email />
+                    break;
+              
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string formActivo = "PlantillasDoc";
+
+    void CambiarFormulario(string nombre)
+    {
+        formActivo = nombre;
+    }
+}

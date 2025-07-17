@@ -18,34 +18,39 @@ public class EmailService
             HtmlBody = model.Mensaje
         };
 
-       if (!string.IsNullOrWhiteSpace(model.Imagen) && model.Imagen.StartsWith("data:image"))
-{
-    try
-    {
-        // Extraer metadata
-        var parts = model.Imagen.Split(',');
-        var metadata = parts[0]; // data:image/png;base64
-        var base64Data = parts[1];
+        if (!string.IsNullOrWhiteSpace(model.Imagen) && model.Imagen.StartsWith("data:image"))
+        {
+            try
+            {
+                var parts = model.Imagen.Split(',');
+                var metadata = parts[0];
+                var base64Data = parts[1];
 
-        // Obtener extensión desde metadata
-        var extension = "png"; // por defecto
-        if (metadata.Contains("image/jpeg")) extension = "jpg";
-        else if (metadata.Contains("image/gif")) extension = "gif";
-        else if (metadata.Contains("image/bmp")) extension = "bmp";
-        else if (metadata.Contains("image/svg+xml")) extension = "svg";
+                var extension = "png";
+                if (metadata.Contains("image/jpeg")) extension = "jpg";
+                else if (metadata.Contains("image/gif")) extension = "gif";
+                else if (metadata.Contains("image/bmp")) extension = "bmp";
+                else if (metadata.Contains("image/svg+xml")) extension = "svg";
 
-        // Convertir base64 a bytes
-        var imageBytes = Convert.FromBase64String(base64Data);
+                var imageBytes = Convert.FromBase64String(base64Data);
 
-        // Adjuntar como archivo
-        builder.Attachments.Add($"plantilla.{extension}", imageBytes, new ContentType("image", extension));
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Error al procesar la imagen base64: {ex.Message}");
-    }
-}
+                var image = builder.LinkedResources.Add($"imagenPlantilla.{extension}", imageBytes);
+                image.ContentId = MimeUtils.GenerateMessageId();
 
+                // Esta es la clave: insertar la imagen en el cuerpo del correo
+                builder.HtmlBody = $"{model.Mensaje}<br><br><img src=\"cid:{image.ContentId}\" style='max-width:100%;'>";
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error al procesar imagen base64 embebida: {ex.Message}");
+                builder.HtmlBody = model.Mensaje;
+            }
+        }
+        else
+        {
+            builder.HtmlBody = model.Mensaje;
+        }
 
         // Adjuntar otros archivos normales
         foreach (var archivo in model.Adjuntos)
