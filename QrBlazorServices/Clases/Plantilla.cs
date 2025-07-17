@@ -7,5 +7,7 @@
         public string? RutaArchivo { get; set; }
         public string? Version { get; set; }
         public string? Estado { get; set; }
+
+        public string Imagen { get; set; }
     }
 }
