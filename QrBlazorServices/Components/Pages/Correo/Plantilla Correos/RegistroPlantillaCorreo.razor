@@ -1,123 +1,139 @@
-﻿@page "/registroplantilla"
-@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
-@inject IWebHostEnvironment env
-@using QrBlazorServices.Clases
-@using System.Data
+﻿@page "/registro"
+@page "/registro/{PlantillaId:int?}"
 
-@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Forms
+@inject IPlantillaService Servicio
+@inject NavigationManager Navigation
 
-<h3>📧 Registro de Plantilla de Correo</h3>
+<h3 class="mb-4">📄 Gestión de Plantillas</h3>
 
 <RadzenRow>
     <!-- Columna izquierda: Formulario -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="📤 Datos de la Plantilla" Style="max-width: 100%;">
-            <RadzenTextBox @bind-Value="plantilla.Nombre" Placeholder="Nombre" Class="w-100 mb-2" />
-            <RadzenTextBox @bind-Value="plantilla.Asunto" Placeholder="Asunto" Class="w-100 mb-2" />
-            <RadzenTextBox @bind-Value="plantilla.Tipo" Placeholder="Tipo (Ej: Bienvenida)" Class="w-100 mb-2" />
-            <RadzenTextArea @bind-Value="plantilla.Cuerpo"
-                            Placeholder="Cuerpo del correo (puede contener {VARIABLES})"
-                            Rows="8" Class="w-100 mb-2" />
-            <RadzenTextBox @bind-Value="plantilla.Variables"
-                           Placeholder="Variables disponibles: {NOMBRE}, {FECHA}, etc."
+        <RadzenFieldset Text="📤 Cargar / Editar Plantilla" Style="max-width: 100%;">
+
+            <RadzenTextBox @bind-Value="plantilla.Nombre"
+                           Placeholder="Nombre de la plantilla"
+                           Name="Nombre"
+                           Class="w-100 mb-3" />
+            <RadzenRequiredValidator Component="Nombre" Text="El nombre es obligatorio" Style="color: red" />
+
+            <RadzenTextBox @bind-Value="plantilla.Referencia"
+                           Placeholder="Referencia"
+                           Name="Referencia"
+                           Class="w-100 mb-3" />
+            <RadzenRequiredValidator Component="Referencia" Text="La referencia es obligatoria" Style="color: red" />
+
+            <RadzenTextBox @bind-Value="plantilla.Version"
+                           Placeholder="Versión"
+                           Name="Version"
                            Class="w-100 mb-3" />
 
-            <RadzenFileInput TValue="object"
-                             Accept="image/*"
-                             ChooseText="Seleccionar imagen"
-                             Style="width: 100%; margin-bottom: 1rem;"
-                             Change="@(args => OnImageSelected((IBrowserFile)args))" />
+            <InputFile OnChange="OnFileChange" />
 
             @if (!string.IsNullOrEmpty(plantilla.Imagen))
             {
-                <p class="text-muted">Vista previa de la imagen:</p>
-                <img src="@plantilla.Imagen" style="max-width: 100%; max-height: 200px;" />
+                <img src="@plantilla.Imagen" style="max-width: 100%; margin-top: 1rem;" />
             }
 
-            <RadzenButton Text="Guardar Plantilla" Icon="save" ButtonStyle="ButtonStyle.Success" Click="GuardarPlantilla" />
+            <RadzenButton Text="💾 Guardar Plantilla"
+                          Icon="save"
+                          Style="margin-top: 1rem;"
+                          Click="GuardarOActualizarPlantilla"
+                          ButtonStyle="ButtonStyle.Primary" />
+
+            @if (!string.IsNullOrWhiteSpace(mensaje))
+            {
+                <p class="mt-3">@mensaje</p>
+            }
         </RadzenFieldset>
     </RadzenColumn>
 
-    <!-- Columna derecha: Tabla -->
+    <!-- Columna derecha: Vista previa PDF -->
     <RadzenColumn Width="6">
-        <h4 class="mt-4">📋 Plantillas registradas</h4>
-
-        <RadzenDataGrid Data="@plantillas" TItem="PlantillaCorreo" Class="w-100" AllowPaging="true" PageSize="5">
-            <Columns>
-                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Nombre" Title="Nombre" />
-                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Asunto" Title="Asunto" />
-                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Tipo" Title="Tipo" />
-                <RadzenDataGridColumn TItem="PlantillaCorreo" Property="FechaCreacion" Title="Creación" FormatString="{0:yyyy-MM-dd HH:mm}" />
-                <RadzenDataGridColumn TItem="PlantillaCorreo" Title="Imagen">
-                    <Template Context="row">
-                        @if (!string.IsNullOrEmpty(row.Imagen))
-                        {
-                            <img src="@row.Imagen" style="max-height: 40px;" />
-                        }
-                    </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="PlantillaCorreo" Title="Acciones">
-                    <Template Context="row">
-                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
-                                      Click="@(() => EliminarPlantilla(row.Id))" />
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
+        <RadzenFieldset Text="Vista previa del documento" Style="max-width: 100%;">
+            @if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
+            {
+                <div class="d-flex justify-content-center">
+                    <iframe src="@rutaSeleccionada"
+                            width="100%"
+                            height="600px"
+                            style="border: none;"></iframe>
+                </div>
+            }
+            else
+            {
+                <p>No hay vista previa disponible.</p>
+            }
+        </RadzenFieldset>
     </RadzenColumn>
 </RadzenRow>
 
-@if (!string.IsNullOrEmpty(mensaje))
-{
-    <div class="alert @(mensaje.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
-        @mensaje
-    </div>
-}
-
 @code {
-    PlantillaCorreo plantilla = new();
-    List<PlantillaCorreo> plantillas = new();
-    string mensaje;
-    int IdAplicacion = 18;
+    [Parameter]
+    public int? PlantillaId { get; set; }
+
+    private Plantilla plantilla = new();
+    private string mensaje;
+    private string rutaSeleccionada;
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarPlantillas();
+        if (PlantillaId.HasValue)
+        {
+            await CargarPlantillaExistente(PlantillaId.Value);
+        }
     }
 
-    bool ValidarPlantilla()
+    private async Task CargarPlantillaExistente(int id)
     {
-        if (string.IsNullOrWhiteSpace(plantilla.Nombre)) { mensaje = "❌ El campo 'Nombre' es obligatorio."; return false; }
-        if (string.IsNullOrWhiteSpace(plantilla.Asunto)) { mensaje = "❌ El campo 'Asunto' es obligatorio."; return false; }
-        if (string.IsNullOrWhiteSpace(plantilla.Cuerpo)) { mensaje = "❌ El campo 'Cuerpo' es obligatorio."; return false; }
-        if (string.IsNullOrWhiteSpace(plantilla.Tipo)) { mensaje = "❌ El campo 'Tipo' es obligatorio."; return false; }
-        if (string.IsNullOrWhiteSpace(plantilla.Variables)) { mensaje = "❌ El campo 'Variables' es obligatorio."; return false; }
-
-        return true;
-    }
-
-    async Task GuardarPlantilla()
-    {
-        if (!ValidarPlantilla()) return;
-
         try
         {
-            var tabla = await ServicioUsuario.TraerEsquemaTablaAsync("PlantillaCorreo", IdAplicacion);
-            var fila = tabla.NewRow();
-            fila["Nombre"] = plantilla.Nombre.Trim();
-            fila["Asunto"] = plantilla.Asunto ?? string.Empty;
-            fila["Cuerpo"] = plantilla.Cuerpo ?? string.Empty;
-            fila["Tipo"] = plantilla.Tipo ?? string.Empty;
-            fila["Variables"] = plantilla.Variables ?? string.Empty;
-            fila["Imagen"] = plantilla.Imagen ?? string.Empty;
-            fila["FechaCreacion"] = DateTime.Now;
+            var resultado = await Servicio.ObtenerPlantillaPorIdAsync(id);
+            if (resultado != null)
+            {
+                plantilla = resultado;
+                rutaSeleccionada = resultado.Imagen;
+                mensaje = $"📄 Editando plantilla: {plantilla.Nombre}";
+            }
+            else
+            {
+                mensaje = "❌ No se encontró la plantilla.";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al cargar plantilla: {ex.Message}";
+        }
+    }
 
-            tabla.Rows.Add(fila);
-            await ServicioUsuario.InsertarTablaAsync(tabla, "PlantillaCorreo", IdAplicacion);
+    private async Task GuardarOActualizarPlantilla()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(plantilla.Nombre) || string.IsNullOrWhiteSpace(plantilla.Referencia))
+            {
+                mensaje = "❌ El nombre y la referencia son obligatorios.";
+                return;
+            }
 
-            mensaje = "✅ Plantilla registrada correctamente.";
-            plantilla = new(); // limpiar
-            await CargarPlantillas();
+            bool resultado;
+
+            if (PlantillaId.HasValue)
+            {
+                resultado = await Servicio.ActualizarPlantillaAsync(plantilla);
+                mensaje = resultado ? "✅ Plantilla actualizada con éxito." : "❌ Error al actualizar.";
+            }
+            else
+            {
+                resultado = await Servicio.InsertarPlantillaAsync(plantilla);
+                mensaje = resultado ? "✅ Plantilla registrada con éxito." : "❌ Error al registrar.";
+            }
+
+            if (resultado)
+            {
+                Navigation.NavigateTo("/lista-plantillas", forceLoad: true);
+            }
         }
         catch (Exception ex)
         {
@@ -125,88 +141,21 @@
         }
     }
 
-    async Task CargarPlantillas()
+    private async Task OnFileChange(InputFileChangeEventArgs e)
     {
-        var tabla = await ServicioUsuario.TraerTablaAsync("PlantillaCorreo", IdAplicacion);
-        plantillas = tabla.AsEnumerable().Select(r => new PlantillaCorreo
+        var archivo = e.File;
+        if (archivo != null)
         {
-            Id = Convert.ToInt32(r["Id"]),
-            Nombre = r["Nombre"].ToString(),
-            Asunto = r["Asunto"].ToString(),
-            Cuerpo = r["Cuerpo"].ToString(),
-            Tipo = r["Tipo"].ToString(),
-            Variables = r["Variables"].ToString(),
-            Imagen = r.Table.Columns.Contains("Imagen") ? r["Imagen"].ToString() : null,
-            FechaCreacion = r["FechaCreacion"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(r["FechaCreacion"])
-        }).ToList();
-    }
+            var nombre = Path.GetFileName(archivo.Name);
+            var ruta = Path.Combine("wwwroot", "plantillas", nombre);
+            var pathFisico = Path.Combine(Directory.GetCurrentDirectory(), ruta);
 
-    async Task EliminarPlantilla(int id)
-    {
-        try
-        {
-            await ServicioUsuario.EliminarListadeLlavesAsync("PlantillaCorreo", "Id", id.ToString(), IdAplicacion);
-            mensaje = "✅ Plantilla eliminada correctamente.";
-            await CargarPlantillas();
+            using var stream = archivo.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB
+            using var fs = File.Create(pathFisico);
+            await stream.CopyToAsync(fs);
+
+            plantilla.Imagen = $"/plantillas/{nombre}";
+            rutaSeleccionada = plantilla.Imagen;
         }
-        catch (Exception ex)
-        {
-            mensaje = $"❌ Error al eliminar: {ex.Message}";
-        }
-    }
-
-    private async Task OnImageSelected(IBrowserFile file)
-    {
-        try
-        {
-            if (file == null)
-            {
-                mensaje = "❌ No se seleccionó ningún archivo.";
-                return;
-            }
-
-            if (!file.ContentType.StartsWith("image/"))
-            {
-                mensaje = "❌ Solo se permiten archivos de imagen.";
-                return;
-            }
-
-            const long maxFileSize = 512 * 1024; // 512 KB
-
-            if (file.Size > maxFileSize)
-            {
-                mensaje = $"❌ La imagen es demasiado grande. Máximo permitido: {maxFileSize / 1024} KB.";
-                return;
-            }
-
-            using var stream = file.OpenReadStream(maxFileSize);
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms);
-            var bytes = ms.ToArray();
-
-            plantilla.Imagen = $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
-            mensaje = "✅ Imagen cargada correctamente.";
-        }
-        catch (IOException ex)
-        {
-            mensaje = $"❌ Error de lectura del archivo: {ex.Message}";
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("❌ Error general al subir imagen: " + ex);
-            mensaje = $"❌ Error al procesar la imagen: {ex.Message}";
-        }
-    }
-
-    public class PlantillaCorreo
-    {
-        public int Id { get; set; }
-        public string Nombre { get; set; }
-        public string Asunto { get; set; }
-        public string Cuerpo { get; set; }
-        public string Tipo { get; set; }
-        public string Variables { get; set; }
-        public string Imagen { get; set; }
-        public DateTime FechaCreacion { get; set; }
     }
 }
