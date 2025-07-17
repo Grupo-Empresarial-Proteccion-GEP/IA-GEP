@@ -112,7 +112,7 @@ private async Task OnFileUpload(InputFileChangeEventArgs e)
 
         if (file != null)
         {
-            using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000); // hasta 10MB
+            using var stream = file.OpenReadStream(maxAllowedSize: 20_000_000); // hasta 20MB
             using var ms = new MemoryStream();
             await stream.CopyToAsync(ms);
             var bytes = ms.ToArray();

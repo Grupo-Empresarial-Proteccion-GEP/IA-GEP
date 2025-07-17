@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Forms;
 
-namespace QrBlazorServices.Controllers
+namespace QrBlazorServices.Clases
 {
     public class CorreoModel
     {
@@ -10,6 +10,7 @@ namespace QrBlazorServices.Controllers
         public string Asunto { get; set; } = string.Empty;
         public string Mensaje { get; set; } = string.Empty;
         public List<IBrowserFile> Adjuntos { get; set; } = new();
+        public string? Imagen { get; set; }
     }
 
 
