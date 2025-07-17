@@ -47,7 +47,12 @@
     <RadzenColumn Width="6">
         <h4 class="mt-4">📋 Plantillas registradas</h4>
 
-        <RadzenDataGrid Data="@plantillas" TItem="PlantillaCorreo" Class="w-100" AllowPaging="true" PageSize="5">
+        <RadzenDataGrid Data="@plantillas" TItem="PlantillaCorreo" AllowPaging="true" PageSize="10"
+                        AllowSorting="true"
+                        FilterMode="FilterMode.Simple"
+                        ShowPagingSummary="true"
+                        class="mb-4">
+
             <Columns>
                 <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Nombre" Title="Nombre" />
                 <RadzenDataGridColumn TItem="PlantillaCorreo" Property="Asunto" Title="Asunto" />
