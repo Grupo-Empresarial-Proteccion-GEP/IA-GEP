@@ -1,7 +1,7 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
-using QrBlazorServices.Controllers;
+using QrBlazorServices.Clases;
 
 public class EmailService
 {

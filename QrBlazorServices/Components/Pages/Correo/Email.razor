@@ -1,10 +1,13 @@
 ﻿@page "/Correo"
 @using QrBlazorServices.Controllers
 @inject EmailService EmailService
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @rendermode InteractiveServer
 
 @using Radzen.Blazor
 @using Radzen
+@using QrBlazorServices.Clases
+@using System.Data
 
 <EditForm Model="@correo" OnValidSubmit="Enviar">
     <DataAnnotationsValidator />
@@ -13,6 +16,27 @@
     <div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh; transform: scale(0.9); transform-origin: top center;">
         <div class="col-md-6">
             <RadzenFieldset Text="Enviar Correo">
+
+                <!-- Selección de plantilla -->
+                <div class="mb-1">
+                    <label class="form-label">Seleccionar plantilla:</label>
+                    <RadzenDropDown TValue="int"
+                                    Data="@plantillas"
+                                    TextProperty="Nombre"
+                                    ValueProperty="Id"
+                                    Change="OnSeleccionarPlantilla"
+                                    Style="width: 100%;"
+                                    Placeholder="Seleccione una plantilla" />
+                </div>
+
+                @if (!string.IsNullOrEmpty(plantillaSeleccionada?.Imagen))
+                {
+                    <img src="@plantillaSeleccionada.Imagen"
+                         style="max-width: 100%; max-height: 150px;"
+                         class="mb-2 rounded shadow" />
+                }
+
+
                 <div class="mb-1">
                     <label class="form-label">Remitente (Gmail):</label>
                     <RadzenTextBox @bind-Value="correo.Remitente" Style="width: 100%;" />
@@ -35,10 +59,11 @@
 
                 <div class="mb-1">
                     <label class="form-label">Mensaje:</label>
-                    <RadzenTextArea @bind-Value="correo.Mensaje" Style="width: 100%; height: 150px; resize: none;" />
+                    <RadzenTextArea @bind-Value="correo.Mensaje"
+                                    Style="width: 100%; height: 150px; resize: none;" />
                 </div>
 
-                <div class="">
+                <div class="mb-2">
                     <label class="form-label">Adjuntar archivo:</label>
                     <InputFile OnChange="OnFileSelected" class="form-control1" />
                     @if (correo.Adjuntos.Count > 0)
@@ -47,23 +72,69 @@
                     }
                 </div>
 
-                <RadzenButton Text="Enviar" ButtonStyle="ButtonStyle.Primary" Type="Submit" Style="margin-top: 10px;" />
+                <RadzenButton Text="Enviar"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Type="Submit"
+                              Style="margin-top: 10px;" />
 
                 @if (!string.IsNullOrEmpty(mensaje))
                 {
                     <div class="alert alert-info mt-3">@mensaje</div>
                 }
+
             </RadzenFieldset>
         </div>
     </div>
 </EditForm>
 
-
-
-
 @code {
-    private CorreoModel correo = new();
+    private CorreoModel correo = new() { Adjuntos = new List<IBrowserFile>() };
     private string? mensaje;
+
+    // Plantillas
+    List<PlantillaCorreo> plantillas = new();
+    PlantillaCorreo? plantillaSeleccionada;
+    int IdAplicacion = 18;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarPlantillas();
+    }
+
+    private async Task CargarPlantillas()
+    {
+        var tabla = await ServicioUsuario.TraerTablaAsync("PlantillaCorreo", IdAplicacion);
+        plantillas = tabla.AsEnumerable().Select(r => new PlantillaCorreo
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            Asunto = r["Asunto"].ToString(),
+            Cuerpo = r["Cuerpo"].ToString(),
+            Tipo = r["Tipo"].ToString(),
+            Variables = r["Variables"].ToString(),
+            Imagen = r.Table.Columns.Contains("Imagen") ? r["Imagen"].ToString() : null,
+            FechaCreacion = r["FechaCreacion"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(r["FechaCreacion"])
+        }).ToList();
+    }
+
+    private void OnSeleccionarPlantilla(object value)
+    {
+        int id = Convert.ToInt32(value);
+        plantillaSeleccionada = plantillas.FirstOrDefault(p => p.Id == id);
+
+        if (plantillaSeleccionada != null)
+        {
+            correo.Asunto = plantillaSeleccionada.Asunto;
+
+            correo.Mensaje = plantillaSeleccionada.Cuerpo
+                .Replace("{NOMBRE}", "Diego")
+                .Replace("{FECHA}", DateTime.Now.ToString("yyyy-MM-dd"));
+
+            // Opción: Si quieres guardar imagen en el correo para reutilizar
+            correo.Imagen = plantillaSeleccionada.Imagen;
+        }
+    }
+
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
