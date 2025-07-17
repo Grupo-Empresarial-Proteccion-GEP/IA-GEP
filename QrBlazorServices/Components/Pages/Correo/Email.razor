@@ -31,11 +31,11 @@
 
                 @if (!string.IsNullOrEmpty(plantillaSeleccionada?.Imagen))
                 {
+                    <p class="text-muted">Vista previa de la imagen que se enviará:</p>
                     <img src="@plantillaSeleccionada.Imagen"
                          style="max-width: 100%; max-height: 150px;"
                          class="mb-2 rounded shadow" />
                 }
-
 
                 <div class="mb-1">
                     <label class="form-label">Remitente (Gmail):</label>
@@ -58,7 +58,7 @@
                 </div>
 
                 <div class="mb-1">
-                    <label class="form-label">Mensaje:</label>
+                    <label class="form-label">Mensaje (sin imagen):</label>
                     <RadzenTextArea @bind-Value="correo.Mensaje"
                                     Style="width: 100%; height: 150px; resize: none;" />
                 </div>
@@ -91,7 +91,6 @@
     private CorreoModel correo = new() { Adjuntos = new List<IBrowserFile>() };
     private string? mensaje;
 
-    // Plantillas
     List<PlantillaCorreo> plantillas = new();
     PlantillaCorreo? plantillaSeleccionada;
     int IdAplicacion = 18;
@@ -125,32 +124,79 @@
         if (plantillaSeleccionada != null)
         {
             correo.Asunto = plantillaSeleccionada.Asunto;
-
             correo.Mensaje = plantillaSeleccionada.Cuerpo
-                .Replace("{NOMBRE}", "Diego")
+                .Replace("{NOMBRE}", correo.Nombre ?? "")
                 .Replace("{FECHA}", DateTime.Now.ToString("yyyy-MM-dd"));
 
-            // Opción: Si quieres guardar imagen en el correo para reutilizar
             correo.Imagen = plantillaSeleccionada.Imagen;
         }
     }
-
 
     private async Task OnFileSelected(InputFileChangeEventArgs e)
     {
         correo.Adjuntos = e.GetMultipleFiles().ToList();
     }
 
-    private async Task Enviar()
+    private async Task<string> ConvertirImagenUrlABase64(string url)
     {
         try
         {
-            await EmailService.EnviarCorreo(correo);
-            mensaje = "✅ Correo enviado correctamente.";
+            using var client = new HttpClient();
+            var bytes = await client.GetByteArrayAsync(url);
+            var ext = Path.GetExtension(url).ToLowerInvariant().Replace(".", "");
+            var base64 = Convert.ToBase64String(bytes);
+            return $"data:image/{ext};base64,{base64}";
         }
-        catch (Exception ex)
+        catch
         {
-            mensaje = $"❌ Error al enviar: {ex.Message}";
+            return string.Empty; // En caso de error, no incrustamos nada
         }
     }
+
+private async Task Enviar()
+{
+    try
+    {
+        string cuerpoFinal = correo.Mensaje;
+
+        if (!string.IsNullOrWhiteSpace(correo.Imagen))
+        {
+            string imagenHtml;
+
+            if (correo.Imagen.StartsWith("data:image/"))
+            {
+                // Ya está en formato base64, se usa directamente
+                imagenHtml = $"<img src='{correo.Imagen}' style='max-width:100%;'><br><br>";
+            }
+            else
+            {
+                // Es una URL, se intenta convertir a base64
+                var imagenBase64 = await ConvertirImagenUrlABase64(correo.Imagen);
+                imagenHtml = !string.IsNullOrEmpty(imagenBase64)
+                    ? $"<img src='{imagenBase64}' style='max-width:100%;'><br><br>"
+                    : string.Empty;
+            }
+
+            cuerpoFinal = $"{imagenHtml}{correo.Mensaje}";
+        }
+
+        var correoEnviar = new CorreoModel
+        {
+            Remitente = correo.Remitente,
+            Contrasena = correo.Contrasena,
+            Destinatario = correo.Destinatario,
+            Asunto = correo.Asunto,
+            Mensaje = cuerpoFinal,
+            Adjuntos = correo.Adjuntos
+        };
+
+        await EmailService.EnviarCorreo(correoEnviar);
+        mensaje = "✅ Correo enviado correctamente.";
+    }
+    catch (Exception ex)
+    {
+        mensaje = $"❌ Error al enviar: {ex.Message}";
+    }
+}
+
 }

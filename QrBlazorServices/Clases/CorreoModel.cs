@@ -11,8 +11,7 @@ namespace QrBlazorServices.Clases
         public string Mensaje { get; set; } = string.Empty;
         public List<IBrowserFile> Adjuntos { get; set; } = new();
         public string? Imagen { get; set; }
+        public string? Nombre { get; set; }
     }
-
-
 
 }
