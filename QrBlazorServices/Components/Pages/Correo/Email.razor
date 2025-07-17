@@ -29,14 +29,6 @@
                                     Placeholder="Seleccione una plantilla" />
                 </div>
 
-                @if (!string.IsNullOrEmpty(plantillaSeleccionada?.Imagen))
-                {
-                    <p class="text-muted">Vista previa de la imagen que se enviará:</p>
-                    <img src="@plantillaSeleccionada.Imagen"
-                         style="max-width: 100%; max-height: 150px;"
-                         class="mb-2 rounded shadow" />
-                }
-
                 <div class="mb-1">
                     <label class="form-label">Remitente (Gmail):</label>
                     <RadzenTextBox @bind-Value="correo.Remitente" Style="width: 100%;" />
