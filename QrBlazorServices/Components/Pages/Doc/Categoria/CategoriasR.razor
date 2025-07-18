@@ -9,13 +9,27 @@
 
 @inject NotificationService notificationService
 
-<h3 class="mb-3">🗂️ Gestión de Nodos de Categoría/Subcategoría</h3>
+<h3 class="mb-3">Gestión de Arbol Categorias</h3>
 
 <RadzenRow>
     <!-- Columna izquierda -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="Nodos existentes">
-            <RadzenDataGrid Data="@nodosExistentes" TItem="NodoCategoria" AllowPaging="true" PageSize="8"
+        <RadzenFieldset Text="Visualizador De Arbol Categorias">
+
+            <RadzenFieldset Text="@tituloSubnodos">
+
+
+                <RadzenTree Data="@nodosRaiz"
+                            Style="max-height: 400px; overflow-y: auto;"
+                            Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
+                    <RadzenTreeLevel TextProperty="Nombre" ChildrenProperty="Hijos" />
+                </RadzenTree>
+
+
+
+            </RadzenFieldset>
+            
+            <!--</><RadzenDataGrid Data="@nodosExistentes" TItem="NodoCategoria" AllowPaging="true" PageSize="8"
                 AllowSorting="true"
                 FilterMode="FilterMode.Simple"
                 ShowPagingSummary="true"
@@ -45,38 +59,60 @@
                         </Template>
                     </RadzenDataGridColumn>
                 </Columns>
-            </RadzenDataGrid>
-        </RadzenFieldset>
-
-        <RadzenFieldset Text="@((editando ? "Editar Nodo" : "Nuevo Nodo"))">
-            <RadzenTextBox @bind-Value="nuevoNodo.Nombre" Placeholder="Nombre del nodo" Class="w-100 mb-2" />
-
-            <RadzenDropDown Data="@nodosExistentes.Where(n => n.Id != nuevoNodo.Id).ToList()"
-                            @bind-Value="nuevoNodo.PadreId"
-                            TextProperty="Nombre"
-                            ValueProperty="Id"
-                            Placeholder="(Opcional) Nodo padre"
-                            AllowClear="true"
-                            Class="w-100 mb-2" />
+            </RadzenDataGrid>-->
 
 
+            <RadzenFieldset Text="@((editando ? "Editar Categoria" : "Nuevo Categoria"))">
+                <RadzenTextBox @bind-Value="nuevoNodo.Nombre" Placeholder="Nombre de la categoria" Class="w-100 mb-2" />
 
-            <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
-            <RadzenButton Text="Guardar" ButtonStyle="ButtonStyle.Success" Click="@GuardarNodo" Icon="save" Style="margin-top: 10px;" />
-            @if (editando)
-            {
-                <RadzenButton Text="Cancelar" ButtonStyle="ButtonStyle.Secondary" Click="@CancelarEdicion" Style="margin-top: 10px; margin-left:10px;" />
-            }
+                <RadzenDropDown Data="@nodosExistentes.Where(n => n.Id != nuevoNodo.Id).ToList()"
+                                @bind-Value="nuevoNodo.PadreId"
+                                TextProperty="Nombre"
+                                ValueProperty="Id"
+                                Placeholder="(Opcional) Categoria Padre"
+                                AllowClear="true"
+                                Class="w-100 mb-2" />
+
+
+
+                <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    <RadzenButton Text="Guardar"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Click="@GuardarNodo"
+                                  Icon="" />
+
+                    @if (editando)
+                    {
+                        <RadzenButton Text="Cancelar"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@CancelarEdicion" />
+                    }
+                    else if (nodoSeleccionado != null)
+                    {
+                        <RadzenButton Text="Editar nodo"
+                                      ButtonStyle="ButtonStyle.Warning"
+                                      Icon=""
+                                      Click="@(() => CargarNodoParaEditar(nodoSeleccionado))" />
+
+                        <RadzenButton Text="Eliminar nodo"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Icon=""
+                                      Click="@(() => EliminarNodo(nodoSeleccionado))" />
+                    }
+                </div>
+
+            </RadzenFieldset>
+
         </RadzenFieldset>
     </RadzenColumn>
-
     <!-- Columna derecha -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="@tituloSubnodos">
-            <RadzenTree Data="@nodosRaiz" Style="max-height: 400px; overflow-y: auto;">
-                <RadzenTreeLevel TextProperty="Nombre" ChildrenProperty="Hijos" />
-            </RadzenTree>
-        </RadzenFieldset>
+
+    <RadzenFieldset>
+
+    </RadzenFieldset>
+
     </RadzenColumn>
 </RadzenRow>
 
@@ -96,7 +132,7 @@
     private string mensaje;
     private bool editando = false;
 
-    private string tituloSubnodos => $"Subnodos de {nodoSeleccionado?.Nombre ?? "..."}";
+    private string tituloSubnodos => $"Arbol De la Categoria {nodoSeleccionado?.Nombre ?? "..."}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -314,5 +350,36 @@
     {
         nodoSeleccionado = nodo;
     }
+
+    private void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
+    {
+        if (nodo == null) return;
+
+        nodoSeleccionado = nodo;
+
+        nuevoNodo = new NodoCategoria
+        {
+            Id = 0, // ID 0 para nuevo nodo hijo
+            PadreId = nodo.Id,
+            EsCategoria = false, // Por defecto, al ser hijo, es subcategoría
+            Nombre = ""
+        };
+
+        editando = false; // Nueva inserción, no edición
+    }
+
+    private void PrepararNuevaCategoria()
+    {
+        nuevoNodo = new NodoCategoria
+        {
+            Id = 0,
+            Nombre = "",
+            PadreId = null,
+            EsCategoria = true
+        };
+
+        editando = false;
+    }
+
 }
 <!--Version Funcional 18/08-->
