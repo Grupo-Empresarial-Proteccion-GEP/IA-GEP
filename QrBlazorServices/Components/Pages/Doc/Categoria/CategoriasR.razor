@@ -106,6 +106,7 @@
 
         </RadzenFieldset>
     </RadzenColumn>
+
     <!-- Columna derecha -->
     <RadzenColumn Width="6">
 
@@ -116,13 +117,13 @@
     </RadzenColumn>
 </RadzenRow>
 
+
 @if (!string.IsNullOrWhiteSpace(mensaje))
 {
     <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 15px;">@mensaje</RadzenAlert>
 }
 
 @code {
-
 
 
     private NodoCategoria nuevoNodo = new();
@@ -202,11 +203,82 @@
         rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
         tablaNodo.Rows.Add(rowNodo);
 
-        if (editando)
-        {
-            await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
-            mensaje = "✅ Nodo actualizado correctamente.";
-        }
+            if (editando)
+            {
+                await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
+                mensaje = "✅ Nodo actualizado correctamente.";
+
+                var nodoAnterior = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.Id);
+                if (nodoAnterior != null)
+                {
+                    // 🔄 Cambio de Subcategoría → Categoría
+                    if (!nodoAnterior.EsCategoria && nuevoNodo.EsCategoria)
+                    {
+                        var tablaCat = new DataTable("Categoria");
+                        tablaCat.Columns.Add("Id", typeof(int));
+                        tablaCat.Columns.Add("Nombre", typeof(string));
+                        tablaCat.Columns.Add("PadreId", typeof(int));
+
+                        var rowCat = tablaCat.NewRow();
+                        rowCat["Id"] = nuevoNodo.Id;
+                        rowCat["Nombre"] = nuevoNodo.Nombre;
+                        rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
+                        tablaCat.Rows.Add(rowCat);
+
+                        await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+
+                        // También podrías eliminar de SubCategoria si existía antes
+                        var eliminarSub = new DataTable("SubCategoria");
+                        eliminarSub.Columns.Add("Id", typeof(int));
+                        var rowDel = eliminarSub.NewRow();
+                        rowDel["Id"] = nuevoNodo.Id;
+                        eliminarSub.Rows.Add(rowDel);
+                        await ServicioUsuario.EliminarFilaAsync(eliminarSub, 18);
+                    }
+
+                    // 🔄 Cambio de Categoría → Subcategoría (esto es raro pero posible)
+                    else if (nodoAnterior.EsCategoria && !nuevoNodo.EsCategoria && nuevoNodo.PadreId.HasValue)
+                    {
+                        // Insertar en SubCategoria
+                        var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
+                        if (padre != null && padre.EsCategoria)
+                        {
+                            var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
+                            var consultaSql = $@"
+                    SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
+                            var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
+
+                            if (dtCategoria.Rows.Count > 0)
+                            {
+                                int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+
+                                var tablaSub = new DataTable("SubCategoria");
+                                tablaSub.Columns.Add("Id", typeof(int));
+                                tablaSub.Columns.Add("CategoriaId", typeof(int));
+                                tablaSub.Columns.Add("Nombre", typeof(string));
+
+                                var rowSub = tablaSub.NewRow();
+                                rowSub["Id"] = nuevoNodo.Id;
+                                rowSub["CategoriaId"] = categoriaId;
+                                rowSub["Nombre"] = nuevoNodo.Nombre;
+                                tablaSub.Rows.Add(rowSub);
+
+                                await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                            }
+                        }
+
+                        // También podrías eliminar de Categoria si existía antes
+                        var eliminarCat = new DataTable("Categoria");
+                        eliminarCat.Columns.Add("Id", typeof(int));
+                        var rowCatDel = eliminarCat.NewRow();
+                        rowCatDel["Id"] = nuevoNodo.Id;
+                        eliminarCat.Rows.Add(rowCatDel);
+                        await ServicioUsuario.EliminarFilaAsync(eliminarCat, 18);
+                    }
+                }
+            }
+
+
         else
         {
             await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
