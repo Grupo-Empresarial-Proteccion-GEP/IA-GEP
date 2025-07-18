@@ -134,92 +134,128 @@
         return nodo;
     }
 
+
+
     private async Task GuardarNodo()
+{
+    if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
     {
-        if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
+        notificationService.Notify(new NotificationMessage
         {
-            notificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Campo requerido",
-                Detail = "El nombre del nodo no puede estar vacío.",
-                Duration = 4000
-            });
-            return;
+            Severity = NotificationSeverity.Error,
+            Summary = "Campo requerido",
+            Detail = "El nombre del nodo no puede estar vacío.",
+            Duration = 4000
+        });
+        return;
+    }
+
+    try
+    {
+        // 🧱 Crear tabla NodoCategoria
+        var tablaNodo = new DataTable("NodoCategoria");
+        tablaNodo.Columns.Add("Id", typeof(int));
+        tablaNodo.Columns.Add("Nombre", typeof(string));
+        tablaNodo.Columns.Add("PadreId", typeof(int));
+        tablaNodo.Columns.Add("EsCategoria", typeof(bool));
+
+        var rowNodo = tablaNodo.NewRow();
+        rowNodo["Id"] = nuevoNodo.Id;
+        rowNodo["Nombre"] = nuevoNodo.Nombre;
+        rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
+        rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
+        tablaNodo.Rows.Add(rowNodo);
+
+        if (editando)
+        {
+            await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
+            mensaje = "✅ Nodo actualizado correctamente.";
         }
-
-        try
+        else
         {
-            var tablaNodo = new DataTable("NodoCategoria");
-            tablaNodo.Columns.Add("Id", typeof(int));
-            tablaNodo.Columns.Add("Nombre", typeof(string));
-            tablaNodo.Columns.Add("PadreId", typeof(int));
-            tablaNodo.Columns.Add("EsCategoria", typeof(bool));
+            await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
+            mensaje = "✅ Nodo guardado correctamente.";
 
-            var rowNodo = tablaNodo.NewRow();
-            rowNodo["Id"] = nuevoNodo.Id;
-            rowNodo["Nombre"] = nuevoNodo.Nombre;
-            rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
-            rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
-            tablaNodo.Rows.Add(rowNodo);
+            // Recuperar el nuevo ID insertado
+            var nombreEscapado = nuevoNodo.Nombre.Replace("'", "''");
+            var dtNuevoNodo = await ServicioUsuario.TraerConsultaAsync($@"
+                SELECT TOP 1 Id FROM NodoCategoria
+                WHERE Nombre = '{nombreEscapado}'
+                ORDER BY Id DESC", 18);
 
-            if (editando)
+            if (dtNuevoNodo.Rows.Count > 0)
             {
-                // 👉 Actualiza el nodo
-                await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
-                mensaje = "✅ Nodo actualizado correctamente.";
+                nuevoNodo.Id = Convert.ToInt32(dtNuevoNodo.Rows[0]["Id"]);
             }
             else
             {
-                // 👉 Inserta nuevo nodo
-                await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
-                mensaje = "✅ Nodo guardado correctamente.";
-
-                if (nuevoNodo.EsCategoria)
-                {
-                    var tablaCat = new DataTable("Categoria");
-                    tablaCat.Columns.Add("Id", typeof(int));
-                    tablaCat.Columns.Add("Nombre", typeof(string));
-                    tablaCat.Columns.Add("PadreId", typeof(int));
-
-                    var rowCat = tablaCat.NewRow();
-                    rowCat["Id"] = 0;
-                    rowCat["Nombre"] = nuevoNodo.Nombre;
-                    rowCat["PadreId"] = DBNull.Value;
-                    tablaCat.Rows.Add(rowCat);
-
-                    await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
-                }
-                else if (nuevoNodo.PadreId.HasValue)
-                {
-                    var existeCategoria = await ExisteCategoria(nuevoNodo.PadreId.Value);
-                    if (existeCategoria)
-                    {
-                        var tablaSub = new DataTable("SubCategoria");
-                        tablaSub.Columns.Add("Id", typeof(int));
-                        tablaSub.Columns.Add("CategoriaId", typeof(int));
-                        tablaSub.Columns.Add("Nombre", typeof(string));
-
-                        var rowSub = tablaSub.NewRow();
-                        rowSub["Id"] = 0;
-                        rowSub["CategoriaId"] = nuevoNodo.PadreId;
-                        rowSub["Nombre"] = nuevoNodo.Nombre;
-                        tablaSub.Rows.Add(rowSub);
-
-                        await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
-                    }
-                }
+                throw new Exception("No se pudo recuperar el ID del nuevo nodo.");
             }
 
-            nuevoNodo = new();
-            editando = false;
-            await CargarNodos();
+            // 🔵 1. Si es Categoría, insertar también en Categoria
+            if (nuevoNodo.EsCategoria)
+            {
+                var tablaCat = new DataTable("Categoria");
+                tablaCat.Columns.Add("Id", typeof(int));
+                tablaCat.Columns.Add("Nombre", typeof(string));
+                tablaCat.Columns.Add("PadreId", typeof(int));
+
+                var rowCat = tablaCat.NewRow();
+                rowCat["Id"] = nuevoNodo.Id;
+                rowCat["Nombre"] = nuevoNodo.Nombre;
+                rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
+                tablaCat.Rows.Add(rowCat);
+
+                await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+            }
+
+            // 🟡 2. Si NO es categoría y tiene padre...
+            else if (nuevoNodo.PadreId.HasValue)
+            {
+                var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
+                if (padre != null && padre.EsCategoria)
+                {
+                    // Buscar ID real de Categoria con el mismo nombre que el nodo padre
+                        var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
+                        var consultaSql = $@"
+    SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
+                        var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
+
+
+
+                    if (dtCategoria.Rows.Count == 0)
+                        throw new Exception($"❌ El padre con Id {padre.Id} no existe en la tabla Categoria.");
+
+                    int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+
+                    // Insertar en SubCategoria
+                    var tablaSub = new DataTable("SubCategoria");
+                    tablaSub.Columns.Add("Id", typeof(int));
+                    tablaSub.Columns.Add("CategoriaId", typeof(int));
+                    tablaSub.Columns.Add("Nombre", typeof(string));
+
+                    var rowSub = tablaSub.NewRow();
+                    rowSub["Id"] = 0;
+                    rowSub["CategoriaId"] = categoriaId;
+                    rowSub["Nombre"] = nuevoNodo.Nombre;
+                    tablaSub.Rows.Add(rowSub);
+
+                    await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                }
+            }
         }
-        catch (Exception ex)
-        {
-            mensaje = $"❌ Error al guardar nodo: {ex.Message}";
-        }
+
+        nuevoNodo = new();
+        editando = false;
+        await CargarNodos();
     }
+    catch (Exception ex)
+    {
+        mensaje = $"❌ Error al guardar nodo: {ex.Message}";
+    }
+}
+
+
 
 
     // Verifica si un ID existe en la tabla Categoria

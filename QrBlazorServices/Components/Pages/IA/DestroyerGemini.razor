@@ -19,7 +19,7 @@
 @using Radzen
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
-    <div class="p-4" style="background-color: #f5f5f5; transform: scale(0.85); transform-origin: top center;">
+    <div class="p-4" style="background-color: #f5f5f5; transform: scale(0.80); transform-origin: top center;">
         <RadzenCard Style="padding: 20px;">
             <div class="text-center mb-4">
                 <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
@@ -132,7 +132,7 @@
 
     private List<string> iasDisponibles = new()
     {
-        "openai", "gemini"
+        "OpenIA", "Gemini IA"
     };
 
     private string IASeleccionada = "openai";

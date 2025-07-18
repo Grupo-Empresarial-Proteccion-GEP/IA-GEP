@@ -8,7 +8,7 @@
 @using Radzen
 @using Radzen.Blazor
 @using QrBlazorServices.Components.Pages.Doc.Categoria
-
+@using QrBlazorServices.Components.Pages.IA
 
 <div class="d-flex flex-column align-items-center w-100">
 
@@ -26,6 +26,10 @@
         <RadzenButton Text="Ver Documentos"
                       Click="@(args => CambiarFormulario("VerDocumentos"))"
                       ButtonStyle="@(formActivo == "VerDocumentos" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+
+        <RadzenButton Text="IA Documental"
+                      Click="@(args => CambiarFormulario("Destroyer Gemini"))"
+                      ButtonStyle="@(formActivo == "Destroyer Gemini" ? ButtonStyle.Primary : ButtonStyle.Light)" />
     </div>
 
     <!-- Contenedor escalado -->
@@ -45,6 +49,10 @@
                     break;
                 case "VerDocumentos":
                     <VerDocumentos />
+                    break;
+
+                case "Destroyer Gemini":
+                    <DestroyerGemini/>
                     break;
             }
 
