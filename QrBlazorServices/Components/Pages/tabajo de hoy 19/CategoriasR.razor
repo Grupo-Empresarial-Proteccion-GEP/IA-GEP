@@ -11,6 +11,11 @@
 @inject NavigationManager Navigation
 @inject NotificationService notificationService
 
+
+    @page "/rdocumento/{Id:int}"
+@inject NavigationManager Navigation
+
+
 <h3 class="mb-3">Gestión de Arbol Categorias</h3>
 
 <RadzenRow>
@@ -43,6 +48,7 @@
 
                 <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
                 <div class="d-flex flex-wrap gap-2 mt-2">
+
                     <RadzenButton Text="Guardar"
                                   ButtonStyle="ButtonStyle.Success"
                                   Click="@GuardarNodo"
@@ -94,7 +100,7 @@
                            class="form-control mb-3" />
 
                 <div class="mb-3">
-                    <RadzenButton Text="Registrar Nueva"
+                    <RadzenButton Text="Nueva Plantilla"
                                   Icon="save"
                                   ButtonStyle="ButtonStyle.Success"
                                   Click="AgregarPlantilla"
@@ -143,13 +149,29 @@
                                 Class="w-100 mb-3" />
                 
                 <div class="">
-                    <RadzenButton Text="Registrar Documento"
-                                  Icon="save"
-                                  ButtonStyle="ButtonStyle.Success"
-                                  Click="GuardarDocumento"
-                                  Class="me-2" />
 
-                    <RadzenButton Text="Documetos Registrados" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
+
+                <RadzenButton Text="@(DocumentoId.HasValue ? "Actualizar Documento" : "Registrar Documento")"
+                              Icon="@(DocumentoId.HasValue ? "refresh" : "save")"
+                              ButtonStyle="@(DocumentoId.HasValue ? ButtonStyle.Warning : ButtonStyle.Success)"
+                              Click="@GuardarDocumento"
+                              Class="me-2" />
+
+                <RadzenButton Text="Documentos Registrados"
+                              Icon="arrow_back"
+                              ButtonStyle="ButtonStyle.Primary"
+                              Click="@(() => {
+                                  if (DocumentoId.HasValue)
+                                  {
+                                      CancelarEdicion2();
+                                  }
+                                  else
+                                  {
+                                      IrAInicio();
+                                  }
+                              })"
+                              Style="margin-left: 10px;" />
+
                 </div>
 
                 @if (!string.IsNullOrEmpty(mensajes))
@@ -163,6 +185,7 @@
     </RadzenFieldset>
             <!--///////////////////////////////////////////////////////////////////////////////////////////-->
             <!--///////////////////////////////////////////////////////////////////////////////////////////-->
+
             <RadzenFieldset Text="Documentos Arbol Documental">
             <RadzenDataGrid Data="@documentos" TItem="DocumentoExtendido" AllowPaging="true" PageSize="3"
                             AllowSorting="true"
@@ -189,6 +212,7 @@
                 </Columns>
             </RadzenDataGrid>
 			</RadzenFieldset>
+
             <!--///////////////////////////////////////////////////////////////////////////////////////////-->
             <!--///////////////////////////////////////////////////////////////////////////////////////////-->
             <!-- DataGrid de plantillas -->
@@ -337,6 +361,7 @@
         await CargarSubcategorias();
         await CargarNodos2();
         await CargarDocumentos();
+        await CargarDocumento();
 
         if (NodoId.HasValue)
         {
@@ -349,6 +374,7 @@
             await CargarDocumentoParaEditar(DocumentoId.Value);
         }
     }
+
 
     private async Task CargarNodos()
     {
@@ -931,105 +957,104 @@
     }
 
     async Task GuardarDocumento()
+{
+    try
     {
-        try
+        mensaje = string.Empty;
+
+        // 🔎 Validaciones
+        if (string.IsNullOrWhiteSpace(documento.Nombre))
+            mensaje += "❌ El nombre del documento es obligatorio.\n";
+
+        if (!string.IsNullOrEmpty(mensaje))
+            return;
+
+        // 🧠 Obtener nodo final desde árbol
+        var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
+
+        if (nodoCategoriaIdFinal.HasValue)
         {
-            mensaje = string.Empty;
-
-            // 🔎 Validaciones
-            if (string.IsNullOrWhiteSpace(documento.Nombre))
-                mensaje += "❌ El nombre del documento es obligatorio.\n";
-
-
-            if (!string.IsNullOrEmpty(mensaje))
-                return;
-
-            // 🧠 Obtener último nodo seleccionado
-            var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
-            if (nodoCategoriaIdFinal.HasValue)
-            {
-                Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
-            }
-            else
-            {
-                Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos.");
-            }
-
-
-            // 🟨 ACTUALIZACIÓN
-            if (DocumentoId.HasValue)
-            {
-                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
-                var fila = dtDocumento.NewRow();
-
-                fila["Id"] = DocumentoId.Value;
-                fila["Nombre"] = documento.Nombre.Trim();
-
-
-                fila["PlantillaId"] = documento.PlantillaId ?? 0;
-
-                dtDocumento.Rows.Add(fila);
-                await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
-
-                if (subCategoriaSeleccionadaId.HasValue)
-                {
-                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
-
-                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
-                    var filaRelacion = dtRelacion.NewRow();
-
-                    filaRelacion["DocumentoId"] = DocumentoId.Value;
-                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
-
-
-                    dtRelacion.Rows.Add(filaRelacion);
-                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
-                }
-
-                mensaje = "✅ Documento actualizado correctamente.";
-            }
-            else
-            {
-                // ✅ NUEVO REGISTRO
-                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
-                var fila = dtDocumento.NewRow();
-
-                fila["Nombre"] = documento.Nombre.Trim();
-
-
-                fila["PlantillaId"] = documento.PlantillaId ?? 0;
-                fila["FechaCreacion"] = DateTime.Now;
-
-                dtDocumento.Rows.Add(fila);
-                await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
-
-                var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
-                int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
-
-                if (subCategoriaSeleccionadaId.HasValue)
-                {
-                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
-                    var filaRelacion = dtRelacion.NewRow();
-
-                    filaRelacion["DocumentoId"] = nuevoDocumentoId;
-                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
-
-
-                    dtRelacion.Rows.Add(filaRelacion);
-                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
-                }
-
-                mensaje = "✅ Documento registrado correctamente.";
-                documento = new(); // limpia el formulario
-            }
+            Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
         }
-        catch (Exception ex)
+        else
         {
-            mensaje = $"❌ Error al guardar documento: {ex.Message}";
+            Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos.");
+        }
+
+        // 🟨 ACTUALIZACIÓN
+        if (DocumentoId.HasValue)
+        {
+            var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+            var fila = dtDocumento.NewRow();
+
+            fila["Id"] = DocumentoId.Value;
+            fila["Nombre"] = documento.Nombre.Trim();
+            fila["PlantillaId"] = documento.PlantillaId ?? 0;
+
+            dtDocumento.Rows.Add(fila);
+            await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
+
+            // 🔄 Actualizar relación DocumentoCategoria
+            if (subCategoriaSeleccionadaId.HasValue)
+            {
+                await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
+
+                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                var filaRelacion = dtRelacion.NewRow();
+
+                filaRelacion["DocumentoId"] = DocumentoId.Value;
+                filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                dtRelacion.Rows.Add(filaRelacion);
+                await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+            }
+
+            mensaje = "✅ Documento actualizado correctamente.";
+                await CargarDocumentos();
+        }
+        else
+        {
+            // ✅ NUEVO REGISTRO
+            var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+            var fila = dtDocumento.NewRow();
+
+            fila["Nombre"] = documento.Nombre.Trim();
+            fila["PlantillaId"] = documento.PlantillaId ?? 0;
+            fila["FechaCreacion"] = DateTime.Now;
+
+            dtDocumento.Rows.Add(fila);
+            await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
+
+            // 📌 Obtener ID recién insertado
+            var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
+            int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+
+            // ➕ Insertar relación DocumentoCategoria
+            if (subCategoriaSeleccionadaId.HasValue)
+            {
+                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                var filaRelacion = dtRelacion.NewRow();
+
+                filaRelacion["DocumentoId"] = nuevoDocumentoId;
+                filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                dtRelacion.Rows.Add(filaRelacion);
+                await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+            }
+
+            mensaje = "✅ Documento registrado correctamente.";
+            documento = new(); // limpia el formulario
+                await CargarDocumentos();
         }
     }
+    catch (Exception ex)
+    {
+        mensaje = $"❌ Error al guardar documento: {ex.Message}";
+    }
+}
+
 
     private int? ObtenerNodoCategoriaIdFinal()
     {
@@ -1362,11 +1387,6 @@
         }).ToList();
     }
 
-    void EditarDocumento(int id)
-    {
-        Navigation.NavigateTo($"/rdocumento/{id}");
-    }
-
     async Task EliminarDocumento(int id)
     {
         try
@@ -1387,5 +1407,66 @@
     {
         Navigation.NavigateTo("/Documentos");
     }
+
+    bool esNuevo = true;
+
+    [Parameter]  public int Id { get; set; }
+
+    void NuevoDocumento()
+{
+    documento = new(); // limpia todos los campos del documento
+    DocumentoId = null;
+    esNuevo = true;
+    mensaje = string.Empty;
+    subCategoriaSeleccionadaId = null;
 }
+
+    void EditarDocumento(int id)
+    {
+        Navigation.NavigateTo($"/rdocumento/{id}");
+    }
+    
+    async Task CargarDocumento()
+    {
+        var dt = await ServicioUsuario.TraerTablaAsync("Documento", IdAplicacion);
+        var fila = dt.AsEnumerable().FirstOrDefault(d => Convert.ToInt32(d["Id"]) == Id);
+
+        if (fila != null)
+        {
+            DocumentoId = Id; // ✅ Esto es clave
+
+            documento = new Documento
+            {
+                Nombre = fila["Nombre"].ToString(),
+                PlantillaId = fila["PlantillaId"] != DBNull.Value ? Convert.ToInt32(fila["PlantillaId"]) : (int?)null
+            };
+
+            var relacion = (await ServicioUsuario.TraerTablaAsync("DocumentoCategoria", IdAplicacion))
+                .AsEnumerable()
+                .FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == Id);
+
+            if (relacion != null)
+            {
+                subCategoriaSeleccionadaId = Convert.ToInt32(relacion["SubCategoriaId"]);
+                nodoSeleccionadoId = relacion["NodoCategoriaId"] != DBNull.Value
+                    ? Convert.ToInt32(relacion["NodoCategoriaId"])
+                    : (int?)null;
+            }
+        }
+    }
+
+    void CancelarEdicion2()
+    {
+        DocumentoId = null;
+        documento = new Documento(); // limpia los campos
+        subCategoriaSeleccionadaId = null;
+        nodoSeleccionadoId = null;
+        nodoSeleccionadoFinalId = null;
+        mensajes = string.Empty;
+        _ = CargarDocumentos(); // 🔁 recarga la grilla
+    }
+
+}
+
+
 <!--Version Funcional 18/08-->

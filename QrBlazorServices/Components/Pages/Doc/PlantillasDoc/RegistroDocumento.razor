@@ -1,5 +1,4 @@
-﻿@page "/rdocumento"
-@page "/rdocumento/{DocumentoId:int}"  
+﻿
 
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @inject NavigationManager Navigation
@@ -226,47 +225,56 @@
     {
         try
         {
+            mensaje = string.Empty;
+
+            // 🔎 Validaciones
             if (string.IsNullOrWhiteSpace(documento.Nombre))
-            {
                 mensaje += "❌ El nombre del documento es obligatorio.\n";
-            }
 
 
-
-            // Si hay errores, salir
             if (!string.IsNullOrEmpty(mensaje))
-            {
                 return;
+
+            // 🧠 Obtener último nodo seleccionado
+            var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
+            if (nodoCategoriaIdFinal.HasValue)
+            {
+                Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
+            }
+            else
+            {
+                Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos.");
             }
 
 
+            // 🟨 ACTUALIZACIÓN
             if (DocumentoId.HasValue)
             {
-                // 🟡 ACTUALIZAR
                 var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
                 var fila = dtDocumento.NewRow();
 
                 fila["Id"] = DocumentoId.Value;
                 fila["Nombre"] = documento.Nombre.Trim();
+
+
                 fila["PlantillaId"] = documento.PlantillaId ?? 0;
 
                 dtDocumento.Rows.Add(fila);
                 await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
 
-                // 🔄 Actualiza DocumentoCategoria (opcional: puedes eliminar y volver a insertar para simplificar)
                 if (subCategoriaSeleccionadaId.HasValue)
                 {
-                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
 
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
                     var filaRelacion = dtRelacion.NewRow();
+
                     filaRelacion["DocumentoId"] = DocumentoId.Value;
                     filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                    filaRelacion["NodoCategoriaId"] = nivelesDinamicos.LastOrDefault(x => x.NodoSeleccionadoId.HasValue)?.NodoSeleccionadoId ?? (object)DBNull.Value;
+                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
 
                     dtRelacion.Rows.Add(filaRelacion);
-
-                    // Elimina relaciones anteriores (por simplicidad)
-                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
                     await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
                 }
 
@@ -274,31 +282,38 @@
             }
             else
             {
-                // ✅ INSERTAR NUEVO
+                // ✅ NUEVO REGISTRO
                 var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
                 var fila = dtDocumento.NewRow();
+
                 fila["Nombre"] = documento.Nombre.Trim();
+
+
                 fila["PlantillaId"] = documento.PlantillaId ?? 0;
                 fila["FechaCreacion"] = DateTime.Now;
+
                 dtDocumento.Rows.Add(fila);
                 await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
 
                 var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
-                int documentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+                int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
 
                 if (subCategoriaSeleccionadaId.HasValue)
                 {
                     var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
                     var filaRelacion = dtRelacion.NewRow();
-                    filaRelacion["DocumentoId"] = documentoId;
+
+                    filaRelacion["DocumentoId"] = nuevoDocumentoId;
                     filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                    filaRelacion["NodoCategoriaId"] = nivelesDinamicos.LastOrDefault(x => x.NodoSeleccionadoId.HasValue)?.NodoSeleccionadoId ?? (object)DBNull.Value;
+                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+
                     dtRelacion.Rows.Add(filaRelacion);
                     await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
                 }
 
                 mensaje = "✅ Documento registrado correctamente.";
-                documento = new(); // limpia formulario
+                documento = new(); // limpia el formulario
             }
         }
         catch (Exception ex)
@@ -394,12 +409,81 @@
             // Cargar jerarquía dinámica
             if (nodoSeleccionadoId is int nodoId)
             {
-                InicializarJerarquiaDesdeNodo(nodoId);
+                ReconstruirJerarquiaDesdeNodoFinal(nodoId);
             }
+
         }
     }
 
     private void IrAInicio() => Navigation.NavigateTo("/Documentos");
+
+
+    void ReconstruirJerarquiaDesdeNodoFinal(int nodoFinalId)
+    {
+        nivelesDinamicos.Clear();
+
+        // Encuentra el nodo actual
+        var nodoActual = todosNodos.FirstOrDefault(n => n.Id == nodoFinalId);
+        if (nodoActual == null)
+            return;
+
+        // Lista para mantener la cadena ascendente
+        var jerarquia = new List<NodoCategoria>();
+
+        // Recorrer hacia arriba desde el nodo final hasta la raíz
+        while (nodoActual != null)
+        {
+            jerarquia.Insert(0, nodoActual); // Insertar al principio para mantener orden raíz → hoja
+            nodoActual = todosNodos.FirstOrDefault(n => n.Id == nodoActual.PadreId);
+        }
+
+        // Ahora construir niveles dinámicos
+        for (int i = 0; i < jerarquia.Count; i++)
+        {
+            var nodoPadre = jerarquia[i];
+            var hijos = todosNodos.Where(n => n.PadreId == nodoPadre.Id).ToList();
+
+            nivelesDinamicos.Add(new NodoSeleccion
+            {
+                NodoSeleccionadoId = nodoPadre.Id,
+                Hijos = hijos
+            });
+        }
+    }
+
+    private int? ObtenerNodoCategoriaIdFinal()
+    {
+        int? nodoId = null;
+
+        // 1. Buscar en niveles dinámicos (si existen)
+        if (nivelesDinamicos != null && nivelesDinamicos.Any())
+        {
+            for (int i = nivelesDinamicos.Count - 1; i >= 0; i--)
+            {
+                var nivel = nivelesDinamicos[i];
+                if (nivel.NodoSeleccionadoId.HasValue)
+                {
+                    nodoId = nivel.NodoSeleccionadoId;
+                    var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoId);
+                    Console.WriteLine($"✅ Nodo seleccionado final: {nodo?.Nombre} (ID: {nodo?.Id})");
+                    return nodoId;
+                }
+            }
+        }
+
+        // 2. Si no se encontró en niveles dinámicos, usar el nodo raíz seleccionado
+        if (nodoSeleccionadoId.HasValue)
+        {
+            nodoId = nodoSeleccionadoId;
+            var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoId);
+            Console.WriteLine($"✅ Nodo seleccionado raíz: {nodo?.Nombre} (ID: {nodo?.Id})");
+            return nodoId;
+        }
+
+        // 3. Ningún nodo válido encontrado
+        Console.WriteLine("❌ No se encontró NodoCategoriaId válido ni en niveles dinámicos ni en nodo raíz.");
+        return null;
+    }
 
 }
 <!--Version Funcional 18/08-->
