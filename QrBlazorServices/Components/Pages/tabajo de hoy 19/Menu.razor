@@ -1,0 +1,47 @@
+﻿@page "/menu19"
+@using AccesoDatos
+@using System.Data
+@inject NavigationManager Navigation
+@inject AccesoDatosSoapClient ServicioUsuario
+@rendermode InteractiveServer
+@using QrBlazorServices.Components.Pages
+@using Radzen
+@using Radzen.Blazor
+
+<div class="d-flex flex-column align-items-center w-100">
+
+    <!-- Barra de navegación con estilo Radzen -->
+    <div class="d-flex mb-3 gap-2 justify-content-center">
+        <RadzenButton Text="Plantillas Documentos"
+
+                      Click="@(args => CambiarFormulario("CategoriasR"))"
+                      ButtonStyle="@(formActivo == "CategoriasR" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+      
+    </div>
+
+    <!-- Contenedor escalado -->
+    <div class="w-100 d-flex justify-content-center">
+        <div style="transform: scale(0.96); transform-origin: top center; width: 100%;">
+
+            @switch (formActivo)
+            {
+
+                case "CategoriasR":
+                    <CategoriasR/>
+                    break;
+             
+            }
+
+        </div>
+    </div>
+</div>
+
+@code {
+    private string formActivo = "CategoriasR";
+
+    void CambiarFormulario(string nombre)
+    {
+        formActivo = nombre;
+    }
+}
+<!--Version Funcional 18/08-->

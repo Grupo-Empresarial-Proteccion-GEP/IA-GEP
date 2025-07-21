@@ -8,6 +8,8 @@
         public string? Version { get; set; }
         public string? Estado { get; set; }
 
-        public string Imagen { get; set; }
+        public string? Referencia { get; set; }
+
+        public string RutaBase64 { get; set; } = "";
     }
 }
