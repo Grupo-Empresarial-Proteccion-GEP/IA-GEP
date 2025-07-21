@@ -26,13 +26,10 @@
                             Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
                     <RadzenTreeLevel TextProperty="Nombre" ChildrenProperty="Hijos" />
                 </RadzenTree>
-
-
-
-            </RadzenFieldset>
+        </RadzenFieldset>
             
 
-            <RadzenFieldset Text="@((editando ? "Editar Categoria" : "Nuevo Categoria"))">
+        <RadzenFieldset Text="@((editando ? "Editar Categoria" : "Nuevo Categoria"))">
 
                 <RadzenDropDown Data="@nodosExistentes.Where(n => n.Id != nuevoNodo.Id).ToList()"
                                 @bind-Value="nuevoNodo.PadreId"
@@ -43,8 +40,6 @@
                                 Class="w-100 mb-2" />
 
                 <RadzenTextBox @bind-Value="nuevoNodo.Nombre" Placeholder="Nombre de la categoria" Class="w-100 mb-2" />
-
-
 
                 <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
                 <div class="d-flex flex-wrap gap-2 mt-2">
@@ -73,9 +68,9 @@
                     }
                 </div>
 
-            </RadzenFieldset>
+        </RadzenFieldset>
 
-            <RadzenFieldset Text="Cargar / Editar Plantilla" Style="max-width: 100%;">
+        <RadzenFieldset Text="Cargar / Editar Plantilla" Style="max-width: 100%;">
                 <RadzenTextBox @bind-Value="plantilla.NombreArchivo"
                                Placeholder="Nombre de la plantilla"
                                Class="w-100 mb-3" />
@@ -127,19 +122,18 @@
                 }
             </RadzenFieldset>
         </RadzenFieldset>
-    </RadzenColumn>
+</RadzenColumn>
 
     <!-- Columna derecha -->
     <RadzenColumn Width="6">
         <RadzenFieldset>
             <!--///////////////////////////////////////////////////////////////////////////////////////////-->
             <RadzenFieldset Text="Datos del Documento" Style="max-width: 100%;">
+            <RadzenFieldset>
                 <RadzenTextBox @bind-Value="documento.Nombre"
                                Placeholder="Nombre del documento"
                                Name="Nombre"
                                Class="w-100 mb-3" />
-
-
 
                 <RadzenDropDown @bind-Value="documento.PlantillaId"
                                 Data="@plantillas"
@@ -155,7 +149,7 @@
                                   Click="GuardarDocumento"
                                   Class="me-2" />
 
-                    <RadzenButton Text="Volver" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
+                    <RadzenButton Text="Documetos Registrados" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
                 </div>
 
                 @if (!string.IsNullOrEmpty(mensajes))
@@ -166,9 +160,12 @@
                 }
 
             </RadzenFieldset>
+    </RadzenFieldset>
             <!--///////////////////////////////////////////////////////////////////////////////////////////-->
             <!-- DataGrid de plantillas -->
-            <RadzenDataGrid TItem="Plantilla" Data="@listaPlantillas" RowSelect="OnSeleccionarDesdeGrid"
+        <RadzenFieldset Text="Plantillas Documentos">
+         
+                        <RadzenDataGrid TItem="Plantilla" Data="@listaPlantillas" RowSelect="OnSeleccionarDesdeGrid"
                             AllowPaging="true" PageSize="10"
                             AllowSorting="true"
                             FilterMode="FilterMode.Simple"
@@ -187,10 +184,11 @@
                     </RadzenDataGridColumn>
                 </Columns>
             </RadzenDataGrid>
-
         </RadzenFieldset>
-       
-    </RadzenColumn>
+
+	</RadzenFieldset>
+
+</RadzenColumn>
 
 </RadzenRow>
 
@@ -252,41 +250,48 @@
     </RadzenAlert>
 }
 
-
 @code {
 
-
-    private NodoCategoria nuevoNodo = new();
-    private NodoCategoria? nodoSeleccionado;
-
-    private bool editando = false;
-
-    [Parameter] public int? NodoId { get; set; }
-    [Parameter] public int? DocumentoId { get; set; }
-
-
+    string mensajes;
+    int IdAplicacion = 18;
+    private string mensaje;
+    private string? mensaje2;
+    Plantilla plantilla = new();
     Documento documento = new();
+    string tipoSeleccionado = "";
+    private bool editando = false;
+    string nombreSeleccionado = "";
+    private string? rutaSeleccionada;
     List<Plantilla> plantillas = new();
     List<Categoria> categorias = new();
-    List<SubCategoria> todasSubcategorias = new();
-    List<SubCategoria> subcategoriasFiltradas = new();
-    List<NodoCategoria> todosNodos = new();
-    List<NodoCategoria> nodosFiltrados = new();
-    List<NodoSeleccion> nivelesDinamicos = new();
-
+    private int? plantillaSeleccionadaId;
     List<NodoCategoria> ListaNodos = new(); // debe contener TODA la estructura
-
-    private List<NodoCategoria> nodosExistentes = new();
+    List<NodoCategoria> todosNodos = new();
+    private NodoCategoria nuevoNodo = new();
+    List<Plantilla> listaPlantillas = new();
+    private NodoCategoria? nodoSeleccionado;
+    List<NodoCategoria> nodosFiltrados = new();
+    [Parameter] public int? NodoId { get; set; }
+    List<NodoSeleccion> nivelesDinamicos = new();
+    List<SubCategoria> todasSubcategorias = new();
     private List<NodoCategoria> nodosRaiz = new();
+    [Parameter] public int? DocumentoId { get; set; }
+    List<SubCategoria> subcategoriasFiltradas = new();
+    List<NodoCategoria> jerarquiaSeleccionada = new();
+    private List<NodoCategoria> nodosExistentes = new();
 
-    int? nodoNivel1Id, nodoNivel2Id, nodoNivel3Id, nodoSeleccionadoFinalId;
-    int? nodoJerarquicoSeleccionadoId, categoriaSeleccionadaId, subCategoriaSeleccionadaId, nodoSeleccionadoId;
-    int IdAplicacion = 18;
-
-    private string mensaje;
-    string mensajes;
-
+    List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
     private string tituloSubnodos => $"Arbol De la Categoria {nodoSeleccionado?.Nombre ?? "..."}";
+
+    int? nodoJerarquicoSeleccionadoId,
+    categoriaSeleccionadaId,
+    subCategoriaSeleccionadaId,
+    nodoSeleccionadoId,
+    nodoNivel1Id,
+    nodoNivel2Id,
+    nodoNivel3Id,
+    nodoSeleccionadoFinalId;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -584,10 +589,6 @@
         nodoSeleccionado = nodo;
     }
 
-
-
-
-
     private void PrepararNuevaCategoria()
     {
         nuevoNodo = new NodoCategoria
@@ -681,8 +682,6 @@
         nodoSeleccionadoId = null;
     }
 
-
-
     void InicializarJerarquiaDesdeNodo(int? nodoRaizId)
     {
         nivelesDinamicos.Clear();
@@ -745,7 +744,7 @@
             documento = new Documento
             {
                 Nombre = row["Nombre"].ToString(),
-                
+
                 PlantillaId = row["PlantillaId"] == DBNull.Value ? null : Convert.ToInt32(row["PlantillaId"])
             };
 
@@ -799,11 +798,6 @@
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    string tipoSeleccionado = "";
-    string nombreSeleccionado = "";
-
-    List<NodoCategoria> jerarquiaSeleccionada = new();
-
     private List<NodoCategoria> ObtenerRutaJerarquica(NodoCategoria nodoFinal)
     {
         var ruta = new List<NodoCategoria>();
@@ -817,7 +811,6 @@
 
         return ruta;
     }
-
 
     private string ObtenerRutaJerarquica()
     {
@@ -842,16 +835,8 @@
         return string.Join(" ➝ ", partes);
     }
 
-
-
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    
-
 
     private void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
     {
@@ -863,9 +848,6 @@
         // 🧭 Construir jerarquía desde el nodo hasta la raíz
         jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
 
-        // 🏷️ Mostrar visualmente toda la jerarquía
-        tipoSeleccionado = jerarquiaSeleccionada.Count > 0 ? "Ruta seleccionada" : "";
-        nombreSeleccionado = string.Join(" > ", jerarquiaSeleccionada.Select(j => j.Nombre));
 
         // 🧠 Sincronizar dropdowns
         var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
@@ -887,12 +869,22 @@
             }
         }
 
-        // Último nodo
+        // Último nodo (para edición)
         var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
         if (nodoFinal != null)
         {
             nodoSeleccionadoId = nodoFinal.Id;
             InicializarJerarquiaDesdeNodo(nodoFinal.Id);
+
+            // ⚠️ Aquí actualizamos el objeto que se edita en el formulario
+            nuevoNodo = new NodoCategoria
+            {
+                Id = nodoFinal.Id,
+                Nombre = nodoFinal.Nombre,
+                PadreId = nodoFinal.PadreId,
+                EsCategoria = nodoFinal.EsCategoria
+            };
+
             Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
         }
         else
@@ -902,8 +894,6 @@
 
         StateHasChanged();
     }
-
-
 
     async Task GuardarDocumento()
     {
@@ -1040,22 +1030,9 @@
         return null;
     }
 
-
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private int? plantillaSeleccionadaId;
-
-    Plantilla plantilla = new();
-    List<Plantilla> listaPlantillas = new();
-    List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
-    private string? mensaje2;
-    private string? rutaSeleccionada;
-
+    
     private async Task OnFileUpload(InputFileChangeEventArgs e)
     {
         try
@@ -1177,7 +1154,7 @@
 
     private async Task EliminarPlantilla()
     {
-        if (string.IsNullOrWhiteSpace(rutaSeleccionada))
+        if (plantillaSeleccionadaId == null)
         {
             await dialogService.Alert("⚠️ Selecciona una plantilla para eliminar.");
             return;
@@ -1185,17 +1162,34 @@
 
         try
         {
-            await ServicioSoap.TraerConsultaAsync($"DELETE FROM Plantilla WHERE RutaArchivo = '{rutaSeleccionada}'", 18);
+            // Validar si hay documentos relacionados
+            var dtRelacionados = await ServicioSoap.TraerConsultaAsync(
+                $"SELECT COUNT(*) AS Total FROM Documento WHERE PlantillaId = {plantillaSeleccionadaId}", 18);
 
-            var pathAbsoluto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaSeleccionada.TrimStart('/'));
-            if (File.Exists(pathAbsoluto))
+            int relacionados = Convert.ToInt32(dtRelacionados.Rows[0]["Total"]);
+            if (relacionados > 0)
             {
-                File.Delete(pathAbsoluto);
+                mensaje2 = $"❌ No se puede eliminar. Hay {relacionados} documento(s) que usan esta plantilla.";
+                return;
+            }
+
+            // Eliminar plantilla
+            await ServicioSoap.TraerConsultaAsync($"DELETE FROM Plantilla WHERE Id = {plantillaSeleccionadaId}", 18);
+
+            // Eliminar archivo físico si lo deseas (opcional)
+            if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
+            {
+                var pathAbsoluto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaSeleccionada.TrimStart('/'));
+                if (File.Exists(pathAbsoluto))
+                {
+                    File.Delete(pathAbsoluto);
+                }
             }
 
             mensaje2 = "✅ Plantilla eliminada correctamente.";
             plantilla = new();
             rutaSeleccionada = null;
+            plantillaSeleccionadaId = null;
             await CargarPlantillas2();
         }
         catch (Exception ex)
@@ -1239,8 +1233,6 @@
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////

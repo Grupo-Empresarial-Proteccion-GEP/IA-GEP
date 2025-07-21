@@ -16,8 +16,6 @@
                 FilterMode="FilterMode.Simple"
                 ShowPagingSummary="true"
                 class="mb-4">
-    
-
     <Columns>
         <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Id" Title="ID" />
         <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Nombre" Title="Nombre" />
@@ -29,24 +27,17 @@
         <RadzenDataGridColumn TItem="DocumentoExtendido" Property="FechaCreacion" Title="Creación" FormatString="{0:yyyy-MM-dd}" />
         <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
             <Template Context="doc">
-                <RadzenButton Icon="edit"
-                              Size="ButtonSize.Small"
-                              Style="margin-right: 5px;"
-                              ButtonStyle="ButtonStyle.Info"
+                <RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
                               Click="() => EditarDocumento(doc.Id)" />
-                <RadzenButton Icon="delete"
-                              Size="ButtonSize.Small"
-                              ButtonStyle="ButtonStyle.Danger"
+                <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger"
                               Click="() => EliminarDocumento(doc.Id)" />
             </Template>
-
         </RadzenDataGridColumn>
-
-
     </Columns>
 </RadzenDataGrid>
-      
-<RadzenButton Text="Nueva Documento" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle" Style="margin-bottom: 10px; margin-right: 10px;" />
+
+<RadzenButton Text="Nuevo Documento" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro"
+              Icon="add_circle" Style="margin-bottom: 10px; margin-right: 10px;" />
 
 @if (!string.IsNullOrEmpty(mensaje))
 {
@@ -59,8 +50,6 @@
     int IdAplicacion = 18;
     List<DocumentoExtendido> documentos = new();
     string mensaje;
-
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -104,41 +93,41 @@
             Referencia = r.Table.Columns.Contains("Referencia") ? r["Referencia"]?.ToString() : null
         }).ToList();
 
-
         var relaciones = dtRelacion.AsEnumerable().ToList();
 
         documentos = dtDocumentos.AsEnumerable().Select(doc =>
         {
             int id = Convert.ToInt32(doc["Id"]);
-            var relacion = relaciones.FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == id);
 
+            var relacion = relaciones.FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == id);
             var subCatId = relacion != null ? Convert.ToInt32(relacion["SubCategoriaId"]) : 0;
-            var nodoId = relacion != null && relacion["NodoCategoriaId"] != DBNull.Value ? Convert.ToInt32(relacion["NodoCategoriaId"]) : 0;
+            var nodoId = relacion != null && relacion["NodoCategoriaId"] != DBNull.Value
+                            ? Convert.ToInt32(relacion["NodoCategoriaId"]) : 0;
 
             var subcategoria = subcategorias.FirstOrDefault(s => s.Id == subCatId);
             var categoria = categorias.FirstOrDefault(c => c.Id == subcategoria?.CategoriaId);
             var nodo = nodos.FirstOrDefault(n => n.Id == nodoId);
-            var plantilla = plantillas.FirstOrDefault(p => p.Id == Convert.ToInt32(doc["PlantillaId"]));
+
+            Plantilla plantilla = null;
+            if (doc.Table.Columns.Contains("PlantillaId") && doc["PlantillaId"] != DBNull.Value)
+            {
+                int idPlantilla = Convert.ToInt32(doc["PlantillaId"]);
+                plantilla = plantillas.FirstOrDefault(p => p.Id == idPlantilla);
+            }
 
             return new DocumentoExtendido
             {
                 Id = id,
                 Nombre = doc["Nombre"].ToString(),
                 Referencia = plantilla?.Referencia ?? "",
-
-                FechaCreacion = doc["FechaCreacion"] == DBNull.Value
-                ? DateTime.MinValue
-                : Convert.ToDateTime(doc["FechaCreacion"]),
-
-
+                NombrePlantilla = plantilla?.NombreArchivo ?? "",
+                FechaCreacion = doc["FechaCreacion"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(doc["FechaCreacion"]),
                 Categoria = categoria?.Nombre ?? "",
                 SubCategoria = subcategoria?.Nombre ?? "",
-                Nodo = nodo?.Nombre ?? "",
-                NombrePlantilla = plantilla?.NombreArchivo ?? ""
+                Nodo = nodo?.Nombre ?? ""
             };
         }).ToList();
     }
-
 
     void EditarDocumento(int id)
     {
@@ -149,10 +138,7 @@
     {
         try
         {
-            // Primero eliminar la relación en DocumentoCategoria
             await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", id.ToString(), IdAplicacion);
-
-            // Luego eliminar el documento
             await ServicioUsuario.EliminarListadeLlavesAsync("Documento", "Id", id.ToString(), IdAplicacion);
 
             mensaje = "✅ Documento eliminado correctamente.";
@@ -166,9 +152,6 @@
 
     private void IrARegistro()
     {
-        Navigation.NavigateTo("/rdocumento");
+        Navigation.NavigateTo("/Documentos");
     }
-
-
 }
-<!--Version Funcional 18/08-->

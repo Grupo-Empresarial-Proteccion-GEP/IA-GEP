@@ -241,7 +241,7 @@
 
     private async Task EliminarPlantilla()
     {
-        if (string.IsNullOrWhiteSpace(rutaSeleccionada))
+        if (plantillaSeleccionadaId == null)
         {
             await dialogService.Alert("⚠️ Selecciona una plantilla para eliminar.");
             return;
@@ -249,17 +249,34 @@
 
         try
         {
-            await ServicioSoap.TraerConsultaAsync($"DELETE FROM Plantilla WHERE RutaArchivo = '{rutaSeleccionada}'", 18);
+            // Validar si hay documentos relacionados
+            var dtRelacionados = await ServicioSoap.TraerConsultaAsync(
+                $"SELECT COUNT(*) AS Total FROM Documento WHERE PlantillaId = {plantillaSeleccionadaId}", 18);
 
-            var pathAbsoluto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaSeleccionada.TrimStart('/'));
-            if (File.Exists(pathAbsoluto))
+            int relacionados = Convert.ToInt32(dtRelacionados.Rows[0]["Total"]);
+            if (relacionados > 0)
             {
-                File.Delete(pathAbsoluto);
+                mensaje2 = $"❌ No se puede eliminar. Hay {relacionados} documento(s) que usan esta plantilla.";
+                return;
+            }
+
+            // Eliminar plantilla
+            await ServicioSoap.TraerConsultaAsync($"DELETE FROM Plantilla WHERE Id = {plantillaSeleccionadaId}", 18);
+
+            // Eliminar archivo físico si lo deseas (opcional)
+            if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
+            {
+                var pathAbsoluto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaSeleccionada.TrimStart('/'));
+                if (File.Exists(pathAbsoluto))
+                {
+                    File.Delete(pathAbsoluto);
+                }
             }
 
             mensaje2 = "✅ Plantilla eliminada correctamente.";
             plantilla = new();
             rutaSeleccionada = null;
+            plantillaSeleccionadaId = null;
             await CargarPlantillas2();
         }
         catch (Exception ex)
@@ -267,6 +284,7 @@
             mensaje2 = $"❌ Error al eliminar plantilla: {ex.Message}";
         }
     }
+
 
     private string EnsureDataUrl(string base64, string nombreArchivo)
     {

@@ -25,9 +25,7 @@
                            Class="w-100 mb-3" />
             
 
-            <RadzenTextBox @bind-Value="documento.Referencia"
-                           Placeholder="Referencia"
-                           Class="w-100 mb-3" />
+
 
             <RadzenDropDown @bind-Value="documento.PlantillaId"
                             Data="@plantillas"
@@ -233,10 +231,7 @@
                 mensaje += "❌ El nombre del documento es obligatorio.\n";
             }
 
-            if (string.IsNullOrWhiteSpace(documento.Referencia))
-            {
-                mensaje += "❌ El nombre de la Referencia es obligatorio.\n";
-            }
+
 
             // Si hay errores, salir
             if (!string.IsNullOrEmpty(mensaje))
@@ -253,7 +248,6 @@
 
                 fila["Id"] = DocumentoId.Value;
                 fila["Nombre"] = documento.Nombre.Trim();
-                fila["Referencia"] = documento.Referencia ?? string.Empty;
                 fila["PlantillaId"] = documento.PlantillaId ?? 0;
 
                 dtDocumento.Rows.Add(fila);
@@ -284,7 +278,6 @@
                 var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
                 var fila = dtDocumento.NewRow();
                 fila["Nombre"] = documento.Nombre.Trim();
-                fila["Referencia"] = documento.Referencia ?? string.Empty;
                 fila["PlantillaId"] = documento.PlantillaId ?? 0;
                 fila["FechaCreacion"] = DateTime.Now;
                 dtDocumento.Rows.Add(fila);
@@ -369,7 +362,7 @@
     async Task CargarDocumentoParaEditar(int id)
     {
         var consulta = await ServicioUsuario.TraerConsultaAsync(
-            $"SELECT d.Id, d.Nombre, d.Referencia, d.PlantillaId, dc.SubCategoriaId, dc.NodoCategoriaId " +
+            $"SELECT d.Id, d.Nombre, d.PlantillaId, dc.SubCategoriaId, dc.NodoCategoriaId " +
             $"FROM Documento d LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId WHERE d.Id = {id}", IdAplicacion);
 
         if (consulta.Rows.Count > 0)
@@ -379,7 +372,7 @@
             documento = new Documento
             {
                 Nombre = row["Nombre"].ToString(),
-                Referencia = row["Referencia"].ToString(),
+                
                 PlantillaId = row["PlantillaId"] == DBNull.Value ? null : Convert.ToInt32(row["PlantillaId"])
             };
 
