@@ -14,8 +14,8 @@
     <div class="d-flex mb-3 gap-2 justify-content-center">
         <RadzenButton Text="Plantillas Documentos"
 
-                      Click="@(args => CambiarFormulario("CategoriasR"))"
-                      ButtonStyle="@(formActivo == "CategoriasR" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+                      Click="@(args => CambiarFormulario("CategoriaNew"))"
+                      ButtonStyle="@(formActivo == "CategoriaNew" ? ButtonStyle.Primary : ButtonStyle.Light)" />
       
     </div>
 
@@ -26,8 +26,8 @@
             @switch (formActivo)
             {
 
-                case "CategoriasR":
-                    <CategoriasR/>
+                case "CategoriaNew":
+                    <CategoriaNew />
                     break;
              
             }
@@ -37,7 +37,7 @@
 </div>
 
 @code {
-    private string formActivo = "CategoriasR";
+    private string formActivo = "CategoriaNew";
 
     void CambiarFormulario(string nombre)
     {

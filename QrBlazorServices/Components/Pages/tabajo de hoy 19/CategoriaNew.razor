@@ -16,176 +16,133 @@
 @inject NavigationManager Navigation
 
 
-<h3 class="mb-3">Gestión de Arbol Categorias</h3>
+<h3 class="mb-3">Gestión de Arbol Documental</h3>
 
 <RadzenRow>
     <!-- Columna izquierda -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="Visualizador De Arbol Categorias">
+        <RadzenFieldset Text="Visualizador De Arbol Documental">
 
-            <RadzenFieldset Text="@tituloSubnodos">
+            <RadzenFieldset Text="@tituloSubnodos" RadzenColumn Style="height: 775px; overflow-y: auto;">
 
+             <RadzenTextBox @bind-Value="textoBusqueda" Placeholder="🔍 Buscar categoría..." Style="width: 100%" Change="BuscarNodo" />
 
-                <RadzenTree Data="@nodosRaiz"
-                            Style="max-height: 450px; overflow-y: auto;"
-                            Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
-                    <RadzenTreeLevel TextProperty="Nombre" ChildrenProperty="Hijos" />
-                </RadzenTree>
-        </RadzenFieldset>
             
 
-        <RadzenFieldset Text="@((editando ? "Editar Categoria" : "Nuevo Categoria"))">
+            <RadzenTree Data="@nodosRaiz"
+                        Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
+                <RadzenTreeLevel TextProperty="Nombre"
+                                 ChildrenProperty="Hijos"
+                                 Expanded="@((context) => ((NodoCategoria)context).Expanded)" />
+            </RadzenTree>
 
-                <RadzenDropDown Data="@nodosExistentes.Where(n => n.Id != nuevoNodo.Id).ToList()"
-                                @bind-Value="nuevoNodo.PadreId"
-                                TextProperty="Nombre"
-                                ValueProperty="Id"
-                                Placeholder="(Opcional) Categoria Padre"
-                                AllowClear="true"
-                                Class="w-100 mb-2" />
 
-                <RadzenTextBox @bind-Value="nuevoNodo.Nombre" Placeholder="Nombre de la categoria" Class="w-100 mb-2" />
-
-                <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es categoría principal?</label>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-
-                    <RadzenButton Text="Guardar"
-                                  ButtonStyle="ButtonStyle.Success"
-                                  Click="@GuardarNodo"
-                                  Icon="" />
-
-                    @if (editando)
-                    {
-                        <RadzenButton Text="Cancelar"
-                                      ButtonStyle="ButtonStyle.Secondary"
-                                      Click="@CancelarEdicion" />
-                    }
-                    else if (nodoSeleccionado != null)
-                    {
-                        <RadzenButton Text="Editar nodo"
-                                      ButtonStyle="ButtonStyle.Warning"
-                                      Icon=""
-                                      Click="@(() => CargarNodoParaEditar(nodoSeleccionado))" />
-
-                        <RadzenButton Text="Eliminar nodo"
-                                      ButtonStyle="ButtonStyle.Danger"
-                                      Icon=""
-                                      Click="@(() => EliminarNodo(nodoSeleccionado))" />
-                    }
-                </div>
-
-        </RadzenFieldset>
-
-        <RadzenFieldset Text="Cargar / Editar Plantilla" Style="max-width: 100%;">
-                <RadzenTextBox @bind-Value="plantilla.NombreArchivo"
-                               Placeholder="Nombre de la plantilla"
-                               Class="w-100 mb-3" />
-
-                <RadzenTextBox @bind-Value="plantilla.Version"
-                               Placeholder="Versión"
-                               Class="w-100 mb-3" />
-
-                <RadzenTextBox @bind-Value="plantilla.Referencia"
-                               Placeholder="Referencia"
-                               Class="w-100 mb-3" />
-
-                <RadzenDropDown @bind-Value="plantilla.Estado"
-                                Data="@estadosDisponibles"
-                                Placeholder="Seleccione el estado"
-                                AllowCustom="true"
-                                Class="w-100 mb-3" />
-
-                <InputFile OnChange="OnFileUpload"
-                           accept=".docx,.pdf,.txt"
-                           class="form-control mb-3" />
-
-                <div class="mb-3">
-                    <RadzenButton Text="Nueva Plantilla"
-                                  Icon="save"
-                                  ButtonStyle="ButtonStyle.Success"
-                                  Click="AgregarPlantilla"
-                                  Class="me-2" />
-
-                    <RadzenButton Text="Actualizar"
-                                  Icon="edit"
-                                  ButtonStyle="ButtonStyle.Warning"
-                                  Click="ActualizarPlantilla"
-                                  Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)"
-                                  Class="me-2" />
-
-                    <RadzenButton Text="Eliminar"
-                                  Icon="delete"
-                                  ButtonStyle="ButtonStyle.Danger"
-                                  Click="EliminarPlantilla"
-                                  Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)" />
-                </div>
-
+         </RadzenFieldset>
                 @if (!string.IsNullOrEmpty(mensaje2))
                 {
                     <div class="alert @(mensaje2.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
                         @mensaje2
                     </div>
                 }
-            </RadzenFieldset>
-        </RadzenFieldset>
+         </RadzenFieldset>
+        
 </RadzenColumn>
 
     <!-- Columna derecha -->
     <RadzenColumn Width="6">
+
+         <!--/////////////////////////////////////////aqui//////////////////////////////////////////////////-->
         <RadzenFieldset>
-            <!--///////////////////////////////////////////////////////////////////////////////////////////-->
-            <RadzenFieldset Text="Datos del Documento" Style="max-width: 100%;">
-            <RadzenFieldset>
-                <RadzenTextBox @bind-Value="documento.Nombre"
-                               Placeholder="Nombre del documento"
-                               Name="Nombre"
-                               Class="w-100 mb-3" />
+
+                    <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">
+                
+@if (!DocumentoId.HasValue)
+{
+    <RadzenFormField Text="Nombre de la Rama / Documento" Class="w-100 mb-2">
+        <RadzenTextBox @bind-Value="nombreComun" Style="width: 100%" />
+    </RadzenFormField>
+}
+
 
                 <RadzenDropDown @bind-Value="documento.PlantillaId"
                                 Data="@plantillas"
                                 TextProperty="NombreArchivo"
                                 ValueProperty="Id"
                                 Placeholder="Seleccione plantilla"
-                                Class="w-100 mb-3" />
+                                Class="w-100 mb-2" />
+
+                @if (!DocumentoId.HasValue)
+                {
+                if (editando == false)
+                {
+                <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es Rama principal?</label>
+                }
+                }
+
+                <div class="d-flex flex-wrap gap-2 mt-2">
+
+                @if (!DocumentoId.HasValue)
+                {
+
+                    <RadzenButton Text="Guardar"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Click="@GuardarDocumentoYRama"
+                                  Icon=""
+                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+                }
+
+
+
+                @if (editando)
+                {
+                    <RadzenButton Text="Cancelar"
+                                  ButtonStyle="ButtonStyle.Secondary"
+                                  Click="@CancelarEdicion"
+                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+                }
+                else if (nodoSeleccionado != null)
+                {
+                    <RadzenButton Text="Editar nodo"
+                                  ButtonStyle="ButtonStyle.Warning"
+                                  Icon=""
+                                  Click="@(() => CargarNodoParaEditar(nodoSeleccionado))"
+                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+
+                    <RadzenButton Text="Eliminar nodo"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Icon=""
+                                  Click="@(() => EliminarNodo(nodoSeleccionado))"
+                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+                }
+
                 
-                <div class="">
+
+                @if (DocumentoId.HasValue)
+                {
+                    <RadzenButton 
+                        Text="Actualizar Documento"
+                        Icon="refresh"
+                        ButtonStyle="ButtonStyle.Warning"
+                        Click="@GuardarDocumento"
+                        Class="me-2" />
+                    }
 
 
-                <RadzenButton Text="@(DocumentoId.HasValue ? "Actualizar Documento" : "Registrar Documento")"
-                              Icon="@(DocumentoId.HasValue ? "refresh" : "save")"
-                              ButtonStyle="@(DocumentoId.HasValue ? ButtonStyle.Warning : ButtonStyle.Success)"
-                              Click="@GuardarDocumento"
-                              Class="me-2" />
-
-                <RadzenButton Text="@(DocumentoId.HasValue ? "Cancelar edición" : "Documentos Registrados")"
-                              Icon="arrow_back"
-                              ButtonStyle="ButtonStyle.Primary"
-                              Click="@(() => {
-                                  if (DocumentoId.HasValue)
-                                  {
-                                      CancelarEdicion2();
-                                  }
-                                  else
-                                  {
-                                      IrAInicio();
-                                  }
-                              })"
-                              Style="margin-left: 10px;" />
-
+                    @if (DocumentoId.HasValue)
+                    {
+                        <RadzenButton Text="Cancelar edición"
+                                      Icon="arrow_back"
+                                      ButtonStyle="ButtonStyle.Primary"
+                                      Click="@(() => Cancelar())"
+                                      Style="margin-left: 10px;" />
+                    }
 
                 </div>
 
-                @if (!string.IsNullOrEmpty(mensajes))
-                {
-                    <div class="alert @(mensajes.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
-                        @mensajes
-                    </div>
-                }
-
-            </RadzenFieldset>
-    </RadzenFieldset>
-            <!--///////////////////////////////////////////////////////////////////////////////////////////-->
-            <!--///////////////////////////////////////////////////////////////////////////////////////////-->
+        </RadzenFieldset>
+        
+        <!--////////////////////////////////////////aqui///////////////////////////////////////////////////-->
+        <!--///////////////////////////////////////////////////////////////////////////////////////////-->
 
             <RadzenFieldset Text="Documentos Arbol Documental">
             <RadzenDataGrid Data="@documentos" TItem="DocumentoExtendido" AllowPaging="true" PageSize="3"
@@ -214,31 +171,16 @@
             </RadzenDataGrid>
 			</RadzenFieldset>
 
+            
+            <RadzenFieldset Text="Ramificacion Arbol">
+                            @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
+            {
+                <p><strong>📂 Ruta:</strong> @string.Join(" / ", jerarquiaSeleccionada.Select(j => j.Nombre))</p>
+            }
+            </RadzenFieldset>
+
             <!--///////////////////////////////////////////////////////////////////////////////////////////-->
-            <!--///////////////////////////////////////////////////////////////////////////////////////////-->
-            <!-- DataGrid de plantillas -->
-        <RadzenFieldset Text="Plantillas Documentos">
-         
-                        <RadzenDataGrid TItem="Plantilla" Data="@listaPlantillas" RowSelect="OnSeleccionarDesdeGrid"
-                            AllowPaging="true" PageSize="3"
-                            AllowSorting="true"
-                            FilterMode="FilterMode.Simple"
-                            ShowPagingSummary="true"
-                            >
-                <Columns>
-                    <RadzenDataGridColumn TItem="Plantilla" Property="Id" Title="ID" Width="50px" />
-                    <RadzenDataGridColumn TItem="Plantilla" Property="NombreArchivo" Title="Nombre" />
-                    <RadzenDataGridColumn TItem="Plantilla" Property="Version" Title="Versión" />
-                    <RadzenDataGridColumn TItem="Plantilla" Property="Referencia" Title="Referencia" />
-                    <RadzenDataGridColumn TItem="Plantilla" Property="Estado" Title="Estado" />
-                    <RadzenDataGridColumn TItem="Plantilla" Title="Acción">
-                        <Template Context="data">
-                            <RadzenButton Icon="visibility" Size="ButtonSize.Small" Click="@(() => showModal = true)" />
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-        </RadzenFieldset>
+            <!--///////////////////////////////////////////////////////////////////////////////////////////-->       
 	</RadzenFieldset>
 </RadzenColumn>
 </RadzenRow>
@@ -309,9 +251,8 @@
     </div>
 }
 
+
 @code {
-
-
 
     string mensajes;
     string mensajes2;
@@ -346,8 +287,10 @@
     List<NodoCategoria> jerarquiaSeleccionada = new();
     private List<NodoCategoria> nodosExistentes = new();
 
+    public List<NodoCategoria> Hijos { get; set; } = new();
+
     List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
-    private string tituloSubnodos => $"Arbol De la Categoria {nodoSeleccionado?.Nombre ?? "..."}";
+    private string tituloSubnodos => $"Rama del Arbol Seleccionada: {nodoSeleccionado?.Nombre ?? "..."}";
 
     int? nodoJerarquicoSeleccionadoId,
     categoriaSeleccionadaId,
@@ -358,12 +301,15 @@
     nodoNivel3Id,
     nodoSeleccionadoFinalId;
 
+    private string nombreComun = string.Empty;
+
+
+
 
     protected override async Task OnInitializedAsync()
     {
         nuevoNodo = new NodoCategoria(); // <-- esto es clave para que EditForm y validadores no fallen
         await CargarNodos();
-        await CargarPlantillas2();
         await CargarPlantillas();
         await CargarCategorias();
         await CargarSubcategorias();
@@ -383,7 +329,8 @@
         }
     }
 
-
+    //////////////////////////////////PROCESOS NODO///////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////
     private async Task CargarNodos()
     {
         nodosExistentes.Clear();
@@ -395,9 +342,11 @@
         {
             Id = Convert.ToInt32(row["Id"]),
             Nombre = row["Nombre"].ToString() ?? "",
+            NombreOriginal = row["Nombre"].ToString() ?? "", // 👈 guardar nombre original
             PadreId = row["PadreId"] != DBNull.Value ? Convert.ToInt32(row["PadreId"]) : (int?)null,
             EsCategoria = Convert.ToBoolean(row["EsCategoria"])
         }).ToList();
+
 
         var nodosPadres = nodosExistentes.Where(n => n.PadreId == null).ToList();
 
@@ -413,135 +362,45 @@
         return nodo;
     }
 
-    private async Task GuardarNodo()
+   private async Task GuardarNodo()
+{
+    if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
     {
-        if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
-        {
-            notificationService.Notify(new NotificationMessage
+        notificationService.Notify(new NotificationMessage
         {
             Severity = NotificationSeverity.Error,
             Summary = "Campo requerido",
             Detail = "El nombre del nodo no puede estar vacío.",
             Duration = 4000
         });
-            return;
-        }
+        return;
+    }
 
-        try
+    try
+    {
+        var tablaNodo = new DataTable("NodoCategoria");
+        tablaNodo.Columns.Add("Id", typeof(int));
+        tablaNodo.Columns.Add("Nombre", typeof(string));
+        tablaNodo.Columns.Add("PadreId", typeof(int));
+        tablaNodo.Columns.Add("EsCategoria", typeof(bool));
+
+        var rowNodo = tablaNodo.NewRow();
+        rowNodo["Id"] = nuevoNodo.Id;
+        rowNodo["Nombre"] = nuevoNodo.Nombre;
+        rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
+        rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
+        tablaNodo.Rows.Add(rowNodo);
+
+        if (editando)
         {
-            // 🧱 Crear tabla NodoCategoria
-            var tablaNodo = new DataTable("NodoCategoria");
-            tablaNodo.Columns.Add("Id", typeof(int));
-            tablaNodo.Columns.Add("Nombre", typeof(string));
-            tablaNodo.Columns.Add("PadreId", typeof(int));
-            tablaNodo.Columns.Add("EsCategoria", typeof(bool));
+            await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
+            mensaje = "✅ Nodo actualizado correctamente.";
 
-            var rowNodo = tablaNodo.NewRow();
-            rowNodo["Id"] = nuevoNodo.Id;
-            rowNodo["Nombre"] = nuevoNodo.Nombre;
-            rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
-            rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
-            tablaNodo.Rows.Add(rowNodo);
-
-            if (editando)
+            var nodoAnterior = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.Id);
+            if (nodoAnterior != null)
             {
-                await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
-                mensaje = "✅ Nodo actualizado correctamente.";
-
-                var nodoAnterior = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.Id);
-                if (nodoAnterior != null)
-                {
-                    // 🔄 Cambio de Subcategoría → Categoría
-                    if (!nodoAnterior.EsCategoria && nuevoNodo.EsCategoria)
-                    {
-                        var tablaCat = new DataTable("Categoria");
-                        tablaCat.Columns.Add("Id", typeof(int));
-                        tablaCat.Columns.Add("Nombre", typeof(string));
-                        tablaCat.Columns.Add("PadreId", typeof(int));
-
-                        var rowCat = tablaCat.NewRow();
-                        rowCat["Id"] = nuevoNodo.Id;
-                        rowCat["Nombre"] = nuevoNodo.Nombre;
-                        rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
-                        tablaCat.Rows.Add(rowCat);
-
-                        await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
-
-                        // También podrías eliminar de SubCategoria si existía antes
-                        var eliminarSub = new DataTable("SubCategoria");
-                        eliminarSub.Columns.Add("Id", typeof(int));
-                        var rowDel = eliminarSub.NewRow();
-                        rowDel["Id"] = nuevoNodo.Id;
-                        eliminarSub.Rows.Add(rowDel);
-                        await ServicioUsuario.EliminarFilaAsync(eliminarSub, 18);
-                    }
-
-                    // 🔄 Cambio de Categoría → Subcategoría (esto es raro pero posible)
-                    else if (nodoAnterior.EsCategoria && !nuevoNodo.EsCategoria && nuevoNodo.PadreId.HasValue)
-                    {
-                        // Insertar en SubCategoria
-                        var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
-                        if (padre != null && padre.EsCategoria)
-                        {
-                            var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
-                            var consultaSql = $@"
-                    SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
-                            var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
-
-                            if (dtCategoria.Rows.Count > 0)
-                            {
-                                int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
-
-                                var tablaSub = new DataTable("SubCategoria");
-                                tablaSub.Columns.Add("Id", typeof(int));
-                                tablaSub.Columns.Add("CategoriaId", typeof(int));
-                                tablaSub.Columns.Add("Nombre", typeof(string));
-
-                                var rowSub = tablaSub.NewRow();
-                                rowSub["Id"] = nuevoNodo.Id;
-                                rowSub["CategoriaId"] = categoriaId;
-                                rowSub["Nombre"] = nuevoNodo.Nombre;
-                                tablaSub.Rows.Add(rowSub);
-
-                                await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
-                            }
-                        }
-
-                        // También podrías eliminar de Categoria si existía antes
-                        var eliminarCat = new DataTable("Categoria");
-                        eliminarCat.Columns.Add("Id", typeof(int));
-                        var rowCatDel = eliminarCat.NewRow();
-                        rowCatDel["Id"] = nuevoNodo.Id;
-                        eliminarCat.Rows.Add(rowCatDel);
-                        await ServicioUsuario.EliminarFilaAsync(eliminarCat, 18);
-                    }
-                }
-            }
-
-
-            else
-            {
-                await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
-                mensaje = "✅ Nodo guardado correctamente.";
-
-                // Recuperar el nuevo ID insertado
-                var nombreEscapado = nuevoNodo.Nombre.Replace("'", "''");
-                var dtNuevoNodo = await ServicioUsuario.TraerConsultaAsync($@"
-                SELECT TOP 1 Id FROM NodoCategoria
-                WHERE Nombre = '{nombreEscapado}'
-                ORDER BY Id DESC", 18);
-
-                if (dtNuevoNodo.Rows.Count > 0)
-                {
-                    nuevoNodo.Id = Convert.ToInt32(dtNuevoNodo.Rows[0]["Id"]);
-                }
-                else
-                {
-                    throw new Exception("No se pudo recuperar el ID del nuevo nodo.");
-                }
-
-                // 🔵 1. Si es Categoría, insertar también en Categoria
-                if (nuevoNodo.EsCategoria)
+                // 🔄 Cambio de Subcategoría → Categoría
+                if (!nodoAnterior.EsCategoria && nuevoNodo.EsCategoria)
                 {
                     var tablaCat = new DataTable("Categoria");
                     tablaCat.Columns.Add("Id", typeof(int));
@@ -555,53 +414,158 @@
                     tablaCat.Rows.Add(rowCat);
 
                     await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+
+                    // 🔐 Validar dependencias antes de eliminar SubCategoria
+                    var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
+                    var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
+                    int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
+
+                    if (cantidad == 0)
+                    {
+                        var eliminarSub = new DataTable("SubCategoria");
+                        eliminarSub.Columns.Add("Id", typeof(int));
+                        var rowDel = eliminarSub.NewRow();
+                        rowDel["Id"] = nuevoNodo.Id;
+                        eliminarSub.Rows.Add(rowDel);
+                        await ServicioUsuario.EliminarFilaAsync(eliminarSub, 18);
+                    }
+                    else
+                    {
+                        mensaje += $" ⚠ No se eliminó SubCategoría porque tiene documentos relacionados.";
+                    }
                 }
 
-                // 🟡 2. Si NO es categoría y tiene padre...
-                else if (nuevoNodo.PadreId.HasValue)
+                // 🔄 Cambio de Categoría → Subcategoría
+                else if (nodoAnterior.EsCategoria && !nuevoNodo.EsCategoria && nuevoNodo.PadreId.HasValue)
                 {
                     var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
                     if (padre != null && padre.EsCategoria)
                     {
-                        // Buscar ID real de Categoria con el mismo nombre que el nodo padre
                         var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
-                        var consultaSql = $@"
-    SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
+                        var consultaSql = $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
                         var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
 
+                        if (dtCategoria.Rows.Count > 0)
+                        {
+                            int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
 
+                            var tablaSub = new DataTable("SubCategoria");
+                            tablaSub.Columns.Add("Id", typeof(int));
+                            tablaSub.Columns.Add("CategoriaId", typeof(int));
+                            tablaSub.Columns.Add("Nombre", typeof(string));
 
-                        if (dtCategoria.Rows.Count == 0)
-                            throw new Exception($"❌ El padre con Id {padre.Id} no existe en la tabla Categoria.");
+                            var rowSub = tablaSub.NewRow();
+                            rowSub["Id"] = nuevoNodo.Id;
+                            rowSub["CategoriaId"] = categoriaId;
+                            rowSub["Nombre"] = nuevoNodo.Nombre;
+                            tablaSub.Rows.Add(rowSub);
 
-                        int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+                            await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                        }
+                    }
 
-                        // Insertar en SubCategoria
-                        var tablaSub = new DataTable("SubCategoria");
-                        tablaSub.Columns.Add("Id", typeof(int));
-                        tablaSub.Columns.Add("CategoriaId", typeof(int));
-                        tablaSub.Columns.Add("Nombre", typeof(string));
+                    // 🔐 Validar dependencias antes de eliminar Categoria
+                    var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
+                    var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
+                    int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
 
-                        var rowSub = tablaSub.NewRow();
-                        rowSub["Id"] = 0;
-                        rowSub["CategoriaId"] = categoriaId;
-                        rowSub["Nombre"] = nuevoNodo.Nombre;
-                        tablaSub.Rows.Add(rowSub);
-
-                        await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                    if (cantidad == 0)
+                    {
+                        var eliminarCat = new DataTable("Categoria");
+                        eliminarCat.Columns.Add("Id", typeof(int));
+                        var rowCatDel = eliminarCat.NewRow();
+                        rowCatDel["Id"] = nuevoNodo.Id;
+                        eliminarCat.Rows.Add(rowCatDel);
+                        await ServicioUsuario.EliminarFilaAsync(eliminarCat, 18);
+                    }
+                    else
+                    {
+                        mensaje += $" ⚠ No se eliminó Categoría porque tiene documentos relacionados.";
                     }
                 }
             }
+        }
 
-            nuevoNodo = new();
-            editando = false;
-            await CargarNodos();
-        }
-        catch (Exception ex)
+        else // Crear nuevo nodo
         {
-            mensaje = $"❌ Error al guardar nodo: {ex.Message}";
+            await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
+            mensaje = "✅ Nodo guardado correctamente.";
+
+            // Recuperar el nuevo ID
+            var nombreEscapado = nuevoNodo.Nombre.Replace("'", "''");
+            var dtNuevoNodo = await ServicioUsuario.TraerConsultaAsync($@"
+                SELECT TOP 1 Id FROM NodoCategoria
+                WHERE Nombre = '{nombreEscapado}'
+                ORDER BY Id DESC", 18);
+
+            if (dtNuevoNodo.Rows.Count > 0)
+            {
+                nuevoNodo.Id = Convert.ToInt32(dtNuevoNodo.Rows[0]["Id"]);
+            }
+            else
+            {
+                throw new Exception("No se pudo recuperar el ID del nuevo nodo.");
+            }
+
+            if (nuevoNodo.EsCategoria)
+            {
+                var tablaCat = new DataTable("Categoria");
+                tablaCat.Columns.Add("Id", typeof(int));
+                tablaCat.Columns.Add("Nombre", typeof(string));
+                tablaCat.Columns.Add("PadreId", typeof(int));
+
+                var rowCat = tablaCat.NewRow();
+                rowCat["Id"] = nuevoNodo.Id;
+                rowCat["Nombre"] = nuevoNodo.Nombre;
+                rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
+                tablaCat.Rows.Add(rowCat);
+
+                await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+            }
+            else if (nuevoNodo.PadreId.HasValue)
+            {
+                var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
+                if (padre != null && padre.EsCategoria)
+                {
+                    var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
+                    var consultaSql = $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
+                    var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
+
+                    if (dtCategoria.Rows.Count == 0)
+                        throw new Exception($"❌ El padre con Id {padre.Id} no existe en la tabla Categoria.");
+
+                    int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+
+                    var tablaSub = new DataTable("SubCategoria");
+                    tablaSub.Columns.Add("Id", typeof(int));
+                    tablaSub.Columns.Add("CategoriaId", typeof(int));
+                    tablaSub.Columns.Add("Nombre", typeof(string));
+
+                    var rowSub = tablaSub.NewRow();
+                    rowSub["Id"] = 0;
+                    rowSub["CategoriaId"] = categoriaId;
+                    rowSub["Nombre"] = nuevoNodo.Nombre;
+                    tablaSub.Rows.Add(rowSub);
+
+                    await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                }
+            }
         }
+
+        int? padreIdAnterior = nuevoNodo.PadreId;
+
+        nuevoNodo = new();
+        editando = false;
+        await CargarNodos();
+        ExpandirNodoPadre(padreIdAnterior);
+        ExpandirRutaHastaNodo(padreIdAnterior);
     }
+    catch (Exception ex)
+    {
+        mensaje = $"❌ Error al guardar nodo: {ex.Message}";
+    }
+}
+
 
     private async Task<bool> ExisteCategoria(int idCategoria)
     {
@@ -671,6 +635,7 @@
         editando = false;
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     async Task CargarPlantillas()
@@ -913,12 +878,9 @@
             return;
 
         nodoSeleccionado = nodo;
-
-        // 🧭 Construir jerarquía desde el nodo hasta la raíz
         jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
 
-
-        // 🧠 Sincronizar dropdowns
+        // Sincronizar dropdowns
         var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
         var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
 
@@ -938,21 +900,34 @@
             }
         }
 
-        // Último nodo (para edición)
+        // Último nodo (para edición o referencia)
         var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
         if (nodoFinal != null)
         {
             nodoSeleccionadoId = nodoFinal.Id;
             InicializarJerarquiaDesdeNodo(nodoFinal.Id);
 
-            // ⚠️ Aquí actualizamos el objeto que se edita en el formulario
-            nuevoNodo = new NodoCategoria
+            if (editando)
+            {
+                // Si estamos editando, cargamos los datos del nodo para modificación
+                nuevoNodo = new NodoCategoria
             {
                 Id = nodoFinal.Id,
                 Nombre = nodoFinal.Nombre,
                 PadreId = nodoFinal.PadreId,
                 EsCategoria = nodoFinal.EsCategoria
             };
+            }
+            else
+            {
+                // Si no estamos editando, preparamos un nuevo hijo
+                nuevoNodo = new NodoCategoria
+            {
+                PadreId = nodoFinal.Id,
+                EsCategoria = false, // o true si deseas permitir subcategorías hijas
+                Nombre = ""
+            };
+            }
 
             Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
         }
@@ -965,103 +940,103 @@
     }
 
     async Task GuardarDocumento()
-{
-    try
     {
-        mensaje = string.Empty;
-
-        // 🔎 Validaciones
-        if (string.IsNullOrWhiteSpace(documento.Nombre))
-            mensaje += "❌ El nombre del documento es obligatorio.\n";
-
-        if (!string.IsNullOrEmpty(mensaje))
-            return;
-
-        // 🧠 Obtener nodo final desde árbol
-        var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
-
-        if (nodoCategoriaIdFinal.HasValue)
+        try
         {
-            Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
-        }
-        else
-        {
-            Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos.");
-        }
+            mensaje = string.Empty;
 
-        // 🟨 ACTUALIZACIÓN
-        if (DocumentoId.HasValue)
-        {
-            var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
-            var fila = dtDocumento.NewRow();
+            // 🔎 Validaciones
+            if (string.IsNullOrWhiteSpace(documento.Nombre))
+                mensaje += "❌ El nombre del documento es obligatorio.\n";
 
-            fila["Id"] = DocumentoId.Value;
-            fila["Nombre"] = documento.Nombre.Trim();
-            fila["PlantillaId"] = documento.PlantillaId ?? 0;
+            if (!string.IsNullOrEmpty(mensaje))
+                return;
 
-            dtDocumento.Rows.Add(fila);
-            await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
+            // 🧠 Obtener nodo final desde árbol
+            var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
 
-            // 🔄 Actualizar relación DocumentoCategoria
-            if (subCategoriaSeleccionadaId.HasValue)
+            if (nodoCategoriaIdFinal.HasValue)
             {
-                await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
-
-                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
-                var filaRelacion = dtRelacion.NewRow();
-
-                filaRelacion["DocumentoId"] = DocumentoId.Value;
-                filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
-
-                dtRelacion.Rows.Add(filaRelacion);
-                await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
+            }
+            else
+            {
+                Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos.");
             }
 
-            mensaje = "✅ Documento actualizado correctamente.";
-                await CargarDocumentos();
-        }
-        else
-        {
-            // ✅ NUEVO REGISTRO
-            var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
-            var fila = dtDocumento.NewRow();
-
-            fila["Nombre"] = documento.Nombre.Trim();
-            fila["PlantillaId"] = documento.PlantillaId ?? 0;
-            fila["FechaCreacion"] = DateTime.Now;
-
-            dtDocumento.Rows.Add(fila);
-            await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
-
-            // 📌 Obtener ID recién insertado
-            var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
-            int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
-
-            // ➕ Insertar relación DocumentoCategoria
-            if (subCategoriaSeleccionadaId.HasValue)
+            // 🟨 ACTUALIZACIÓN
+            if (DocumentoId.HasValue)
             {
-                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
-                var filaRelacion = dtRelacion.NewRow();
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
 
-                filaRelacion["DocumentoId"] = nuevoDocumentoId;
-                filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+                fila["Id"] = DocumentoId.Value;
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
 
-                dtRelacion.Rows.Add(filaRelacion);
-                await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
-            }
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
 
-            mensaje = "✅ Documento registrado correctamente.";
-            documento = new(); // limpia el formulario
+                // 🔄 Actualizar relación DocumentoCategoria
+                if (subCategoriaSeleccionadaId.HasValue)
+                {
+                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
+
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                    var filaRelacion = dtRelacion.NewRow();
+
+                    filaRelacion["DocumentoId"] = DocumentoId.Value;
+                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                    dtRelacion.Rows.Add(filaRelacion);
+                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                }
+
+                mensaje = "✅ Documento actualizado correctamente.";
                 await CargarDocumentos();
+            }
+            else
+            {
+                // ✅ NUEVO REGISTRO
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
+
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
+                fila["FechaCreacion"] = DateTime.Now;
+
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
+
+                // 📌 Obtener ID recién insertado
+                var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
+                int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+
+                // ➕ Insertar relación DocumentoCategoria
+                if (subCategoriaSeleccionadaId.HasValue)
+                {
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                    var filaRelacion = dtRelacion.NewRow();
+
+                    filaRelacion["DocumentoId"] = nuevoDocumentoId;
+                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                    dtRelacion.Rows.Add(filaRelacion);
+                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                }
+
+                mensaje = "✅ Documento registrado correctamente.";
+                documento = new(); // limpia el formulario
+                await CargarDocumentos();
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al guardar documento: {ex.Message}";
         }
     }
-    catch (Exception ex)
-    {
-        mensaje = $"❌ Error al guardar documento: {ex.Message}";
-    }
-}
 
     private int? ObtenerNodoCategoriaIdFinal()
     {
@@ -1100,220 +1075,12 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    private async Task OnFileUpload(InputFileChangeEventArgs e)
-    {
-        try
-        {
-            var file = e.File;
-
-            if (file != null)
-            {
-                using var stream = file.OpenReadStream(maxAllowedSize: 20_000_000);
-                using var ms = new MemoryStream();
-                await stream.CopyToAsync(ms);
-                var bytes = ms.ToArray();
-
-                var mime = file.ContentType;
-                var base64 = Convert.ToBase64String(bytes);
-                var dataUrl = $"data:{mime};base64,{base64}";
-
-                plantilla.NombreArchivo = file.Name;
-                plantilla.RutaArchivo = dataUrl;
-
-                mensaje2 = $"✅ Archivo '{file.Name}' cargado correctamente.";
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje2 = $"❌ Error al leer archivo: {ex.Message}";
-        }
-    }
-
-    private async Task AgregarPlantilla()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(plantilla.NombreArchivo) || string.IsNullOrWhiteSpace(plantilla.RutaArchivo))
-            {
-                await dialogService.Alert("⚠️ Debes seleccionar un archivo válido.");
-                return;
-            }
-
-            var dt = await ServicioSoap.TraerEsquemaTablaAsync("Plantilla", 18);
-            var row = dt.NewRow();
-            row["NombreArchivo"] = plantilla.NombreArchivo;
-            row["RutaArchivo"] = plantilla.RutaArchivo;
-            row["Version"] = plantilla.Version ?? (object)DBNull.Value;
-            row["Estado"] = plantilla.Estado ?? (object)DBNull.Value;
-            row["Referencia"] = plantilla.Referencia ?? string.Empty;
-            dt.Rows.Add(row);
-
-            await ServicioSoap.InsertarTablaAsync(dt, "Plantilla", 18);
-
-            mensaje2 = "✅ Plantilla registrada exitosamente.";
-            plantilla = new();
-           await CargarPlantillas2();
-           await CargarPlantillas(); 
-
-        }
-        catch (Exception ex)
-        {
-            mensaje2 = $"❌ Error al registrar plantilla: {ex.Message}";
-        }
-    }
-
-    private async Task CargarPlantillas2()
-    {
-        try
-        {
-            var dt = await ServicioSoap.TraerConsultaAsync("SELECT Id, NombreArchivo, RutaArchivo, Version, Estado, Referencia FROM Plantilla", 18);
-            listaPlantillas = dt.Rows.Cast<DataRow>().Select(row => new Plantilla
-            {
-                Id = Convert.ToInt32(row["Id"]),
-                NombreArchivo = row["NombreArchivo"].ToString(),
-                RutaArchivo = EnsureDataUrl(row["RutaArchivo"].ToString(), row["NombreArchivo"].ToString()),
-                Version = row["Version"].ToString(),
-                Estado = row["Estado"].ToString(),
-                Referencia = row.Table.Columns.Contains("Referencia") ? row["Referencia"]?.ToString() : null
-            }).ToList();
-        }
-        catch (Exception ex)
-        {
-            mensaje2 = $"❌ Error al cargar plantillas: {ex.Message}";
-        }
-    }
-
-    private async Task ActualizarPlantilla()
-    {
-        if (string.IsNullOrWhiteSpace(rutaSeleccionada))
-        {
-            await dialogService.Alert("⚠️ Selecciona una plantilla para actualizar.");
-            return;
-        }
-
-        try
-        {
-            var rutaEscapada = rutaSeleccionada.Replace("'", "''");
-            string condicion = $"RutaArchivo = '{rutaEscapada}'";
-
-            string nombreArchivo = plantilla.NombreArchivo?.Replace("'", "''") ?? "";
-            string version = plantilla.Version?.Replace("'", "''") ?? "";
-            string estado = plantilla.Estado?.Replace("'", "''") ?? "";
-            string referencia = plantilla.Referencia?.Replace("'", "''") ?? "";
-
-            await ServicioSoap.ActualizarCampoAsync("Plantilla", "NombreArchivo", $"'{nombreArchivo}'", condicion, 18);
-            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Version", $"'{version}'", condicion, 18);
-            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Estado", $"'{estado}'", condicion, 18);
-            await ServicioSoap.ActualizarCampoAsync("Plantilla", "Referencia", $"'{referencia}'", condicion, 18);
-
-            if (!string.IsNullOrWhiteSpace(plantilla.RutaArchivo))
-            {
-                string rutaBase64 = plantilla.RutaArchivo.Replace("'", "''");
-                await ServicioSoap.ActualizarCampoAsync("Plantilla", "RutaArchivo", $"'{rutaBase64}'", condicion, 18);
-            }
-
-            mensaje2 = "✅ Plantilla actualizada correctamente.";
-            await CargarPlantillas2();
-        }
-        catch (Exception ex)
-        {
-            mensaje2 = $"❌ Error al actualizar plantilla: {ex.Message}";
-        }
-    }
-
-    private async Task EliminarPlantilla()
-    {
-        if (plantillaSeleccionadaId == null)
-        {
-            await dialogService.Alert("⚠️ Selecciona una plantilla para eliminar.");
-            return;
-        }
-
-        try
-        {
-            // Validar si hay documentos relacionados
-            var dtRelacionados = await ServicioSoap.TraerConsultaAsync(
-                $"SELECT COUNT(*) AS Total FROM Documento WHERE PlantillaId = {plantillaSeleccionadaId}", 18);
-
-            int relacionados = Convert.ToInt32(dtRelacionados.Rows[0]["Total"]);
-            if (relacionados > 0)
-            {
-                mensaje2 = $"❌ No se puede eliminar. Hay {relacionados} documento(s) que usan esta plantilla.";
-                return;
-            }
-
-            // Eliminar plantilla
-            await ServicioSoap.TraerConsultaAsync($"DELETE FROM Plantilla WHERE Id = {plantillaSeleccionadaId}", 18);
-
-            // Eliminar archivo físico si lo deseas (opcional)
-            if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
-            {
-                var pathAbsoluto = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaSeleccionada.TrimStart('/'));
-                if (File.Exists(pathAbsoluto))
-                {
-                    File.Delete(pathAbsoluto);
-                }
-            }
-
-            mensaje2 = "✅ Plantilla eliminada correctamente.";
-            plantilla = new();
-            rutaSeleccionada = null;
-            plantillaSeleccionadaId = null;
-            await CargarPlantillas2();
-        }
-        catch (Exception ex)
-        {
-            mensaje2 = $"❌ Error al eliminar plantilla: {ex.Message}";
-        }
-    }
-
-    private string EnsureDataUrl(string base64, string nombreArchivo)
-    {
-        if (string.IsNullOrWhiteSpace(base64)) return "";
-
-        if (base64.StartsWith("data:")) return base64;
-
-        var ext = Path.GetExtension(nombreArchivo)?.ToLowerInvariant();
-        var mime = ext switch
-        {
-            ".png" => "image/png",
-            ".jpg" or ".jpeg" => "image/jpeg",
-            ".pdf" => "application/pdf",
-            ".txt" => "text/plain",
-            _ => "application/octet-stream"
-        };
-
-        return $"data:{mime};base64,{base64}";
-    }
-
-    private void OnSeleccionarDesdeGrid(Plantilla seleccionada)
-    {
-        if (seleccionada != null)
-        {
-            plantilla.NombreArchivo = seleccionada.NombreArchivo;
-            plantilla.RutaArchivo = seleccionada.RutaArchivo;
-            plantilla.Version = seleccionada.Version;
-            plantilla.Estado = estadosDisponibles.Contains(seleccionada.Estado) ? seleccionada.Estado : null;
-            plantilla.Referencia = seleccionada.Referencia;
-            rutaSeleccionada = seleccionada.RutaArchivo;
-            plantillaSeleccionadaId = seleccionada.Id;
-
-            //showModal = true; // ✅ Mostramos la ventana emergente
-        }
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
     void MostrarVisor(Plantilla data)
     {
         rutaSeleccionada = data?.RutaBase64 ?? "";
         showModal = !string.IsNullOrWhiteSpace(rutaSeleccionada);
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1412,19 +1179,20 @@
     }
 
     void NuevoDocumento()
-{
-    documento = new(); // limpia todos los campos del documento
-    DocumentoId = null;
-    esNuevo = true;
-    mensaje = string.Empty;
-    subCategoriaSeleccionadaId = null;
-}
+    {
+        documento = new(); // limpia todos los campos del documento
+        DocumentoId = null;
+        esNuevo = true;
+        mensaje = string.Empty;
+        subCategoriaSeleccionadaId = null;
+    }
 
     void EditarDocumento(int id)
     {
         Navigation.NavigateTo($"/rdocumento/{id}");
     }
-    
+
+
     async Task CargarDocumento()
     {
         var dt = await ServicioUsuario.TraerTablaAsync("Documento", IdAplicacion);
@@ -1463,7 +1231,195 @@
         nodoSeleccionadoFinalId = null;
         mensajes = string.Empty;
         _ = CargarDocumentos(); // 🔁 recarga la grilla
+        NuevoDocumento();
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    void PrepararNuevoNodoComoHijo()
+    {
+        nuevoNodo = new NodoCategoria
+        {
+            PadreId = nodoSeleccionado?.Id,
+            EsCategoria = false,
+            Nombre = ""
+        };
+
+        editando = false;
+    }
+
+    private void ExpandirNodoPadre(int? padreId)
+    {
+        if (!padreId.HasValue)
+            return;
+
+        void Expandir(NodoCategoria nodo)
+        {
+            if (nodo.Id == padreId)
+            {
+                nodo.Expanded = true;
+                return;
+            }
+
+            foreach (var hijo in nodo.Hijos)
+            {
+                Expandir(hijo);
+            }
+        }
+
+        foreach (var raiz in nodosRaiz)
+        {
+            Expandir(raiz);
+        }
+    }
+
+    private void ExpandirRutaHastaNodo(int? nodoIdFinal)
+    {
+        if (!nodoIdFinal.HasValue)
+            return;
+
+        void Expandir(NodoCategoria nodo, List<int> ruta)
+        {
+            if (ruta.Contains(nodo.Id))
+                nodo.Expanded = true;
+
+            foreach (var hijo in nodo.Hijos)
+            {
+                Expandir(hijo, ruta);
+            }
+        }
+
+        // 🧠 Obtener la ruta desde raíz hasta el nodo con ese ID
+        List<int> rutaIds = ObtenerRutaIds(nodoIdFinal.Value);
+        foreach (var raiz in nodosRaiz)
+        {
+            Expandir(raiz, rutaIds);
+        }
+    }
+
+    private List<int> ObtenerRutaIds(int nodoIdDestino)
+    {
+        List<int> ruta = new();
+
+        bool BuscarRuta(NodoCategoria nodo)
+        {
+            if (nodo.Id == nodoIdDestino)
+            {
+                ruta.Add(nodo.Id);
+                return true;
+            }
+
+            foreach (var hijo in nodo.Hijos)
+            {
+                if (BuscarRuta(hijo))
+                {
+                    ruta.Add(nodo.Id); // Agrega al subir
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        foreach (var raiz in nodosRaiz)
+        {
+            if (BuscarRuta(raiz))
+                break;
+        }
+
+        ruta.Reverse(); // De raíz a destino
+        return ruta;
+    }
+
+    private string textoBusqueda = string.Empty;
+    private int? nodoIdEncontrado = null;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    private async Task BuscarNodo()
+    {
+        if (string.IsNullOrWhiteSpace(textoBusqueda))
+            return;
+
+        LimpiarResaltado(nodosRaiz); // 1️⃣ limpia solo resaltados anteriores
+
+        var nodoEncontrado = BuscarNodoPorNombre(nodosRaiz, textoBusqueda.Trim()); // 2️⃣ busca y marca
+
+        if (nodoEncontrado != null)
+        {
+            nodoIdEncontrado = nodoEncontrado.Id;
+            ExpandirRutaHastaNodo(nodoIdEncontrado);
+            await InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            mensaje = "❌ Nodo no encontrado.";
+        }
+    }
+
+    private NodoCategoria BuscarNodoPorNombre(List<NodoCategoria> nodos, string texto)
+{
+    foreach (var nodo in nodos)
+    {
+        if (nodo.NombreOriginal.Contains(texto, StringComparison.OrdinalIgnoreCase))
+        {
+            nodo.EsNodoBuscado = true;
+            nodo.Nombre = $"👉 {nodo.NombreOriginal}";
+            return nodo;
+        }
+
+        var encontrado = BuscarNodoPorNombre(nodo.Hijos, texto);
+        if (encontrado != null)
+            return encontrado;
+    }
+    return null;
+}
+
+    private void LimpiarResaltado(List<NodoCategoria> nodos)
+    {
+        foreach (var nodo in nodos)
+        {
+            if (nodo.EsNodoBuscado)
+            {
+                nodo.EsNodoBuscado = false;
+                nodo.Nombre = nodo.NombreOriginal; // ← restaurar solo si estaba resaltado
+            }
+
+            if (nodo.Hijos?.Any() == true)
+                LimpiarResaltado(nodo.Hijos);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+    private void Cancelar() => Navigation.NavigateTo("/Documentos");
+
+    async Task GuardarDocumentoYRama()
+{
+    if (string.IsNullOrWhiteSpace(nombreComun))
+    {
+        mensaje = "❌ Debes escribir un nombre para la rama y el documento.";
+        return;
+    }
+
+    nuevoNodo.Nombre = nombreComun;
+    documento.Nombre = nombreComun;
+
+    // Luego llamas tus métodos existentes:
+    await GuardarNodo();        // o lógica para nodo
+    await GuardarDocumento();   // o lógica para documento
+}
 
 }
 
