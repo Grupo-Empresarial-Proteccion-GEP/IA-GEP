@@ -27,7 +27,7 @@
 
 
                 <RadzenTree Data="@nodosRaiz"
-                            Style="max-height: 400px; overflow-y: auto;"
+                            Style="max-height: 450px; overflow-y: auto;"
                             Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
                     <RadzenTreeLevel TextProperty="Nombre" ChildrenProperty="Hijos" />
                 </RadzenTree>
@@ -157,7 +157,7 @@
                               Click="@GuardarDocumento"
                               Class="me-2" />
 
-                <RadzenButton Text="Documentos Registrados"
+                <RadzenButton Text="@(DocumentoId.HasValue ? "Cancelar edición" : "Documentos Registrados")"
                               Icon="arrow_back"
                               ButtonStyle="ButtonStyle.Primary"
                               Click="@(() => {
@@ -171,6 +171,7 @@
                                   }
                               })"
                               Style="margin-left: 10px;" />
+
 
                 </div>
 
@@ -232,7 +233,7 @@
                     <RadzenDataGridColumn TItem="Plantilla" Property="Estado" Title="Estado" />
                     <RadzenDataGridColumn TItem="Plantilla" Title="Acción">
                         <Template Context="data">
-                            <RadzenButton Icon="visibility" Size="ButtonSize.Small" Click="@(() => OnSeleccionarDesdeGrid(data))" />
+                            <RadzenButton Icon="visibility" Size="ButtonSize.Small" Click="@(() => showModal = true)" />
                         </Template>
                     </RadzenDataGridColumn>
                 </Columns>
@@ -310,7 +311,11 @@
 
 @code {
 
+
+
     string mensajes;
+    string mensajes2;
+    bool esNuevo = true;
     int IdAplicacion = 18;
     private string mensaje;
     private string? mensaje2;
@@ -318,17 +323,20 @@
     Documento documento = new();
     string tipoSeleccionado = "";
     private bool editando = false;
+    private bool showModal = false;
     string nombreSeleccionado = "";
     private string? rutaSeleccionada;
     List<Plantilla> plantillas = new();
     List<Categoria> categorias = new();
     private int? plantillaSeleccionadaId;
+    [Parameter] public int Id { get; set;}
     List<NodoCategoria> ListaNodos = new(); // debe contener TODA la estructura
     List<NodoCategoria> todosNodos = new();
     private NodoCategoria nuevoNodo = new();
     List<Plantilla> listaPlantillas = new();
     private NodoCategoria? nodoSeleccionado;
     List<NodoCategoria> nodosFiltrados = new();
+    List<DocumentoExtendido> documentos = new();
     [Parameter] public int? NodoId { get; set; }
     List<NodoSeleccion> nivelesDinamicos = new();
     List<SubCategoria> todasSubcategorias = new();
@@ -1055,7 +1063,6 @@
     }
 }
 
-
     private int? ObtenerNodoCategoriaIdFinal()
     {
         int? nodoId = null;
@@ -1145,7 +1152,9 @@
 
             mensaje2 = "✅ Plantilla registrada exitosamente.";
             plantilla = new();
-            await CargarPlantillas2();
+           await CargarPlantillas2();
+           await CargarPlantillas(); 
+
         }
         catch (Exception ex)
         {
@@ -1289,15 +1298,13 @@
             rutaSeleccionada = seleccionada.RutaArchivo;
             plantillaSeleccionadaId = seleccionada.Id;
 
-            showModal = true; // ✅ Mostramos la ventana emergente
+            //showModal = true; // ✅ Mostramos la ventana emergente
         }
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private bool showModal = false;
 
     void MostrarVisor(Plantilla data)
     {
@@ -1309,10 +1316,6 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-    
-    
-    List<DocumentoExtendido> documentos = new();
-    string mensajes2;
 
     async Task CargarDocumentos()
     {
@@ -1407,10 +1410,6 @@
     {
         Navigation.NavigateTo("/Documentos");
     }
-
-    bool esNuevo = true;
-
-    [Parameter]  public int Id { get; set; }
 
     void NuevoDocumento()
 {
