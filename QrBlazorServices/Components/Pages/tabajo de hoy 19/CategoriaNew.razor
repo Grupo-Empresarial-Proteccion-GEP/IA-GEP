@@ -91,6 +91,15 @@
                                   Style="font-size: 0.85rem; padding: 6px 12px;" />
                 }
 
+                                <!--@if (!DocumentoId.HasValue)-->
+               <!-- {
+
+                    <RadzenButton Text="Guardar"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Click="@GuardarDocumento"
+                                  Icon=""
+                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+                }-->
 
 
                 @if (editando)
@@ -145,7 +154,7 @@
         <!--///////////////////////////////////////////////////////////////////////////////////////////-->
 
             <RadzenFieldset Text="Documentos Arbol Documental">
-            <RadzenDataGrid Data="@documentos" TItem="DocumentoExtendido" AllowPaging="true" PageSize="3"
+            <RadzenDataGrid Data="@documentos" TItem="DocumentoExtendido" AllowPaging="true" PageSize="10"
                             AllowSorting="true"
                             FilterMode="FilterMode.Simple"
                             ShowPagingSummary="true"
@@ -287,6 +296,8 @@
     List<NodoCategoria> jerarquiaSeleccionada = new();
     private List<NodoCategoria> nodosExistentes = new();
 
+   
+
     public List<NodoCategoria> Hijos { get; set; } = new();
 
     List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
@@ -362,211 +373,7 @@
         return nodo;
     }
 
-   private async Task GuardarNodo()
-{
-    if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
-    {
-        notificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = "Campo requerido",
-            Detail = "El nombre del nodo no puede estar vacío.",
-            Duration = 4000
-        });
-        return;
-    }
-
-    try
-    {
-        var tablaNodo = new DataTable("NodoCategoria");
-        tablaNodo.Columns.Add("Id", typeof(int));
-        tablaNodo.Columns.Add("Nombre", typeof(string));
-        tablaNodo.Columns.Add("PadreId", typeof(int));
-        tablaNodo.Columns.Add("EsCategoria", typeof(bool));
-
-        var rowNodo = tablaNodo.NewRow();
-        rowNodo["Id"] = nuevoNodo.Id;
-        rowNodo["Nombre"] = nuevoNodo.Nombre;
-        rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
-        rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
-        tablaNodo.Rows.Add(rowNodo);
-
-        if (editando)
-        {
-            await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
-            mensaje = "✅ Nodo actualizado correctamente.";
-
-            var nodoAnterior = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.Id);
-            if (nodoAnterior != null)
-            {
-                // 🔄 Cambio de Subcategoría → Categoría
-                if (!nodoAnterior.EsCategoria && nuevoNodo.EsCategoria)
-                {
-                    var tablaCat = new DataTable("Categoria");
-                    tablaCat.Columns.Add("Id", typeof(int));
-                    tablaCat.Columns.Add("Nombre", typeof(string));
-                    tablaCat.Columns.Add("PadreId", typeof(int));
-
-                    var rowCat = tablaCat.NewRow();
-                    rowCat["Id"] = nuevoNodo.Id;
-                    rowCat["Nombre"] = nuevoNodo.Nombre;
-                    rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
-                    tablaCat.Rows.Add(rowCat);
-
-                    await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
-
-                    // 🔐 Validar dependencias antes de eliminar SubCategoria
-                    var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
-                    var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
-                    int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
-
-                    if (cantidad == 0)
-                    {
-                        var eliminarSub = new DataTable("SubCategoria");
-                        eliminarSub.Columns.Add("Id", typeof(int));
-                        var rowDel = eliminarSub.NewRow();
-                        rowDel["Id"] = nuevoNodo.Id;
-                        eliminarSub.Rows.Add(rowDel);
-                        await ServicioUsuario.EliminarFilaAsync(eliminarSub, 18);
-                    }
-                    else
-                    {
-                        mensaje += $" ⚠ No se eliminó SubCategoría porque tiene documentos relacionados.";
-                    }
-                }
-
-                // 🔄 Cambio de Categoría → Subcategoría
-                else if (nodoAnterior.EsCategoria && !nuevoNodo.EsCategoria && nuevoNodo.PadreId.HasValue)
-                {
-                    var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
-                    if (padre != null && padre.EsCategoria)
-                    {
-                        var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
-                        var consultaSql = $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
-                        var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
-
-                        if (dtCategoria.Rows.Count > 0)
-                        {
-                            int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
-
-                            var tablaSub = new DataTable("SubCategoria");
-                            tablaSub.Columns.Add("Id", typeof(int));
-                            tablaSub.Columns.Add("CategoriaId", typeof(int));
-                            tablaSub.Columns.Add("Nombre", typeof(string));
-
-                            var rowSub = tablaSub.NewRow();
-                            rowSub["Id"] = nuevoNodo.Id;
-                            rowSub["CategoriaId"] = categoriaId;
-                            rowSub["Nombre"] = nuevoNodo.Nombre;
-                            tablaSub.Rows.Add(rowSub);
-
-                            await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
-                        }
-                    }
-
-                    // 🔐 Validar dependencias antes de eliminar Categoria
-                    var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
-                    var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
-                    int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
-
-                    if (cantidad == 0)
-                    {
-                        var eliminarCat = new DataTable("Categoria");
-                        eliminarCat.Columns.Add("Id", typeof(int));
-                        var rowCatDel = eliminarCat.NewRow();
-                        rowCatDel["Id"] = nuevoNodo.Id;
-                        eliminarCat.Rows.Add(rowCatDel);
-                        await ServicioUsuario.EliminarFilaAsync(eliminarCat, 18);
-                    }
-                    else
-                    {
-                        mensaje += $" ⚠ No se eliminó Categoría porque tiene documentos relacionados.";
-                    }
-                }
-            }
-        }
-
-        else // Crear nuevo nodo
-        {
-            await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
-            mensaje = "✅ Nodo guardado correctamente.";
-
-            // Recuperar el nuevo ID
-            var nombreEscapado = nuevoNodo.Nombre.Replace("'", "''");
-            var dtNuevoNodo = await ServicioUsuario.TraerConsultaAsync($@"
-                SELECT TOP 1 Id FROM NodoCategoria
-                WHERE Nombre = '{nombreEscapado}'
-                ORDER BY Id DESC", 18);
-
-            if (dtNuevoNodo.Rows.Count > 0)
-            {
-                nuevoNodo.Id = Convert.ToInt32(dtNuevoNodo.Rows[0]["Id"]);
-            }
-            else
-            {
-                throw new Exception("No se pudo recuperar el ID del nuevo nodo.");
-            }
-
-            if (nuevoNodo.EsCategoria)
-            {
-                var tablaCat = new DataTable("Categoria");
-                tablaCat.Columns.Add("Id", typeof(int));
-                tablaCat.Columns.Add("Nombre", typeof(string));
-                tablaCat.Columns.Add("PadreId", typeof(int));
-
-                var rowCat = tablaCat.NewRow();
-                rowCat["Id"] = nuevoNodo.Id;
-                rowCat["Nombre"] = nuevoNodo.Nombre;
-                rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
-                tablaCat.Rows.Add(rowCat);
-
-                await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
-            }
-            else if (nuevoNodo.PadreId.HasValue)
-            {
-                var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
-                if (padre != null && padre.EsCategoria)
-                {
-                    var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
-                    var consultaSql = $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
-                    var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
-
-                    if (dtCategoria.Rows.Count == 0)
-                        throw new Exception($"❌ El padre con Id {padre.Id} no existe en la tabla Categoria.");
-
-                    int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
-
-                    var tablaSub = new DataTable("SubCategoria");
-                    tablaSub.Columns.Add("Id", typeof(int));
-                    tablaSub.Columns.Add("CategoriaId", typeof(int));
-                    tablaSub.Columns.Add("Nombre", typeof(string));
-
-                    var rowSub = tablaSub.NewRow();
-                    rowSub["Id"] = 0;
-                    rowSub["CategoriaId"] = categoriaId;
-                    rowSub["Nombre"] = nuevoNodo.Nombre;
-                    tablaSub.Rows.Add(rowSub);
-
-                    await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
-                }
-            }
-        }
-
-        int? padreIdAnterior = nuevoNodo.PadreId;
-
-        nuevoNodo = new();
-        editando = false;
-        await CargarNodos();
-        ExpandirNodoPadre(padreIdAnterior);
-        ExpandirRutaHastaNodo(padreIdAnterior);
-    }
-    catch (Exception ex)
-    {
-        mensaje = $"❌ Error al guardar nodo: {ex.Message}";
-    }
-}
-
-
+  
     private async Task<bool> ExisteCategoria(int idCategoria)
     {
         var dt = await ServicioUsuario.TraerConsultaAsync($"SELECT COUNT(*) AS Total FROM Categoria WHERE Id = {idCategoria}", 18);
@@ -661,6 +468,9 @@
     async Task CargarSubcategorias()
     {
         var ds = await ServicioUsuario.TraerTablaAsync("SubCategoria", IdAplicacion);
+
+
+
         todasSubcategorias = ds.AsEnumerable().Select(r => new SubCategoria
         {
             Id = Convert.ToInt32(r["Id"]),
@@ -869,212 +679,6 @@
         return string.Join(" ➝ ", partes);
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
-    {
-        if (nodo == null)
-            return;
-
-        nodoSeleccionado = nodo;
-        jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
-
-        // Sincronizar dropdowns
-        var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
-        var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
-
-        if (categoria != null)
-        {
-            categoriaSeleccionadaId = categoria.Id;
-            FiltrarSubcategorias(categoria.Id);
-        }
-
-        if (subcategoria != null)
-        {
-            var sub = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == subcategoria.Nombre.Trim());
-            if (sub != null)
-            {
-                subCategoriaSeleccionadaId = sub.Id;
-                FiltrarNodos(sub.Id);
-            }
-        }
-
-        // Último nodo (para edición o referencia)
-        var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
-        if (nodoFinal != null)
-        {
-            nodoSeleccionadoId = nodoFinal.Id;
-            InicializarJerarquiaDesdeNodo(nodoFinal.Id);
-
-            if (editando)
-            {
-                // Si estamos editando, cargamos los datos del nodo para modificación
-                nuevoNodo = new NodoCategoria
-            {
-                Id = nodoFinal.Id,
-                Nombre = nodoFinal.Nombre,
-                PadreId = nodoFinal.PadreId,
-                EsCategoria = nodoFinal.EsCategoria
-            };
-            }
-            else
-            {
-                // Si no estamos editando, preparamos un nuevo hijo
-                nuevoNodo = new NodoCategoria
-            {
-                PadreId = nodoFinal.Id,
-                EsCategoria = false, // o true si deseas permitir subcategorías hijas
-                Nombre = ""
-            };
-            }
-
-            Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
-        }
-        else
-        {
-            Console.WriteLine("⚠️ No se pudo determinar el nodo final desde la jerarquía.");
-        }
-
-        StateHasChanged();
-    }
-
-    async Task GuardarDocumento()
-    {
-        try
-        {
-            mensaje = string.Empty;
-
-            // 🔎 Validaciones
-            if (string.IsNullOrWhiteSpace(documento.Nombre))
-                mensaje += "❌ El nombre del documento es obligatorio.\n";
-
-            if (!string.IsNullOrEmpty(mensaje))
-                return;
-
-            // 🧠 Obtener nodo final desde árbol
-            var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
-
-            if (nodoCategoriaIdFinal.HasValue)
-            {
-                Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
-            }
-            else
-            {
-                Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos.");
-            }
-
-            // 🟨 ACTUALIZACIÓN
-            if (DocumentoId.HasValue)
-            {
-                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
-                var fila = dtDocumento.NewRow();
-
-                fila["Id"] = DocumentoId.Value;
-                fila["Nombre"] = documento.Nombre.Trim();
-                fila["PlantillaId"] = documento.PlantillaId ?? 0;
-
-                dtDocumento.Rows.Add(fila);
-                await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
-
-                // 🔄 Actualizar relación DocumentoCategoria
-                if (subCategoriaSeleccionadaId.HasValue)
-                {
-                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
-
-                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
-                    var filaRelacion = dtRelacion.NewRow();
-
-                    filaRelacion["DocumentoId"] = DocumentoId.Value;
-                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
-
-                    dtRelacion.Rows.Add(filaRelacion);
-                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
-                }
-
-                mensaje = "✅ Documento actualizado correctamente.";
-                await CargarDocumentos();
-            }
-            else
-            {
-                // ✅ NUEVO REGISTRO
-                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
-                var fila = dtDocumento.NewRow();
-
-                fila["Nombre"] = documento.Nombre.Trim();
-                fila["PlantillaId"] = documento.PlantillaId ?? 0;
-                fila["FechaCreacion"] = DateTime.Now;
-
-                dtDocumento.Rows.Add(fila);
-                await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
-
-                // 📌 Obtener ID recién insertado
-                var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
-                int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
-
-                // ➕ Insertar relación DocumentoCategoria
-                if (subCategoriaSeleccionadaId.HasValue)
-                {
-                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
-                    var filaRelacion = dtRelacion.NewRow();
-
-                    filaRelacion["DocumentoId"] = nuevoDocumentoId;
-                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
-
-                    dtRelacion.Rows.Add(filaRelacion);
-                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
-                }
-
-                mensaje = "✅ Documento registrado correctamente.";
-                documento = new(); // limpia el formulario
-                await CargarDocumentos();
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"❌ Error al guardar documento: {ex.Message}";
-        }
-    }
-
-    private int? ObtenerNodoCategoriaIdFinal()
-    {
-        int? nodoId = null;
-
-        // 1. Buscar en niveles dinámicos (si existen)
-        if (nivelesDinamicos != null && nivelesDinamicos.Any())
-        {
-            for (int i = nivelesDinamicos.Count - 1; i >= 0; i--)
-            {
-                var nivel = nivelesDinamicos[i];
-                if (nivel.NodoSeleccionadoId.HasValue)
-                {
-                    nodoId = nivel.NodoSeleccionadoId;
-                    var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoId);
-                    Console.WriteLine($"✅ Nodo seleccionado final: {nodo?.Nombre} (ID: {nodo?.Id})");
-                    return nodoId;
-                }
-            }
-        }
-
-        // 2. Si no se encontró en niveles dinámicos, usar el nodo raíz seleccionado
-        if (nodoSeleccionadoId.HasValue)
-        {
-            nodoId = nodoSeleccionadoId;
-            var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoId);
-            Console.WriteLine($"✅ Nodo seleccionado raíz: {nodo?.Nombre} (ID: {nodo?.Id})");
-            return nodoId;
-        }
-
-        // 3. Ningún nodo válido encontrado
-        Console.WriteLine("❌ No se encontró NodoCategoriaId válido ni en niveles dinámicos ni en nodo raíz.");
-        return null;
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
     void MostrarVisor(Plantilla data)
     {
         rutaSeleccionada = data?.RutaBase64 ?? "";
@@ -1128,7 +732,12 @@
             int id = Convert.ToInt32(doc["Id"]);
 
             var relacion = relaciones.FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == id);
-            var subCatId = relacion != null ? Convert.ToInt32(relacion["SubCategoriaId"]) : 0;
+            
+            var subCatId = (relacion != null && relacion["SubCategoriaId"] != DBNull.Value)
+               ? Convert.ToInt32(relacion["SubCategoriaId"])
+               : 0;
+
+
             var nodoId = relacion != null && relacion["NodoCategoriaId"] != DBNull.Value
                             ? Convert.ToInt32(relacion["NodoCategoriaId"]) : 0;
 
@@ -1405,7 +1014,8 @@
 
     private void Cancelar() => Navigation.NavigateTo("/Documentos");
 
-    async Task GuardarDocumentoYRama()
+
+  async Task GuardarDocumentoYRama()
 {
     if (string.IsNullOrWhiteSpace(nombreComun))
     {
@@ -1416,10 +1026,502 @@
     nuevoNodo.Nombre = nombreComun;
     documento.Nombre = nombreComun;
 
-    // Luego llamas tus métodos existentes:
-    await GuardarNodo();        // o lógica para nodo
-    await GuardarDocumento();   // o lógica para documento
+    await GuardarNodo(); // crea el nodo
+
+    // 🔄 Consultar inmediatamente el nodo recién insertado
+    var nombreEscapado = nombreComun.Replace("'", "''");
+    var dtNodoReciente = await ServicioUsuario.TraerConsultaAsync($@"
+        SELECT TOP 1 * FROM NodoCategoria 
+        WHERE Nombre = '{nombreEscapado}'
+        ORDER BY Id DESC", 18);
+
+    if (dtNodoReciente.Rows.Count > 0)
+    {
+        nodoSeleccionadoId = Convert.ToInt32(dtNodoReciente.Rows[0]["Id"]);
+        Console.WriteLine($"✅ Nodo creado y confirmado con ID: {nodoSeleccionadoId}");
+
+        documento.NodoCategoriaId = nodoSeleccionadoId; // ✅ Asignación importante
+    }
+    else
+    {
+        mensaje = "⚠️ No se encontró el nodo recién creado desde la base de datos.";
+        return;
+    }
+
+    // 🔁 Re-cargar nodos y subcategorías para tener datos actualizados
+    await CargarNodos2();
+    await CargarSubcategorias();
+
+    // ✅ Registrar el nodo seleccionado como nivel dinámico
+    nivelesDinamicos ??= new List<NodoSeleccion>();
+    nivelesDinamicos.Clear();
+    nivelesDinamicos.Add(new NodoSeleccion
+    {
+        NodoSeleccionadoId = nodoSeleccionadoId
+    });
+
+    // 🧠 Buscar subcategoría en jerarquía ascendente
+    var actual = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
+    subCategoriaSeleccionadaId = null;
+
+    while (actual != null)
+    {
+        var sub = todasSubcategorias.FirstOrDefault(s =>
+            s.Nombre.Trim().Equals(actual.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (sub != null)
+        {
+            subCategoriaSeleccionadaId = sub.Id;
+            Console.WriteLine($"✅ SubCategoría encontrada: {sub.Nombre} (ID: {sub.Id})");
+            FiltrarNodos(sub.Id);
+            break;
+        }
+
+        actual = todosNodos.FirstOrDefault(n => n.Id == actual.PadreId);
+    }
+
+    if (!subCategoriaSeleccionadaId.HasValue)
+    {
+        mensaje = $"⚠️ No se encontró ninguna subcategoría válida en la jerarquía ascendente desde el nodo ID: {nodoSeleccionadoId}";
+        return;
+    }
+
+    Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
+
+    // ✅ Guardar el documento
+    await GuardarDocumento();
 }
+
+
+    private async Task GuardarNodo()
+{
+    if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
+    {
+        notificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = "Campo requerido",
+            Detail = "El nombre del nodo no puede estar vacío.",
+            Duration = 4000
+        });
+        return;
+    }
+
+    try
+    {
+        var tablaNodo = new DataTable("NodoCategoria");
+        tablaNodo.Columns.Add("Id", typeof(int));
+        tablaNodo.Columns.Add("Nombre", typeof(string));
+        tablaNodo.Columns.Add("PadreId", typeof(int));
+        tablaNodo.Columns.Add("EsCategoria", typeof(bool));
+
+        var rowNodo = tablaNodo.NewRow();
+        rowNodo["Id"] = nuevoNodo.Id;
+        rowNodo["Nombre"] = nuevoNodo.Nombre;
+        rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
+        rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
+        tablaNodo.Rows.Add(rowNodo);
+
+        if (editando)
+        {
+            await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
+            mensaje = "✅ Nodo actualizado correctamente.";
+
+            var nodoAnterior = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.Id);
+            if (nodoAnterior != null)
+            {
+                // 🔄 Cambio de Subcategoría → Categoría
+                if (!nodoAnterior.EsCategoria && nuevoNodo.EsCategoria)
+                {
+                    var tablaCat = new DataTable("Categoria");
+                    tablaCat.Columns.Add("Id", typeof(int));
+                    tablaCat.Columns.Add("Nombre", typeof(string));
+                    tablaCat.Columns.Add("PadreId", typeof(int));
+
+                    var rowCat = tablaCat.NewRow();
+                    rowCat["Id"] = nuevoNodo.Id;
+                    rowCat["Nombre"] = nuevoNodo.Nombre;
+                    rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
+                    tablaCat.Rows.Add(rowCat);
+
+                    await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+
+                    // 🔐 Validar dependencias antes de eliminar SubCategoria
+                    var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
+                    var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
+                    int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
+
+                    if (cantidad == 0)
+                    {
+                        var eliminarSub = new DataTable("SubCategoria");
+                        eliminarSub.Columns.Add("Id", typeof(int));
+                        var rowDel = eliminarSub.NewRow();
+                        rowDel["Id"] = nuevoNodo.Id;
+                        eliminarSub.Rows.Add(rowDel);
+                        await ServicioUsuario.EliminarFilaAsync(eliminarSub, 18);
+                    }
+                    else
+                    {
+                        mensaje += $" ⚠ No se eliminó SubCategoría porque tiene documentos relacionados.";
+                    }
+                }
+
+                // 🔄 Cambio de Categoría → Subcategoría
+                else if (nodoAnterior.EsCategoria && !nuevoNodo.EsCategoria && nuevoNodo.PadreId.HasValue)
+                {
+                    var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
+                    if (padre != null && padre.EsCategoria)
+                    {
+                        var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
+                        var consultaSql = $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
+                        var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
+
+                        if (dtCategoria.Rows.Count > 0)
+                        {
+                            int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+
+                            var tablaSub = new DataTable("SubCategoria");
+                            tablaSub.Columns.Add("Id", typeof(int));
+                            tablaSub.Columns.Add("CategoriaId", typeof(int));
+                            tablaSub.Columns.Add("Nombre", typeof(string));
+
+                            var rowSub = tablaSub.NewRow();
+                            rowSub["Id"] = nuevoNodo.Id;
+                            rowSub["CategoriaId"] = categoriaId;
+                            rowSub["Nombre"] = nuevoNodo.Nombre;
+                            tablaSub.Rows.Add(rowSub);
+
+                            await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                        }
+                    }
+
+                    // 🔐 Validar dependencias antes de eliminar Categoria
+                    var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
+                    var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
+                    int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
+
+                    if (cantidad == 0)
+                    {
+                        var eliminarCat = new DataTable("Categoria");
+                        eliminarCat.Columns.Add("Id", typeof(int));
+                        var rowCatDel = eliminarCat.NewRow();
+                        rowCatDel["Id"] = nuevoNodo.Id;
+                        eliminarCat.Rows.Add(rowCatDel);
+                        await ServicioUsuario.EliminarFilaAsync(eliminarCat, 18);
+                    }
+                    else
+                    {
+                        mensaje += $" ⚠ No se eliminó Categoría porque tiene documentos relacionados.";
+                    }
+                }
+            }
+        }
+
+        else // 🚀 NUEVO NODO
+        {
+            await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
+            mensaje = "✅ Nodo guardado correctamente.";
+
+            // 🔄 Recuperar el nuevo ID del nodo
+            var nombreEscapado = nuevoNodo.Nombre.Replace("'", "''");
+            var dtNuevoNodo = await ServicioUsuario.TraerConsultaAsync($@"
+                SELECT TOP 1 Id FROM NodoCategoria
+                WHERE Nombre = '{nombreEscapado}'
+                ORDER BY Id DESC", 18);
+
+            if (dtNuevoNodo.Rows.Count > 0)
+            {
+                nuevoNodo.Id = Convert.ToInt32(dtNuevoNodo.Rows[0]["Id"]);
+                Console.WriteLine($"✅ Nodo creado con ID: {nuevoNodo.Id}");
+            }
+            else
+            {
+                throw new Exception("No se pudo recuperar el ID del nuevo nodo.");
+            }
+
+            // 🎯 Crear Categoría o SubCategoría según el tipo
+            if (nuevoNodo.EsCategoria)
+            {
+                var tablaCat = new DataTable("Categoria");
+                tablaCat.Columns.Add("Id", typeof(int));
+                tablaCat.Columns.Add("Nombre", typeof(string));
+                tablaCat.Columns.Add("PadreId", typeof(int));
+
+                var rowCat = tablaCat.NewRow();
+                rowCat["Id"] = nuevoNodo.Id;
+                rowCat["Nombre"] = nuevoNodo.Nombre;
+                rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
+                tablaCat.Rows.Add(rowCat);
+
+                await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+                Console.WriteLine($"📁 Categoría '{nuevoNodo.Nombre}' creada.");
+            }
+            else if (nuevoNodo.PadreId.HasValue)
+            {
+                // Buscar si el padre es una categoría válida
+                var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
+                if (padre != null && padre.EsCategoria)
+                {
+                    var nombreEscapadoPadre = padre.Nombre.Replace("'", "''");
+                    var dtCategoria = await ServicioUsuario.TraerConsultaAsync(
+                        $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoPadre}'", 18);
+
+                    if (dtCategoria.Rows.Count == 0)
+                    {
+                        throw new Exception($"❌ El nodo padre con ID {padre.Id} no existe en la tabla Categoria.");
+                    }
+
+                    int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+
+                    var tablaSub = new DataTable("SubCategoria");
+                    tablaSub.Columns.Add("Id", typeof(int));
+                    tablaSub.Columns.Add("CategoriaId", typeof(int));
+                    tablaSub.Columns.Add("Nombre", typeof(string));
+
+                    var rowSub = tablaSub.NewRow();
+                    rowSub["Id"] = nuevoNodo.Id; // ¡Usa el ID real del nodo!
+                    rowSub["CategoriaId"] = categoriaId;
+                    rowSub["Nombre"] = nuevoNodo.Nombre;
+                    tablaSub.Rows.Add(rowSub);
+
+                    await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                    Console.WriteLine($"📂 Subcategoría '{nuevoNodo.Nombre}' creada bajo Categoría ID {categoriaId}");
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ El nodo padre no es una categoría válida. No se creó subcategoría.");
+                }
+            }
+        }
+
+        // 🔄 Refrescar árbol
+        int? padreIdAnterior = nuevoNodo.PadreId;
+
+        nuevoNodo = new();
+        editando = false;
+
+        await CargarNodos(); // reconstruye árbol
+        ExpandirNodoPadre(padreIdAnterior);
+        ExpandirRutaHastaNodo(padreIdAnterior);
+    }
+    catch (Exception ex)
+    {
+        mensaje = $"❌ Error al guardar nodo: {ex.Message}";
+        Console.WriteLine($"❌ EXCEPCIÓN: {ex}");
+    }
+}
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
+    {
+        if (nodo == null)
+            return;
+
+        nodoSeleccionado = nodo;
+        jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
+
+        // Sincronizar dropdowns
+        var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
+        var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
+
+        if (categoria != null)
+        {
+            categoriaSeleccionadaId = categoria.Id;
+            FiltrarSubcategorias(categoria.Id);
+        }
+
+        if (subcategoria != null)
+        {
+            var sub = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == subcategoria.Nombre.Trim());
+            if (sub != null)
+            {
+                subCategoriaSeleccionadaId = sub.Id;
+                FiltrarNodos(sub.Id);
+            }
+        }
+
+        // Último nodo (para edición o referencia)
+        var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
+        if (nodoFinal != null)
+        {
+            nodoSeleccionadoId = nodoFinal.Id;
+            InicializarJerarquiaDesdeNodo(nodoFinal.Id);
+
+            if (editando)
+            {
+                // Si estamos editando, cargamos los datos del nodo para modificación
+                nuevoNodo = new NodoCategoria
+            {
+                Id = nodoFinal.Id,
+                Nombre = nodoFinal.Nombre,
+                PadreId = nodoFinal.PadreId,
+                EsCategoria = nodoFinal.EsCategoria
+            };
+            }
+            else
+            {
+                // Si no estamos editando, preparamos un nuevo hijo
+                nuevoNodo = new NodoCategoria
+            {
+                PadreId = nodoFinal.Id,
+                EsCategoria = false, // o true si deseas permitir subcategorías hijas
+                Nombre = ""
+            };
+            }
+
+            Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
+        }
+        else
+        {
+            Console.WriteLine("⚠️ No se pudo determinar el nodo final desde la jerarquía.");
+        }
+
+        StateHasChanged();
+    }
+
+    async Task GuardarDocumento()
+    {
+        try
+        {
+            mensaje = string.Empty;
+
+            // 🔎 Validaciones
+            if (string.IsNullOrWhiteSpace(documento.Nombre))
+                mensaje += "❌ El nombre del documento es obligatorio.\n";
+
+            if (!string.IsNullOrEmpty(mensaje))
+                return;
+
+            // 🧠 Obtener nodo final desde árbol
+
+            var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
+
+            if (nodoCategoriaIdFinal.HasValue)
+            {
+                Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
+            }
+            else
+            {
+                Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos ni en nodoSeleccionadoId.");
+            }
+
+
+            // 🟨 ACTUALIZACIÓN
+            if (DocumentoId.HasValue)
+            {
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
+
+                fila["Id"] = DocumentoId.Value;
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
+
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
+
+                // 🔄 Actualizar relación DocumentoCategoria
+                if (subCategoriaSeleccionadaId.HasValue)
+                {
+                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
+
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                    var filaRelacion = dtRelacion.NewRow();
+
+                    filaRelacion["DocumentoId"] = DocumentoId.Value;
+                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                    dtRelacion.Rows.Add(filaRelacion);
+                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                }
+
+                mensaje = "✅ Documento actualizado correctamente.";
+                await CargarDocumentos();
+            }
+            else
+            {
+                // ✅ NUEVO REGISTRO
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
+
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
+                fila["FechaCreacion"] = DateTime.Now;
+
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
+
+                // 📌 Obtener ID recién insertado
+                var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
+                int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+
+                // ➕ Insertar relación DocumentoCategoria
+                if (subCategoriaSeleccionadaId.HasValue)
+                {
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                    var filaRelacion = dtRelacion.NewRow();
+
+                    filaRelacion["DocumentoId"] = nuevoDocumentoId;
+                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                    dtRelacion.Rows.Add(filaRelacion);
+                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                }
+
+                mensaje = "✅ Documento registrado correctamente.";
+                documento = new(); // limpia el formulario
+                await CargarDocumentos();
+            }
+        Console.WriteLine($"🧾 NodoCategoriaIdFinal recibido: {nodoCategoriaIdFinal}");
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al guardar documento: {ex.Message}";
+        }
+
+    }
+
+   
+    private int? ObtenerNodoCategoriaIdFinal()
+{
+    int? nodoId = null;
+
+    // 1. Buscar en niveles dinámicos (si existen)
+    if (nivelesDinamicos != null && nivelesDinamicos.Any())
+    {
+        for (int i = nivelesDinamicos.Count - 1; i >= 0; i--)
+        {
+            var nivel = nivelesDinamicos[i];
+            if (nivel.NodoSeleccionadoId.HasValue)
+            {
+                nodoId = nivel.NodoSeleccionadoId;
+                var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoId);
+                Console.WriteLine($"✅ Nodo final desde nivelesDinamicos: {nodo?.Nombre} (ID: {nodo?.Id})");
+                return nodoId;
+            }
+        }
+    }
+
+    // 2. Fallback a nodoSeleccionadoId manualmente asignado
+    if (nodoSeleccionadoId.HasValue)
+    {
+        var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId.Value);
+        Console.WriteLine($"✅ Nodo final desde nodoSeleccionadoId: {nodo?.Nombre} (ID: {nodo?.Id})");
+        return nodoSeleccionadoId;
+    }
+
+    // 3. Nada válido
+    Console.WriteLine("❌ No se encontró NodoCategoriaId válido en nivelesDinamicos ni en nodoSeleccionadoId.");
+    return null;
+}
+
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 }
 
