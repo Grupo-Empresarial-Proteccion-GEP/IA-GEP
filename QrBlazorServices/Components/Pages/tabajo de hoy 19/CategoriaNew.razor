@@ -1060,33 +1060,49 @@
         NodoSeleccionadoId = nodoSeleccionadoId
     });
 
-    // 🧠 Buscar subcategoría en jerarquía ascendente
-    var actual = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
-    subCategoriaSeleccionadaId = null;
+// 🧠 Buscar subcategoría en jerarquía ascendente
+var actual = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
+subCategoriaSeleccionadaId = null;
 
-    while (actual != null)
+while (actual != null)
+{
+    var sub = todasSubcategorias.FirstOrDefault(s =>
+        s.Nombre.Trim().Equals(actual.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    if (sub != null)
     {
-        var sub = todasSubcategorias.FirstOrDefault(s =>
-            s.Nombre.Trim().Equals(actual.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
-
-        if (sub != null)
-        {
-            subCategoriaSeleccionadaId = sub.Id;
-            Console.WriteLine($"✅ SubCategoría encontrada: {sub.Nombre} (ID: {sub.Id})");
-            FiltrarNodos(sub.Id);
-            break;
-        }
-
-        actual = todosNodos.FirstOrDefault(n => n.Id == actual.PadreId);
+        subCategoriaSeleccionadaId = sub.Id;
+        FiltrarNodos(sub.Id);
+        Console.WriteLine($"✅ SubCategoría encontrada: {sub.Nombre} (ID: {sub.Id})");
+        break;
     }
 
-    if (!subCategoriaSeleccionadaId.HasValue)
+    // 🟨 Si el nodo es una categoría raíz (sin padre), termina la búsqueda
+    if (actual.PadreId == 0)
+    {
+        Console.WriteLine($"🟨 Nodo '{actual.Nombre}' es una categoría raíz. No se buscarán más subcategorías.");
+        break;
+    }
+
+    actual = todosNodos.FirstOrDefault(n => n.Id == actual.PadreId);
+}
+
+// 🧪 Validación final
+if (!subCategoriaSeleccionadaId.HasValue)
+{
+    var nodoRaiz = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
+    if (nodoRaiz != null && nodoRaiz.PadreId == 0 && nodoRaiz.EsCategoria)
+    {
+        Console.WriteLine($"✅ Nodo raíz '{nodoRaiz.Nombre}' detectado. Se permite continuar sin subcategoría.");
+    }
+    else
     {
         mensaje = $"⚠️ No se encontró ninguna subcategoría válida en la jerarquía ascendente desde el nodo ID: {nodoSeleccionadoId}";
         return;
     }
+}
 
-    Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
+Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
 
     // ✅ Guardar el documento
     await GuardarDocumento();
@@ -1458,18 +1474,16 @@
                 int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
 
                 // ➕ Insertar relación DocumentoCategoria
-                if (subCategoriaSeleccionadaId.HasValue)
-                {
-                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
-                    var filaRelacion = dtRelacion.NewRow();
+                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                var filaRelacion = dtRelacion.NewRow();
 
-                    filaRelacion["DocumentoId"] = nuevoDocumentoId;
-                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
-                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+                filaRelacion["DocumentoId"] = nuevoDocumentoId;
+                filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.HasValue ? subCategoriaSeleccionadaId.Value : (object)DBNull.Value;
+                filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
 
-                    dtRelacion.Rows.Add(filaRelacion);
-                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
-                }
+                dtRelacion.Rows.Add(filaRelacion);
+                await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+
 
                 mensaje = "✅ Documento registrado correctamente.";
                 documento = new(); // limpia el formulario
