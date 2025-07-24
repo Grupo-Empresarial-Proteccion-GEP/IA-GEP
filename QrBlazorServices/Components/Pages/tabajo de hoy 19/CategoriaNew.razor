@@ -22,7 +22,7 @@
     <!-- Columna izquierda -->
     <RadzenColumn Width="6">
      <RadzenFieldset>
-            <RadzenFieldset Text="@tituloSubnodos" Style="height: 800px; overflow-y: auto;">
+            <RadzenFieldset Text="@tituloSubnodos" Style="height: 780px; overflow-y: auto;">
             <RadzenTextBox @bind-Value="textoBusqueda" Placeholder="Buscar categoría..." Style="width: 100%" Change="BuscarNodo" />                      
             <RadzenTree Data="@nodosRaiz"
                         Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
@@ -44,7 +44,7 @@
     <RadzenColumn Width="6" >
 
          <!--/////////////////////////////////////////aqui//////////////////////////////////////////////////-->
-        <RadzenFieldset>
+        <RadzenFieldset style="height: 800px; overflow-y: auto;">
 
                 <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">
                 
@@ -130,7 +130,7 @@
         <!--////////////////////////////////////////aqui///////////////////////////////////////////////////-->
         <!--///////////////////////////////////////////////////////////////////////////////////////////-->
 
-        <RadzenFieldset Style="margin-top: 20px; height: 450px; overflow-y: auto;">
+        <RadzenFieldset Style="margin-top: 20px; height: 430px; overflow-y: auto;">
         <RadzenTabs>
             <Tabs>
                 <RadzenTabsItem Text="Vista previa del documento">
@@ -143,7 +143,7 @@
                                 <embed src="@rutaSeleccionada"
                                        type="application/pdf"
                                        width="100%"
-                                       height="349px"
+                                       height="320px"
                                        style="border: 1px solid #ccc; border-radius: 8px;" />
                             }
                             else
@@ -159,34 +159,47 @@
                 </RadzenTabsItem>
 
                 <RadzenTabsItem Text="Documentos Arbol Documental">
-                    <RadzenDataGrid Data="@documentos" TItem="DocumentoExtendido" AllowPaging="true" PageSize="6"
+
+                    <RadzenDataGrid Data="@documentosFiltrados"
+                                    TItem="DocumentoExtendido"
+                                    AllowPaging="true"
+                                    PageSize="6"
                                     AllowSorting="true"
-                                    FilterMode="FilterMode.Simple"
                                     ShowPagingSummary="true"
-                                    Style="height: 349px; width: 100%; overflow-y: auto;">
+                                    Style="height: 329px; width: 100%; overflow-y: auto;">
                         <Columns>
-                            <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Nombre" Title="Nombre" />
+                            <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Nombre" Title="Nombre">
+                                <HeaderTemplate>
+
+                                            <RadzenFormField Text="Buscar Nombre" Class="w-100 mb-2">
+                                                <RadzenTextBox @bind-Value="FiltroNombre" Style="width: 100%" />
+                                            </RadzenFormField>
+                                 
+                                </HeaderTemplate>
+                            </RadzenDataGridColumn>
+
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Referencia" Title="Referencia" />
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="NombrePlantilla" Title="Plantilla" />
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Categoria" Title="Categoría" />
+
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
                                 <Template Context="doc">
                                     <RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
                                                   Click="() => EditarDocumento(doc.Id)" />
                                     <RadzenButton Icon="delete" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Danger"
                                                   Click="() => EliminarDocumento(doc.Id)" />
-                                    <RadzenButton Icon="pageview" Size="ButtonSize.Small" Style="margin-right: 5px;"
-                                                  ButtonStyle="ButtonStyle.Info"
+                                    <RadzenButton Icon="pageview" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
                                                   Click="@(() => MostrarVisor(doc))" />
                                 </Template>
                             </RadzenDataGridColumn>
                         </Columns>
                     </RadzenDataGrid>
+
                 </RadzenTabsItem>
             </Tabs>
         </RadzenTabs>
         </RadzenFieldset>
-            <RadzenFieldset Text="Ramificacion Arbol">
+            <RadzenFieldset Text="Ramificacion Arbol" style="height:100px; overflow-y: auto;">
                             @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
             {
                 <p><strong>📂 Ruta:</strong> @string.Join(" / ", jerarquiaSeleccionada.Select(j => j.Nombre))</p>
@@ -246,7 +259,7 @@
 
 @if (!string.IsNullOrWhiteSpace(mensaje))
 {
-    <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 15px;">@mensaje</RadzenAlert>
+    <RadzenAlert Severity="AlertSeverity.Info" Style="margin-top: 10px;">@mensaje</RadzenAlert>
 }
 
 
@@ -284,14 +297,16 @@
     List<Plantilla> plantillas = new();
     List<Categoria> categorias = new();
     private int? plantillaSeleccionadaId;
+    private int? nodoIdEncontrado = null;
     [Parameter] public int Id { get; set;}
-    List<NodoCategoria> ListaNodos = new(); // debe contener TODA la estructura
+    List<NodoCategoria> ListaNodos = new(); 
     List<NodoCategoria> todosNodos = new();
     private NodoCategoria nuevoNodo = new();
     List<Plantilla> listaPlantillas = new();
     private NodoCategoria? nodoSeleccionado;
     List<NodoCategoria> nodosFiltrados = new();
     List<DocumentoExtendido> documentos = new();
+    private string textoBusqueda = string.Empty;
     [Parameter] public int? NodoId { get; set; }
     List<NodoSeleccion> nivelesDinamicos = new();
     List<SubCategoria> todasSubcategorias = new();
@@ -301,9 +316,8 @@
     List<NodoCategoria> jerarquiaSeleccionada = new();
     private List<NodoCategoria> nodosExistentes = new();
 
-
-
     public List<NodoCategoria> Hijos { get; set; } = new();
+
 
     List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
     private string tituloSubnodos => $"Rama del Arbol Seleccionada: {nodoSeleccionado?.Nombre ?? "..."}";
@@ -319,12 +333,9 @@
 
     private string nombreComun = string.Empty;
 
-
-
-
     protected override async Task OnInitializedAsync()
     {
-        nuevoNodo = new NodoCategoria(); // <-- esto es clave para que EditForm y validadores no fallen
+        nuevoNodo = new NodoCategoria(); 
         await CargarNodos();
         await CargarPlantillas();
         await CargarCategorias();
@@ -332,6 +343,7 @@
         await CargarNodos2();
         await CargarDocumentos();
         await CargarDocumento();
+        AplicarFiltroNombre();
 
         if (NodoId.HasValue)
         {
@@ -347,6 +359,7 @@
 
     //////////////////////////////////PROCESOS NODO///////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////
+
     private async Task CargarNodos()
     {
         nodosExistentes.Clear();
@@ -377,7 +390,6 @@
         nodo.Hijos = nodosExistentes.Where(n => n.PadreId == nodo.Id).Select(ConstruirJerarquia).ToList();
         return nodo;
     }
-
 
     private async Task<bool> ExisteCategoria(int idCategoria)
     {
@@ -463,7 +475,6 @@
                 : null
         }).ToList();
     }
-
 
     async Task CargarCategorias()
     {
@@ -558,19 +569,16 @@
     void ManejarCambioNodo(int nivel, int? nodoId)
     {
         if (nivel >= nivelesDinamicos.Count)
-            return; // Evita index out of range
+            return; 
 
-        // ✅ Actualiza el valor seleccionado del nivel actual
         nivelesDinamicos[nivel].NodoSeleccionadoId = nodoId;
 
-        // ✅ Elimina niveles posteriores
         if (nivelesDinamicos.Count > nivel + 1)
             nivelesDinamicos.RemoveRange(nivel + 1, nivelesDinamicos.Count - (nivel + 1));
 
         if (nodoId == null)
             return;
 
-        // ✅ Busca hijos del nodo seleccionado
         var hijos = todosNodos.Where(n => n.PadreId == nodoId).ToList();
 
         if (hijos.Any())
@@ -582,7 +590,7 @@
             });
         }
 
-        StateHasChanged(); // 🔄 fuerza actualización segura
+        StateHasChanged();
     }
 
     async Task CargarDocumentoParaEditar(int id)
@@ -605,7 +613,6 @@
             subCategoriaSeleccionadaId = row["SubCategoriaId"] == DBNull.Value ? null : Convert.ToInt32(row["SubCategoriaId"]);
             nodoSeleccionadoId = row["NodoCategoriaId"] == DBNull.Value ? null : Convert.ToInt32(row["NodoCategoriaId"]);
 
-            // Filtrar subcategorías y nodos de forma segura
             if (subCategoriaSeleccionadaId is int subCatId)
             {
                 var sub = todasSubcategorias.FirstOrDefault(x => x.Id == subCatId);
@@ -617,7 +624,6 @@
                 }
             }
 
-            // Cargar jerarquía dinámica
             if (nodoSeleccionadoId is int nodoId)
             {
                 InicializarJerarquiaDesdeNodo(nodoId);
@@ -659,7 +665,7 @@
         var actual = nodoFinal;
         while (actual != null)
         {
-            ruta.Insert(0, actual); // Insertar al inicio para que quede ordenado desde raíz hasta el nodo final
+            ruta.Insert(0, actual);
             actual = nodosExistentes.FirstOrDefault(n => n.Id == actual.PadreId);
         }
 
@@ -721,7 +727,7 @@
 
     void NuevoDocumento()
     {
-        documento = new(); // limpia todos los campos del documento
+        documento = new();
         DocumentoId = null;
         esNuevo = true;
         mensaje = string.Empty;
@@ -736,12 +742,12 @@
     void CancelarEdicion2()
     {
         DocumentoId = null;
-        documento = new Documento(); // limpia los campos
+        documento = new Documento();
         subCategoriaSeleccionadaId = null;
         nodoSeleccionadoId = null;
         nodoSeleccionadoFinalId = null;
         mensajes = string.Empty;
-        _ = CargarDocumentos(); // 🔁 recarga la grilla
+        _ = CargarDocumentos(); 
         NuevoDocumento();
     }
 
@@ -845,9 +851,6 @@
         return ruta;
     }
 
-    private string textoBusqueda = string.Empty;
-    private int? nodoIdEncontrado = null;
-
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -858,9 +861,9 @@
         if (string.IsNullOrWhiteSpace(textoBusqueda))
             return;
 
-        LimpiarResaltado(nodosRaiz); // 1️⃣ limpia solo resaltados anteriores
+        LimpiarResaltado(nodosRaiz); 
 
-        var nodoEncontrado = BuscarNodoPorNombre(nodosRaiz, textoBusqueda.Trim()); // 2️⃣ busca y marca
+        var nodoEncontrado = BuscarNodoPorNombre(nodosRaiz, textoBusqueda.Trim());
 
         if (nodoEncontrado != null)
         {
@@ -899,7 +902,7 @@
             if (nodo.EsNodoBuscado)
             {
                 nodo.EsNodoBuscado = false;
-                nodo.Nombre = nodo.NombreOriginal; // ← restaurar solo si estaba resaltado
+                nodo.Nombre = nodo.NombreOriginal; 
             }
 
             if (nodo.Hijos?.Any() == true)
@@ -916,18 +919,24 @@
 
     async Task GuardarDocumentoYRama()
     {
+
+        mensaje = string.Empty;
+
         if (string.IsNullOrWhiteSpace(nombreComun))
-        {
-            mensaje = "❌ Debes escribir un nombre para la rama y el documento.";
+            mensaje += "❌ Debes escribir un nombre para la rama y el documento.\n";
+
+        if (!documento.PlantillaId.HasValue || documento.PlantillaId.Value == 0)
+            mensaje += "❌ Debes seleccionar una plantilla para el documento.\n";
+
+        // ✅ DETENER si hay errores
+        if (!string.IsNullOrEmpty(mensaje))
             return;
-        }
 
         nuevoNodo.Nombre = nombreComun;
         documento.Nombre = nombreComun;
 
-        await GuardarNodo(); // crea el nodo
+        await GuardarNodo();
 
-        // 🔄 Consultar inmediatamente el nodo recién insertado
         var nombreEscapado = nombreComun.Replace("'", "''");
         var dtNodoReciente = await ServicioUsuario.TraerConsultaAsync($@"
             SELECT TOP 1 * FROM NodoCategoria 
@@ -939,7 +948,7 @@
             nodoSeleccionadoId = Convert.ToInt32(dtNodoReciente.Rows[0]["Id"]);
             Console.WriteLine($"✅ Nodo creado y confirmado con ID: {nodoSeleccionadoId}");
 
-            documento.NodoCategoriaId = nodoSeleccionadoId; // ✅ Asignación importante
+            documento.NodoCategoriaId = nodoSeleccionadoId;
         }
         else
         {
@@ -947,11 +956,9 @@
             return;
         }
 
-        // 🔁 Re-cargar nodos y subcategorías para tener datos actualizados
         await CargarNodos2();
         await CargarSubcategorias();
 
-        // ✅ Registrar el nodo seleccionado como nivel dinámico
         nivelesDinamicos ??= new List<NodoSeleccion>();
         nivelesDinamicos.Clear();
         nivelesDinamicos.Add(new NodoSeleccion
@@ -959,7 +966,6 @@
             NodoSeleccionadoId = nodoSeleccionadoId
         });
 
-        // 🧠 Buscar subcategoría en jerarquía ascendente
         var actual = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
         subCategoriaSeleccionadaId = null;
 
@@ -976,7 +982,6 @@
                 break;
             }
 
-            // 🟨 Si el nodo es una categoría raíz (sin padre), termina la búsqueda
             if (actual.PadreId == 0)
             {
                 Console.WriteLine($"🟨 Nodo '{actual.Nombre}' es una categoría raíz. No se buscarán más subcategorías.");
@@ -986,7 +991,6 @@
             actual = todosNodos.FirstOrDefault(n => n.Id == actual.PadreId);
         }
 
-        // 🧪 Validación final
         if (!subCategoriaSeleccionadaId.HasValue)
         {
             var nodoRaiz = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
@@ -1003,10 +1007,8 @@
 
         Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
 
-        // ✅ Guardar el documento
         await GuardarDocumento();
     }
-
 
     private async Task GuardarNodo()
     {
@@ -1045,7 +1047,7 @@
                 var nodoAnterior = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.Id);
                 if (nodoAnterior != null)
                 {
-                    // 🔄 Cambio de Subcategoría → Categoría
+
                     if (!nodoAnterior.EsCategoria && nuevoNodo.EsCategoria)
                     {
                         var tablaCat = new DataTable("Categoria");
@@ -1061,7 +1063,6 @@
 
                         await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
 
-                        // 🔐 Validar dependencias antes de eliminar SubCategoria
                         var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
                         var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
                         int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
@@ -1132,12 +1133,11 @@
                 }
             }
 
-            else // 🚀 NUEVO NODO
+            else
             {
                 await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
                 mensaje = "✅ Nodo guardado correctamente.";
 
-                // 🔄 Recuperar el nuevo ID del nodo
                 var nombreEscapado = nuevoNodo.Nombre.Replace("'", "''");
                 var dtNuevoNodo = await ServicioUsuario.TraerConsultaAsync($@"
                 SELECT TOP 1 Id FROM NodoCategoria
@@ -1154,7 +1154,7 @@
                     throw new Exception("No se pudo recuperar el ID del nuevo nodo.");
                 }
 
-                // 🎯 Crear Categoría o SubCategoría según el tipo
+
                 if (nuevoNodo.EsCategoria)
                 {
                     var tablaCat = new DataTable("Categoria");
@@ -1173,7 +1173,7 @@
                 }
                 else if (nuevoNodo.PadreId.HasValue)
                 {
-                    // Buscar si el padre es una categoría válida
+
                     var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
                     if (padre != null && padre.EsCategoria)
                     {
@@ -1194,7 +1194,7 @@
                         tablaSub.Columns.Add("Nombre", typeof(string));
 
                         var rowSub = tablaSub.NewRow();
-                        rowSub["Id"] = nuevoNodo.Id; // ¡Usa el ID real del nodo!
+                        rowSub["Id"] = nuevoNodo.Id; 
                         rowSub["CategoriaId"] = categoriaId;
                         rowSub["Nombre"] = nuevoNodo.Nombre;
                         tablaSub.Rows.Add(rowSub);
@@ -1209,13 +1209,12 @@
                 }
             }
 
-            // 🔄 Refrescar árbol
             int? padreIdAnterior = nuevoNodo.PadreId;
 
             nuevoNodo = new();
             editando = false;
 
-            await CargarNodos(); // reconstruye árbol
+            await CargarNodos(); 
             ExpandirNodoPadre(padreIdAnterior);
             ExpandirRutaHastaNodo(padreIdAnterior);
         }
@@ -1237,7 +1236,6 @@
         nodoSeleccionado = nodo;
         jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
 
-        // Sincronizar dropdowns
         var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
         var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
 
@@ -1257,7 +1255,6 @@
             }
         }
 
-        // Último nodo (para edición o referencia)
         var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
         if (nodoFinal != null)
         {
@@ -1266,7 +1263,7 @@
 
             if (editando)
             {
-                // Si estamos editando, cargamos los datos del nodo para modificación
+
                 nuevoNodo = new NodoCategoria
             {
                 Id = nodoFinal.Id,
@@ -1277,11 +1274,11 @@
             }
             else
             {
-                // Si no estamos editando, preparamos un nuevo hijo
+
                 nuevoNodo = new NodoCategoria
             {
                 PadreId = nodoFinal.Id,
-                EsCategoria = false, // o true si deseas permitir subcategorías hijas
+                EsCategoria = false, 
                 Nombre = ""
             };
             }
@@ -1302,14 +1299,14 @@
         {
             mensaje = string.Empty;
 
-            // 🔎 Validaciones
             if (string.IsNullOrWhiteSpace(documento.Nombre))
                 mensaje += "❌ El nombre del documento es obligatorio.\n";
 
+            if (!documento.PlantillaId.HasValue || documento.PlantillaId.Value == 0)
+                mensaje += "❌ Debes seleccionar una plantilla para el documento.\n";
+
             if (!string.IsNullOrEmpty(mensaje))
                 return;
-
-            // 🧠 Obtener nodo final desde árbol
 
             var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
 
@@ -1323,7 +1320,6 @@
             }
 
 
-            // 🟨 ACTUALIZACIÓN
             if (DocumentoId.HasValue)
             {
                 var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
@@ -1336,7 +1332,6 @@
                 dtDocumento.Rows.Add(fila);
                 await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
 
-                // 🔄 Actualizar relación DocumentoCategoria
                 if (subCategoriaSeleccionadaId.HasValue)
                 {
                     await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
@@ -1357,7 +1352,7 @@
             }
             else
             {
-                // ✅ NUEVO REGISTRO
+
                 var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
                 var fila = dtDocumento.NewRow();
 
@@ -1368,11 +1363,9 @@
                 dtDocumento.Rows.Add(fila);
                 await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
 
-                // 📌 Obtener ID recién insertado
                 var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
                 int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
 
-                // ➕ Insertar relación DocumentoCategoria
                 var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
                 var filaRelacion = dtRelacion.NewRow();
 
@@ -1383,9 +1376,8 @@
                 dtRelacion.Rows.Add(filaRelacion);
                 await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
 
-
                 mensaje = "✅ Documento registrado correctamente.";
-                documento = new(); // limpia el formulario
+                documento = new();
                 await CargarDocumentos();
             }
             Console.WriteLine($"🧾 NodoCategoriaIdFinal recibido: {nodoCategoriaIdFinal}");
@@ -1401,7 +1393,6 @@
     {
         int? nodoId = null;
 
-        // 1. Buscar en niveles dinámicos (si existen)
         if (nivelesDinamicos != null && nivelesDinamicos.Any())
         {
             for (int i = nivelesDinamicos.Count - 1; i >= 0; i--)
@@ -1417,7 +1408,6 @@
             }
         }
 
-        // 2. Fallback a nodoSeleccionadoId manualmente asignado
         if (nodoSeleccionadoId.HasValue)
         {
             var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId.Value);
@@ -1425,7 +1415,6 @@
             return nodoSeleccionadoId;
         }
 
-        // 3. Nada válido
         Console.WriteLine("❌ No se encontró NodoCategoriaId válido en nivelesDinamicos ni en nodoSeleccionadoId.");
         return null;
     }
@@ -1434,36 +1423,36 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
     async Task CargarDocumentos()
-{
-    documentos.Clear();
+    {
+        documentos.Clear();
 
-    var dtDocumentos = await ServicioUsuario.TraerTablaAsync("Documento", IdAplicacion);
-    var dtRelacion = await ServicioUsuario.TraerTablaAsync("DocumentoCategoria", IdAplicacion);
-    var dtSubcategorias = await ServicioUsuario.TraerTablaAsync("SubCategoria", IdAplicacion);
-    var dtCategorias = await ServicioUsuario.TraerTablaAsync("Categoria", IdAplicacion);
-    var dtNodos = await ServicioUsuario.TraerTablaAsync("NodoCategoria", IdAplicacion);
-    var dtPlantillas = await ServicioUsuario.TraerTablaAsync("Plantilla", IdAplicacion);
+        var dtDocumentos = await ServicioUsuario.TraerTablaAsync("Documento", IdAplicacion);
+        var dtRelacion = await ServicioUsuario.TraerTablaAsync("DocumentoCategoria", IdAplicacion);
+        var dtSubcategorias = await ServicioUsuario.TraerTablaAsync("SubCategoria", IdAplicacion);
+        var dtCategorias = await ServicioUsuario.TraerTablaAsync("Categoria", IdAplicacion);
+        var dtNodos = await ServicioUsuario.TraerTablaAsync("NodoCategoria", IdAplicacion);
+        var dtPlantillas = await ServicioUsuario.TraerTablaAsync("Plantilla", IdAplicacion);
 
-    var subcategorias = dtSubcategorias.AsEnumerable().Select(r => new SubCategoria
+        var subcategorias = dtSubcategorias.AsEnumerable().Select(r => new SubCategoria
     {
         Id = Convert.ToInt32(r["Id"]),
         Nombre = r["Nombre"].ToString(),
         CategoriaId = Convert.ToInt32(r["CategoriaId"])
     }).ToList();
 
-    var categorias = dtCategorias.AsEnumerable().Select(r => new Categoria
+        var categorias = dtCategorias.AsEnumerable().Select(r => new Categoria
     {
         Id = Convert.ToInt32(r["Id"]),
         Nombre = r["Nombre"].ToString()
     }).ToList();
 
-    var nodos = dtNodos.AsEnumerable().Select(r => new NodoCategoria
+        var nodos = dtNodos.AsEnumerable().Select(r => new NodoCategoria
     {
         Id = Convert.ToInt32(r["Id"]),
         Nombre = r["Nombre"].ToString()
     }).ToList();
 
-    var plantillas = dtPlantillas.AsEnumerable().Select(r => new Plantilla
+        var plantillas = dtPlantillas.AsEnumerable().Select(r => new Plantilla
     {
         Id = Convert.ToInt32(r["Id"]),
         NombreArchivo = r["NombreArchivo"].ToString(),
@@ -1471,37 +1460,37 @@
         RutaBase64 = r.Table.Columns.Contains("RutaArchivo") ? r["RutaArchivo"]?.ToString() : null // 👈 Importante
     }).ToList();
 
-    var relaciones = dtRelacion.AsEnumerable().ToList();
+        var relaciones = dtRelacion.AsEnumerable().ToList();
 
-    documentos = dtDocumentos.AsEnumerable().Select(doc =>
-    {
-        int id = Convert.ToInt32(doc["Id"]);
-
-        var relacion = relaciones.FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == id);
-
-        var subCatId = (relacion != null && relacion["SubCategoriaId"] != DBNull.Value)
-            ? Convert.ToInt32(relacion["SubCategoriaId"])
-            : 0;
-
-        var nodoId = (relacion != null && relacion["NodoCategoriaId"] != DBNull.Value)
-            ? Convert.ToInt32(relacion["NodoCategoriaId"])
-            : 0;
-
-        var subcategoria = subcategorias.FirstOrDefault(s => s.Id == subCatId);
-        var categoria = categorias.FirstOrDefault(c => c.Id == subcategoria?.CategoriaId);
-        var nodo = nodos.FirstOrDefault(n => n.Id == nodoId);
-
-        Plantilla plantilla = null;
-        string? rutaBase64 = null;
-
-        if (doc.Table.Columns.Contains("PlantillaId") && doc["PlantillaId"] != DBNull.Value)
+        documentos = dtDocumentos.AsEnumerable().Select(doc =>
         {
-            int idPlantilla = Convert.ToInt32(doc["PlantillaId"]);
-            plantilla = plantillas.FirstOrDefault(p => p.Id == idPlantilla);
-            rutaBase64 = plantilla?.RutaBase64;
-        }
+            int id = Convert.ToInt32(doc["Id"]);
 
-        return new DocumentoExtendido
+            var relacion = relaciones.FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == id);
+
+            var subCatId = (relacion != null && relacion["SubCategoriaId"] != DBNull.Value)
+                ? Convert.ToInt32(relacion["SubCategoriaId"])
+                : 0;
+
+            var nodoId = (relacion != null && relacion["NodoCategoriaId"] != DBNull.Value)
+                ? Convert.ToInt32(relacion["NodoCategoriaId"])
+                : 0;
+
+            var subcategoria = subcategorias.FirstOrDefault(s => s.Id == subCatId);
+            var categoria = categorias.FirstOrDefault(c => c.Id == subcategoria?.CategoriaId);
+            var nodo = nodos.FirstOrDefault(n => n.Id == nodoId);
+
+            Plantilla plantilla = null;
+            string? rutaBase64 = null;
+
+            if (doc.Table.Columns.Contains("PlantillaId") && doc["PlantillaId"] != DBNull.Value)
+            {
+                int idPlantilla = Convert.ToInt32(doc["PlantillaId"]);
+                plantilla = plantillas.FirstOrDefault(p => p.Id == idPlantilla);
+                rutaBase64 = plantilla?.RutaBase64;
+            }
+
+            return new DocumentoExtendido
         {
             Id = id,
             Nombre = doc["Nombre"].ToString(),
@@ -1511,10 +1500,11 @@
             Categoria = categoria?.Nombre ?? "",
             SubCategoria = subcategoria?.Nombre ?? "",
             Nodo = nodo?.Nombre ?? "",
-            RutaBase64 = rutaBase64 // ✅ se asigna desde la BD
+            RutaBase64 = rutaBase64 
         };
-    }).ToList();
-}
+        }).ToList();
+        AplicarFiltroNombre();
+    }
 
     async Task CargarDocumento()
     {
@@ -1523,7 +1513,7 @@
 
         if (fila != null)
         {
-            DocumentoId = Id; // ✅ Esto es clave
+            DocumentoId = Id; 
 
             documento = new Documento
             {
@@ -1560,6 +1550,37 @@
         }
     }
 
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    private List<DocumentoExtendido> documentosFiltrados = new();
+    private string filtroNombre = "";
+    private string _filtroNombre = "";
+
+private string FiltroNombre
+{
+    get => _filtroNombre;
+    set
+    {
+        if (_filtroNombre != value)
+        {
+            _filtroNombre = value;
+            AplicarFiltroNombre();
+        }
+    }
+}
+
+  private void AplicarFiltroNombre()
+{
+    if (string.IsNullOrWhiteSpace(_filtroNombre))
+        documentosFiltrados = documentos;
+    else
+        documentosFiltrados = documentos
+            .Where(d => d.Nombre?.Contains(_filtroNombre, StringComparison.OrdinalIgnoreCase) == true)
+            .ToList();
+}
+    
 
 }
 
