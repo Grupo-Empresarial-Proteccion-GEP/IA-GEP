@@ -14,8 +14,7 @@
         public string? Categoria { get; set; }
         public string? SubCategoria { get; set; }
         public string? Nodo { get; set; }
-            
-           
-        }
+        public string RutaBase64 { get; set; }
+    }
     }
 
