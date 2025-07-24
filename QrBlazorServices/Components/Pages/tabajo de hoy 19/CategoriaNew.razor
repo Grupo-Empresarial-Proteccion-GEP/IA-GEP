@@ -21,34 +21,28 @@
 <RadzenRow>
     <!-- Columna izquierda -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="Visualizador De Arbol Documental">
-
-            <RadzenFieldset Text="@tituloSubnodos" RadzenColumn Style="height: 775px; overflow-y: auto;">
-
-             <RadzenTextBox @bind-Value="textoBusqueda" Placeholder="🔍 Buscar categoría..." Style="width: 100%" Change="BuscarNodo" />
-
-            
-
+     <RadzenFieldset>
+            <RadzenFieldset Text="@tituloSubnodos" Style="height: 800px; overflow-y: auto;">
+            <RadzenTextBox @bind-Value="textoBusqueda" Placeholder="Buscar categoría..." Style="width: 100%" Change="BuscarNodo" />                      
             <RadzenTree Data="@nodosRaiz"
                         Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
                 <RadzenTreeLevel TextProperty="Nombre"
                                  ChildrenProperty="Hijos"
                                  Expanded="@((context) => ((NodoCategoria)context).Expanded)" />
             </RadzenTree>
-
-
-         </RadzenFieldset>
+            </RadzenFieldset>
                 @if (!string.IsNullOrEmpty(mensaje2))
                 {
                     <div class="alert @(mensaje2.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
                         @mensaje2
                     </div>
                 }
-         </RadzenFieldset>
-    </RadzenColumn>
+      </RadzenFieldset>
+</RadzenColumn>
 
     <!-- Columna derecha -->
-    <RadzenColumn Width="6">
+    <RadzenColumn Width="6" >
+
          <!--/////////////////////////////////////////aqui//////////////////////////////////////////////////-->
         <RadzenFieldset>
 
@@ -68,6 +62,8 @@
                     ValueProperty="Id"
                     Placeholder="Seleccione plantilla"
                     Class="w-100 mb-2"
+                    AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                     Change="@(args => MostrarVisorPlantilla(Convert.ToInt32(args)))" />
 
 
@@ -78,9 +74,7 @@
                 <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es Rama principal?</label>
                 }
                 }
-
                 <div class="d-flex flex-wrap gap-2 mt-2">
-
                 @if (!DocumentoId.HasValue)
                 {
 
@@ -90,7 +84,6 @@
                                   Icon=""
                                   Style="font-size: 0.85rem; padding: 6px 12px;" />
                 }
-
                 @if (editando)
                 {
                     <RadzenButton Text="Cancelar"
@@ -112,7 +105,6 @@
                                   Click="@(() => EliminarNodo(nodoSeleccionado))"
                                   Style="font-size: 0.85rem; padding: 6px 12px;" />
                 }
-
                 @if (DocumentoId.HasValue)
                 {
                     <RadzenButton 
@@ -122,9 +114,7 @@
                         Click="@GuardarDocumento"
                         Class="me-2" />
                     }
-
-
-                    @if (DocumentoId.HasValue)
+                @if (DocumentoId.HasValue)
                     {
                         <RadzenButton Text="Cancelar edición"
                                       Icon="arrow_back"
@@ -140,61 +130,62 @@
         <!--////////////////////////////////////////aqui///////////////////////////////////////////////////-->
         <!--///////////////////////////////////////////////////////////////////////////////////////////-->
 
-        <RadzenFieldset Text="Documentos Arbol Documental">
-             <RadzenDataGrid Data="@documentos" TItem="DocumentoExtendido" AllowPaging="true" PageSize="10"
-                            AllowSorting="true"
-                            FilterMode="FilterMode.Simple"
-                            ShowPagingSummary="true">       
-                <Columns>
-                        
-                    <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Nombre" Title="Nombre" />
-                    <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Referencia" Title="Referencia" />
-                    <RadzenDataGridColumn TItem="DocumentoExtendido" Property="NombrePlantilla" Title="Plantilla" />
-                    <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Categoria" Title="Categoría" />
-                                      
-                    <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
-                        <Template Context="doc">
-                            <RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
-                                          Click="() => EditarDocumento(doc.Id)" />
-                            <RadzenButton Icon="delete" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Danger"
-                                          Click="() => EliminarDocumento(doc.Id)" />
+        <RadzenFieldset Style="margin-top: 20px; height: 450px; overflow-y: auto;">
+        <RadzenTabs>
+            <Tabs>
+                <RadzenTabsItem Text="Vista previa del documento">
+                    @if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
+                    {
+                        <div class="d-flex justify-content-center">
+                            @if (rutaSeleccionada.StartsWith("data:application/pdf", StringComparison.OrdinalIgnoreCase)
+                                || rutaSeleccionada.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <embed src="@rutaSeleccionada"
+                                       type="application/pdf"
+                                       width="100%"
+                                       height="349px"
+                                       style="border: 1px solid #ccc; border-radius: 8px;" />
+                            }
+                            else
+                            {
+                                <p class="text-danger">⚠️ El archivo no es un PDF válido.</p>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Seleccione un documento desde la pestaña anterior para previsualizarlo aquí.</p>
+                    }
+                </RadzenTabsItem>
 
-                            <RadzenButton Icon="pageview" Size="ButtonSize.Small" Style="margin-right: 5px;"
-                                          ButtonStyle="ButtonStyle.Info"
-                                          Click="@(() => MostrarVisor(doc))" />
-
-                        </Template>
-                    </RadzenDataGridColumn>
-                </Columns>
-            </RadzenDataGrid>
-		</RadzenFieldset>
-
-
-     <RadzenFieldset Text="Vista previa del documento" Style="max-width: 100%;">
-
-@if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
-{
-    <RadzenFieldset Text="Vista previa del documento" Style="max-width: 100%;">
-        <div class="d-flex justify-content-center">
-            @if (rutaSeleccionada.StartsWith("data:application/pdf", StringComparison.OrdinalIgnoreCase))
-            {
-                <embed src="@rutaSeleccionada"
-                       type="application/pdf"
-                       width="100%"
-                       height="700px"
-                       style="border: 1px solid #ccc; border-radius: 8px;" />
-            }
-            else
-            {
-                <p class="text-danger">⚠️ El archivo no es un PDF válido.</p>
-            }
-        </div>
-    </RadzenFieldset>
-}
-
-
-</RadzenFieldset>
-
+                <RadzenTabsItem Text="Documentos Arbol Documental">
+                    <RadzenDataGrid Data="@documentos" TItem="DocumentoExtendido" AllowPaging="true" PageSize="6"
+                                    AllowSorting="true"
+                                    FilterMode="FilterMode.Simple"
+                                    ShowPagingSummary="true"
+                                    Style="height: 349px; width: 100%; overflow-y: auto;">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Nombre" Title="Nombre" />
+                            <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Referencia" Title="Referencia" />
+                            <RadzenDataGridColumn TItem="DocumentoExtendido" Property="NombrePlantilla" Title="Plantilla" />
+                            <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Categoria" Title="Categoría" />
+                            <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
+                                <Template Context="doc">
+                                    <RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
+                                                  Click="() => EditarDocumento(doc.Id)" />
+                                    <RadzenButton Icon="delete" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Danger"
+                                                  Click="() => EliminarDocumento(doc.Id)" />
+                                    <RadzenButton Icon="pageview" Size="ButtonSize.Small" Style="margin-right: 5px;"
+                                                  ButtonStyle="ButtonStyle.Info"
+                                                  Click="@(() => MostrarVisor(doc))" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                </RadzenTabsItem>
+            </Tabs>
+        </RadzenTabs>
+        </RadzenFieldset>
             <RadzenFieldset Text="Ramificacion Arbol">
                             @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
             {
