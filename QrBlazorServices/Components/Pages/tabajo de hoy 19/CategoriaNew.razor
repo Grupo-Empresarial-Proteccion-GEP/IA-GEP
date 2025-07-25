@@ -99,11 +99,6 @@
                     }
                     else if (nodoSeleccionado != null)
                     {
-                        /*<RadzenButton Icon="done"
-                                      Size="ButtonSize.Small"
-                                      ButtonStyle="ButtonStyle.Info"
-                                      Click="GuardarDocumentoYRama" />*/
-
                         <RadzenButton Icon="edit"
                                       Size="ButtonSize.Small"
                                       ButtonStyle="ButtonStyle.Secondary"
@@ -114,8 +109,20 @@
                                       ButtonStyle="ButtonStyle.Secondary"
                                       Click="@(() => EliminarNodo(nodoSeleccionado))" />
 
+                        <RadzenButton Icon="highlight_off"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@(() => Cancelar())" />
+                    }
+                    else if (nodoSeleccionado == null)
+                    {
+                        <RadzenButton Icon="done"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Info"
+                                      Click="GuardarDocumentoYRama" />
                     }
                 </div>
+
 
 
         </RadzenFieldset>
