@@ -78,73 +78,49 @@
                     Change="@(args => MostrarVisorPlantilla(Convert.ToInt32(args)))" />
 
 
-                @if (!DocumentoId.HasValue)
+                @if (!DocumentoId.HasValue && !editando)
                 {
-                if (editando == false)
-                {
-                <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" /> <label class="ms-2">¿Es Rama principal?</label>
+                    <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" />
+                    <label class="ms-2">¿Es Rama principal?</label>
                 }
-                }
+
                 <div class="d-flex flex-wrap gap-2 mt-2">
-                @if (!DocumentoId.HasValue)
-                {
-
-
-                <RadzenButton 
-                    Icon="done" 
-                    Size="ButtonSize.Small" 
-                    ButtonStyle="ButtonStyle.Info" 
-                    Click="GuardarDocumentoYRama" />
-
-                }
-                @if (editando)
-                {
-                <RadzenButton 
-                    Icon="highlight_off" 
-                    Size="ButtonSize.Small" 
-                    ButtonStyle="ButtonStyle.Secondary" 
-                    Click="@CancelarEdicion"/>
-
-                }
-                else if (nodoSeleccionado != null)
-                {
-
-                <RadzenButton 
-                    Icon="edit" 
-                    Size="ButtonSize.Small" 
-                    ButtonStyle="ButtonStyle.Secondary" 
-                    Click="@(() => CargarNodoParaEditar(nodoSeleccionado))"/>
-
-
-                <RadzenButton 
-                    Icon="delete" 
-                    Size="ButtonSize.Small" 
-                    ButtonStyle="ButtonStyle.Secondary" 
-                    Click="@(() => EliminarNodo(nodoSeleccionado))"/>
-                }
-                @if (DocumentoId.HasValue)
-                {
-                    <RadzenButton 
-                        Text="Actualizar Documento"
-                        Icon="refresh"
-                        ButtonStyle="ButtonStyle.Warning"
-                        Click="@GuardarDocumento"
-                        Class="me-2" />
-                    }
-                @if (DocumentoId.HasValue)
+                    @if (editando)
                     {
-                        <RadzenButton Text="Cancelar edición"
-                                      Icon="arrow_back"
-                                      ButtonStyle="ButtonStyle.Primary"
-                                      Click="@(() => Cancelar())"
-                                      Style="margin-left: 10px;" />
-                    }
+                        <RadzenButton Icon="done"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Info"
+                                      Click="GuardarDocumentoYRama" />
 
+                        <RadzenButton Icon="highlight_off"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@(() => Cancelar())" />
+                    }
+                    else if (nodoSeleccionado != null)
+                    {
+                        /*<RadzenButton Icon="done"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Info"
+                                      Click="GuardarDocumentoYRama" />*/
+
+                        <RadzenButton Icon="edit"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@(() => CargarNodoParaEditar(nodoSeleccionado))" />
+
+                        <RadzenButton Icon="delete"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Secondary"
+                                      Click="@(() => EliminarNodo(nodoSeleccionado))" />
+
+                    }
                 </div>
+
 
         </RadzenFieldset>
      <!--/////////////////////////////////////////////////////////////////////////////////////////-->
-        <RadzenFieldset Style="margin-top: 10px; height: 580px; overflow-y: auto;">
+        <RadzenFieldset Style="margin-top: 10px; height: 610px; overflow-y: auto;">
         <RadzenTabs>
             <Tabs>
                 <RadzenTabsItem Text="Vista previa del documento">
@@ -157,7 +133,7 @@
                                 <embed src="@rutaSeleccionada"
                                        type="application/pdf"
                                        width="100%"
-                                       height="480px"
+                                       height="505px"
                                        style="border: 1px solid #ccc; border-radius: 8px;" />
                             }
                             else
@@ -171,16 +147,15 @@
                         <p class="text-muted">Seleccione un documento desde la pestaña anterior para previsualizarlo aquí.</p>
                     }
                 </RadzenTabsItem>
-
-          <!--      <RadzenTabsItem Text="Documentos Arbol Documental">
+           <RadzenTabsItem Text="Documentos Arbol Documental">
 
                     <RadzenDataGrid Data="@documentosFiltrados"
                                     TItem="DocumentoExtendido"
                                     AllowPaging="true"
-                                    PageSize="6"
+                                    PageSize="7"
                                     AllowSorting="true"
                                     ShowPagingSummary="true"
-                                    Style="height: 329px; width: 100%; overflow-y: auto;">
+                                    Style="height: 505; width: 100%; overflow-y: auto;">
                         <Columns>
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Nombre" Title="Nombre">
                                 <HeaderTemplate>
@@ -198,8 +173,8 @@
 
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
                                 <Template Context="doc">
-                                    <RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
-                                                  Click="() => EditarDocumento(doc.Id)" />
+                                 <!--<RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
+                                                             Click="() => EditarDocumento(doc.Id)"/>-->
                                     <RadzenButton Icon="delete" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Danger"
                                                   Click="() => EliminarDocumento(doc.Id)" />
                                     <RadzenButton Icon="visibility" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
@@ -208,8 +183,7 @@
                             </RadzenDataGridColumn>
                         </Columns>
                     </RadzenDataGrid>
-
-                </RadzenTabsItem>-->
+                </RadzenTabsItem>
             </Tabs>
         </RadzenTabs>
         </RadzenFieldset>
@@ -428,18 +402,6 @@
         {
             mensaje = $"❌ Error al eliminar nodo: {ex.Message}";
         }
-    }
-
-    private void CargarNodoParaEditar(NodoCategoria nodo)
-    {
-        nuevoNodo = new NodoCategoria
-        {
-            Id = nodo.Id,
-            Nombre = nodo.Nombre,
-            PadreId = nodo.PadreId,
-            EsCategoria = nodo.EsCategoria
-        };
-        editando = true;
     }
 
     private void CancelarEdicion()
@@ -932,8 +894,6 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private void Cancelar() => Navigation.NavigateTo("/Documentos");
 
     async Task GuardarDocumentoYRama()
     {
@@ -1536,67 +1496,163 @@
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
-   private void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
+    private async void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
+    {
+        if (nodo == null)
+            return;
+
+        nombreComun = nodo.Nombre;
+        nodoSeleccionado = nodo;
+        jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
+
+        var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
+        var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
+
+        if (categoria != null)
+        {
+            categoriaSeleccionadaId = categoria.Id;
+            FiltrarSubcategorias(categoria.Id);
+        }
+
+        if (subcategoria != null)
+        {
+            var sub = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == subcategoria.Nombre.Trim());
+            if (sub != null)
+            {
+                subCategoriaSeleccionadaId = sub.Id;
+                FiltrarNodos(sub.Id);
+            }
+        }
+
+        var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
+        if (nodoFinal != null)
+        {
+            nodoSeleccionadoId = nodoFinal.Id;
+            InicializarJerarquiaDesdeNodo(nodoFinal.Id);
+
+            if (editando)
+            {
+                nuevoNodo = new NodoCategoria
+                {
+                    Id = nodoFinal.Id,
+                    Nombre = nodoFinal.Nombre,
+                    PadreId = nodoFinal.PadreId,
+                    EsCategoria = nodoFinal.EsCategoria
+                };
+            }
+            else
+            {
+                nuevoNodo = new NodoCategoria
+                {
+                    PadreId = nodoFinal.Id,
+                    EsCategoria = false,
+                    Nombre = ""
+                };
+            }
+
+            // 🔍 Cargar documento asociado al nodo
+            var sql = $@"SELECT TOP 1
+    d.Id AS DocumentoId,
+    d.Nombre,
+    d.PlantillaId,
+    p.RutaArchivo
+FROM Documento d
+JOIN DocumentoCategoria dc ON dc.DocumentoId = d.Id
+JOIN Plantilla p ON p.Id = d.PlantillaId
+WHERE dc.NodoCategoriaId = {nodoFinal.Id}
+";
+
+            var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+            if (dt.Rows.Count > 0)
+            {
+                DocumentoId = Convert.ToInt32(dt.Rows[0]["DocumentoId"]);
+                documento = new Documento
+                {
+                    Nombre = dt.Rows[0]["Nombre"]?.ToString(),
+                    PlantillaId = dt.Rows[0]["PlantillaId"] != DBNull.Value
+                        ? Convert.ToInt32(dt.Rows[0]["PlantillaId"])
+                        : (int?)null,
+                    NodoCategoriaId = nodoFinal.Id
+                };
+
+                var rutaArchivo = dt.Rows[0]["RutaArchivo"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(rutaArchivo))
+                {
+                    rutaSeleccionada = rutaArchivo; // esto lo renderiza el visor PDF
+                }
+                else
+                {
+                    rutaSeleccionada = null;
+                }
+            }
+            else
+            {
+                DocumentoId = null;
+                documento = new Documento();
+                rutaSeleccionada = null;
+            }
+
+
+
+
+            // Esto alimentará el DropDown si está bindeado con documento.PlantillaId
+            Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
+        }
+        else
+        {
+            Console.WriteLine("⚠️ No se pudo determinar el nodo final desde la jerarquía.");
+        }
+
+        StateHasChanged();
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+ 
+    private void Cancelar() => Navigation.NavigateTo("/Documentos", forceLoad: true);
+
+
+    private async void CargarNodoParaEditar(NodoCategoria nodo)
 {
     if (nodo == null)
         return;
 
-    // Asignar directamente el nombre desde el nodo recibido
+    // Cargar el nodo en edición
+    nuevoNodo = new NodoCategoria
+    {
+        Id = nodo.Id,
+        Nombre = nodo.Nombre,
+        PadreId = nodo.PadreId,
+        EsCategoria = nodo.EsCategoria
+    };
+
+    // Mostrar el nombre del nodo en el TextBox
     nombreComun = nodo.Nombre;
 
-    nodoSeleccionado = nodo;
-    jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
+    editando = true;
 
-    var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
-    var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
+    // 🔍 Buscar si hay un documento asociado a este nodo
+    var sql = $@"SELECT TOP 1 d.* FROM Documento d
+                 JOIN DocumentoCategoria dc ON dc.DocumentoId = d.Id
+                 WHERE dc.NodoCategoriaId = {nodo.Id}";
 
-    if (categoria != null)
+    var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+    if (dt.Rows.Count > 0)
     {
-        categoriaSeleccionadaId = categoria.Id;
-        FiltrarSubcategorias(categoria.Id);
-    }
-
-    if (subcategoria != null)
-    {
-        var sub = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == subcategoria.Nombre.Trim());
-        if (sub != null)
+        DocumentoId = Convert.ToInt32(dt.Rows[0]["Id"]);
+        documento = new Documento
         {
-            subCategoriaSeleccionadaId = sub.Id;
-            FiltrarNodos(sub.Id);
-        }
-    }
-
-    var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
-    if (nodoFinal != null)
-    {
-        nodoSeleccionadoId = nodoFinal.Id;
-        InicializarJerarquiaDesdeNodo(nodoFinal.Id);
-
-        if (editando)
-        {
-            nuevoNodo = new NodoCategoria
-            {
-                Id = nodoFinal.Id,
-                Nombre = nodoFinal.Nombre,
-                PadreId = nodoFinal.PadreId,
-                EsCategoria = nodoFinal.EsCategoria
-            };
-        }
-        else
-        {
-            nuevoNodo = new NodoCategoria
-            {
-                PadreId = nodoFinal.Id,
-                EsCategoria = false,
-                Nombre = ""
-            };
-        }
-
-        Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
+            Nombre = dt.Rows[0]["Nombre"]?.ToString(),
+            PlantillaId = dt.Rows[0]["PlantillaId"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["PlantillaId"]) : (int?)null,
+            NodoCategoriaId = nodo.Id
+        };
     }
     else
     {
-        Console.WriteLine("⚠️ No se pudo determinar el nodo final desde la jerarquía.");
+        DocumentoId = null;
+        documento = new Documento();
     }
 
     StateHasChanged();
