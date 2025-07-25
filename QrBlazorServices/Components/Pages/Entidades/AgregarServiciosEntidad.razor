@@ -24,14 +24,14 @@
                 <RadzenTextBox @bind-Value="nuevoServicio" Placeholder="Servicios Ej: Capacitación" Class="w-50" />
             </RadzenFormField>
 
-            <RadzenButton Icon="add_circle" Text="Agregar Servicio" Click="@AgregarServicio" ButtonStyle="ButtonStyle.Secondary" />
+            <RadzenButton Icon="add_circle" Text="Agregar Servicio" Shade="Shade.Lighter" Click="@AgregarServicio" ButtonStyle="ButtonStyle.Secondary" />
 
             <ul class="mt-2">
                 @foreach (var s in listaServicios)
                 {
                     <li>
                         @s
-                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                        <RadzenButton Icon="close" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
                                       Click="@(args => EliminarServicio(s))" />
                     </li>
                 }
@@ -70,14 +70,14 @@
             </RadzenFormField>
 
 
-            <RadzenButton Icon="add_circle" Text="Agregar Departamento" Click="@AgregarSubdiv" ButtonStyle="ButtonStyle.Secondary" />
+            <RadzenButton Icon="add_circle" Text="Agregar Departamento" Click="@AgregarSubdiv" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Secondary" />
 
             <ul class="mt-2">
                 @foreach (var sd in listaSubdiv)
                 {
                     <li>
                         @sd.NombreSubdiv - @sd.Ciudad
-                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Shade="Shade.Lighter"
                                       Click="@(args => EliminarSubdiv(sd))" />
                     </li>
                 }
@@ -88,8 +88,8 @@
 
 <!-- Botones de acción debajo del grid -->
 <div class="mt-4">
-    <RadzenButton Text="Guardar Todo" ButtonStyle="ButtonStyle.Success" Click="@GuardarTodo" />
-    <RadzenButton Text="Volver" ButtonStyle="ButtonStyle.Secondary" Click="@Volver" Style="margin-left: 10px;" />
+    <RadzenButton Text="Guardar Todo" ButtonStyle="ButtonStyle.Success" Click="@GuardarTodo" Shade="Shade.Lighter" />
+    <RadzenButton Text="Volver" ButtonStyle="ButtonStyle.Secondary" Click="@Volver" Style="margin-left: 10px;" Shade="Shade.Lighter" />
 </div>
 
 

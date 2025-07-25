@@ -13,13 +13,13 @@
 
     <!-- Barra de navegación con estilo Radzen -->
     <div class="d-flex mb-3 gap-2 justify-content-center">
-        <RadzenButton Text="Registro De Entidades"
+        <RadzenButton Text="Registro De Entidades" Shade="Shade.Lighter"
                       Click="@(args => CambiarFormulario("Entidades"))"
                       ButtonStyle="@(formActivo == "Entidades" ? ButtonStyle.Primary : ButtonStyle.Light)" />
-        <RadzenButton Text="Registro De Servicios"
+        <RadzenButton Text="Registro De Servicios" Shade="Shade.Lighter"
                       Click="@(args => CambiarFormulario("EntidadesEXis"))"
                       ButtonStyle="@(formActivo == "EntidadesEXis" ? ButtonStyle.Primary : ButtonStyle.Light)" />
-        <RadzenButton Text="Tipo De Entidades"
+        <RadzenButton Text="Tipo De Entidades" Shade="Shade.Lighter"
                       Click="@(args => CambiarFormulario("Tipo De Entidades"))"
                       ButtonStyle="@(formActivo == "Tipo De Entidades" ? ButtonStyle.Primary : ButtonStyle.Light)" />
     </div>

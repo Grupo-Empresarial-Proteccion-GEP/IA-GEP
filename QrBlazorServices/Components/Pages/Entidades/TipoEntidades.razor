@@ -23,12 +23,14 @@
 
             <RadzenButton Text="Registrar"
                           Icon="add_circle"
+                          Shade="Shade.Lighter"
                           ButtonStyle="ButtonStyle.Success"
                           Click="RegistrarTipoEntidad"
                           Class="me-2" />
 
             <RadzenButton Text="Actualizar"
                           Icon="edit"
+                          Shade="Shade.Lighter"
                           ButtonStyle="ButtonStyle.Warning"
                           Click="ActualizarTipoEntidad"
                           Disabled="@(!tipoEntidad.Id.HasValue)"
@@ -55,12 +57,14 @@
                    
                         <Template Context="item">
                         <RadzenButton Icon="edit"
+                                      Shade="Shade.Lighter"
                                       ButtonStyle="ButtonStyle.Warning"
                                       Size="ButtonSize.Small"
                                       Click="@(args => EditarDesdeGrid(item))"
                                       Style="margin-right: 5px" />
 
                         <RadzenButton Icon="delete"
+                                      Shade="Shade.Lighter"
                                       ButtonStyle="ButtonStyle.Danger"
                                       Size="ButtonSize.Small"
                                       Click="@(args => EliminarDesdeGrid(item))" />

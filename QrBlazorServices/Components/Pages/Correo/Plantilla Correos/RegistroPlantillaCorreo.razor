@@ -34,6 +34,7 @@
 
                 <RadzenButton Text="Guardar Plantilla"
                               Icon="save"
+                              Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Success"
                               Class="mt-3"
                               Click="GuardarPlantilla" />
@@ -69,11 +70,12 @@
                 <RadzenDataGridColumn TItem="PlantillaCorreo" Title="Acciones">
                     <Template Context="row">
 
-                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Shade="Shade.Lighter"
                                       Click="@(() => CargarPlantillaParaEditar(row))" Style="margin-right: 5px;" />
 
 
                         <RadzenButton Icon="delete"
+                                      Shade="Shade.Lighter"
                                       ButtonStyle="ButtonStyle.Danger"
                                       Size="ButtonSize.Small"
                                       Click="@(() => EliminarPlantilla(row.Id))" />

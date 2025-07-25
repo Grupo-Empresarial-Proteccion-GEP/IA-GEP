@@ -14,11 +14,11 @@
     <!-- Barra de navegación con estilo Radzen -->
     <div class="d-flex mb-3 gap-2 justify-content-center">
         <RadzenButton Text="Registro De Categorias"
-                      Click="@(args => CambiarFormulario("CategoriasR"))"
+                      Click="@(args => CambiarFormulario("CategoriasR"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "EntidCategoriasRades" ? ButtonStyle.Primary : ButtonStyle.Light)" />
 
         <RadzenButton Text="IA Documental"
-                      Click="@(args => CambiarFormulario("Destroyer Gemini"))"
+                      Click="@(args => CambiarFormulario("Destroyer Gemini"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "Destroyer Gemini" ? ButtonStyle.Primary : ButtonStyle.Light)" />
     </div>
 

@@ -27,10 +27,10 @@
 
         <RadzenDataGridColumn TItem="Entidad" Title="Acciones" Filterable="false" Sortable="false">
             <Template Context="entidad">
-                <RadzenButton Text="Editar" Icon="edit"
+                <RadzenButton Text="Editar" Icon="edit" Shade="Shade.Lighter"
                               Click="@(args => IrAEditarEntidad(entidad))"
                               ButtonStyle="ButtonStyle.Primary" Style="margin-right:5px" />
-                <RadzenButton Text="Servicios" Icon="build"
+                <RadzenButton Text="Servicios" Icon="build" Shade="Shade.Lighter"
                               Click="@(args => IrAAgregarServicios(entidad))"
                               ButtonStyle="ButtonStyle.Info" />
             </Template>
@@ -43,9 +43,9 @@
     <RadzenAlert Severity="AlertSeverity.Info">No hay entidades registradas aún.</RadzenAlert>
 }
 
-<RadzenButton Text="Nueva Entidad" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle"  Style="margin-bottom: 10px; margin-right: 10px;" />
+<RadzenButton Text="Nueva Entidad" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle" Style="margin-bottom: 10px; margin-right: 10px;" />
 
-<RadzenButton Text="Buscar" Click="@(() => mostrarBuscador = !mostrarBuscador)"
+<RadzenButton Text="Buscar" Click="@(() => mostrarBuscador = !mostrarBuscador)" Shade="Shade.Lighter"
               ButtonStyle="ButtonStyle.Secondary" Icon="search"  Style="margin-bottom: 10px; margin-right: 10px;"  />
 
 

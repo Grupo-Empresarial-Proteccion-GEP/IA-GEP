@@ -81,14 +81,14 @@
                             <RadzenTextBox Name="NuevoServicio" @bind-Value="nuevoServicio" Placeholder="Servicios Ej: Capacitación" Class="w-100" />
                         </RadzenFormField>
 
-                        <RadzenButton Icon="add_circle" Text="Agregar Servicio" Click="@AgregarServicio" ButtonStyle="ButtonStyle.Secondary" />
+                        <RadzenButton Icon="add_circle" Text="Agregar Servicio" Click="@AgregarServicio" Shade="Shade.Lighter"  ButtonStyle="ButtonStyle.Secondary" />
 
                         <ul class="mt-2">
                             @foreach (var s in listaServicios)
                             {
                                 <li>
                                     @s
-                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Shade="Shade.Lighter"
                                                   Click="@(args => EliminarServicio(s))" />
                                 </li>
                             }
@@ -120,14 +120,14 @@
                             <RadzenTextBox Name="SubdivResponsable" @bind-Value="subdiv.Responsable" Placeholder="Contacto" Class="w-100" />
                         </RadzenFormField>
 
-                        <RadzenButton Icon="add_circle" Text="Agregar Departamento" Click="@AgregarSubdiv" ButtonStyle="ButtonStyle.Secondary" />
+                        <RadzenButton Icon="add_circle" Shade="Shade.Lighter" Text="Agregar Departamento" Click="@AgregarSubdiv" ButtonStyle="ButtonStyle.Secondary" />
 
                         <ul class="mt-2">
                             @foreach (var sd in listaSubdiv)
                             {
                                 <li>
                                     @sd.NombreSubdiv - @sd.Ciudad
-                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small"
+                                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Shade="Shade.Lighter"
                                                   Click="@(args => EliminarSubdiv(sd))" />
                                 </li>
                             }
@@ -136,8 +136,8 @@
                 }
             </div>
 
-            <RadzenButton Text="Registrar entidad" ButtonStyle="ButtonStyle.Success" Type="Submit" Style="margin-top: 20px;" />
-            <RadzenButton Text="Volver" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
+            <RadzenButton Text="Registrar entidad" Shade="Shade.Lighter"  ButtonStyle="ButtonStyle.Success" Type="Submit" Style="margin-top: 20px;" />
+            <RadzenButton Text="Volver" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
 
         </RadzenFieldset>
 

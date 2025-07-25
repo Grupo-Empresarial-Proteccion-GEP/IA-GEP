@@ -15,10 +15,10 @@
     <!-- Barra de navegación con estilo Radzen -->
     <div class="d-flex mb-3 gap-2 justify-content-center">
         <RadzenButton Text="Plantillas Correos"
-                      Click="@(args => CambiarFormulario("RegistroPlantillaCorreo"))"
+                      Click="@(args => CambiarFormulario("RegistroPlantillaCorreo"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "RegistroPlantillaCorreo.razor" ? ButtonStyle.Primary : ButtonStyle.Light)" />
         <RadzenButton Text="Envio De Correos"
-                      Click="@(args => CambiarFormulario("Email"))"
+                      Click="@(args => CambiarFormulario("Email"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "Email" ? ButtonStyle.Primary : ButtonStyle.Light)" />
       
     </div>

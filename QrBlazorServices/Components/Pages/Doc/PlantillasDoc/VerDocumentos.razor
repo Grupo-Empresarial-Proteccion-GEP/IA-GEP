@@ -27,16 +27,16 @@
         <RadzenDataGridColumn TItem="DocumentoExtendido" Property="FechaCreacion" Title="Creación" FormatString="{0:yyyy-MM-dd}" />
         <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
             <Template Context="doc">
-                <RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
+                <RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info" Shade="Shade.Lighter"
                               Click="() => EditarDocumento(doc.Id)" />
-                <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger"
+                <RadzenButton Icon="delete" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Shade="Shade.Lighter"
                               Click="() => EliminarDocumento(doc.Id)" />
             </Template>
         </RadzenDataGridColumn>
     </Columns>
 </RadzenDataGrid>
 
-<RadzenButton Text="Nuevo Documento" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro"
+<RadzenButton Text="Nuevo Documento" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Shade="Shade.Lighter"
               Icon="add_circle" Style="margin-bottom: 10px; margin-right: 10px;" />
 
 @if (!string.IsNullOrEmpty(mensajes2))

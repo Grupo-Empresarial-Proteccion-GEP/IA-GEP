@@ -15,20 +15,20 @@
     <!-- Barra de navegación con estilo Radzen -->
     <div class="d-flex mb-3 gap-2 justify-content-center">
         <RadzenButton Text="Plantillas Documentos"
-                      Click="@(args => CambiarFormulario("PlantillasDoc"))"
+                      Click="@(args => CambiarFormulario("PlantillasDoc"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "PlantillasDoc" ? ButtonStyle.Primary : ButtonStyle.Light)" />
         <RadzenButton Text="Cantegoria Documentos"
-                      Click="@(args => CambiarFormulario("CategoriasR"))"
+                      Click="@(args => CambiarFormulario("CategoriasR"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "CategoriasR" ? ButtonStyle.Primary : ButtonStyle.Light)" />
         <RadzenButton Text="Registro Documentos"
-                      Click="@(args => CambiarFormulario("RegistroDocumento"))"
+                      Click="@(args => CambiarFormulario("RegistroDocumento"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "RegistroDocumento" ? ButtonStyle.Primary : ButtonStyle.Light)" />
         <RadzenButton Text="Ver Documentos"
-                      Click="@(args => CambiarFormulario("VerDocumentos"))"
+                      Click="@(args => CambiarFormulario("VerDocumentos"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "VerDocumentos" ? ButtonStyle.Primary : ButtonStyle.Light)" />
 
         <RadzenButton Text="IA Documental"
-                      Click="@(args => CambiarFormulario("Destroyer Gemini"))"
+                      Click="@(args => CambiarFormulario("Destroyer Gemini"))" Shade="Shade.Lighter"
                       ButtonStyle="@(formActivo == "Destroyer Gemini" ? ButtonStyle.Primary : ButtonStyle.Light)" />
     </div>
 

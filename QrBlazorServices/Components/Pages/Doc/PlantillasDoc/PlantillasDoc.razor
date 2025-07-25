@@ -43,12 +43,14 @@
             <div class="mb-3">
                 <RadzenButton Text="Registrar Nueva"
                               Icon="save"
+                              Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Success"
                               Click="AgregarPlantilla"
                               Class="me-2" />
 
                 <RadzenButton Text="Actualizar"
                               Icon="edit"
+                              Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Warning"
                               Click="ActualizarPlantilla"
                               Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)"
@@ -56,6 +58,7 @@
 
                 <RadzenButton Text="Eliminar"
                               Icon="delete"
+                              Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Danger"
                               Click="EliminarPlantilla"
                               Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)" />
@@ -83,7 +86,7 @@
                     <RadzenDataGridColumn TItem="Plantilla" Property="Estado" Title="Estado" />
                     <RadzenDataGridColumn TItem="Plantilla" Title="Acción">
                         <Template Context="data">
-                            <RadzenButton Icon="visibility" Size="ButtonSize.Small" Click="@(() => OnSeleccionarDesdeGrid(data))" />
+                            <RadzenButton Icon="visibility" Size="ButtonSize.Small" Shade="Shade.Lighter" Click="@(() => OnSeleccionarDesdeGrid(data))" />
                         </Template>
                     </RadzenDataGridColumn>
                 </Columns>

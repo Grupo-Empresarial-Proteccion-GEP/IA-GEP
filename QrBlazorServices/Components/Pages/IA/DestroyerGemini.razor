@@ -31,7 +31,7 @@
                     <RadzenFieldset Text="Buscar Usuario">
                         <div class="d-flex gap-2">
                             <RadzenTextBox Placeholder="Buscar por documento" Style="width: 100%; margin-bottom: 10px;" @bind-Value="nombreBuscado" />
-                            <RadzenButton Icon="search" Text="Buscar" Click="@BuscarClientePorDocumento" Style="width: 25%; margin-bottom: 10px;" Disabled="@buscandoCliente" />
+                            <RadzenButton Icon="search" Text="Buscar" Shade="Shade.Lighter" Click="@BuscarClientePorDocumento" Style="width: 25%; margin-bottom: 10px;" Disabled="@buscandoCliente" />
                         </div>
                     </RadzenFieldset>
 
@@ -79,8 +79,8 @@
                     <RadzenFieldset Text="Adjuntar archivo">
                         <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
                         <div class="d-flex gap-2">
-                            <RadzenButton Text="Generar Documento IA" Click="@EnviarYLimpiarDespues" Disabled="@cargando" Style="flex: 1;" />
-                            <RadzenButton Text="Analizar Documento" Click="@EnviarYLimpiarDespues2" Disabled="@cargantwo" ButtonStyle="ButtonStyle.Secondary" Style="flex: 1;" />
+                            <RadzenButton Text="Generar Documento IA" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues" Disabled="@cargando" Style="flex: 1;" />
+                            <RadzenButton Text="Analizar Documento" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues2" Disabled="@cargantwo" ButtonStyle="ButtonStyle.Secondary" Style="flex: 1;" />
                         </div>
                     </RadzenFieldset>
 
@@ -110,8 +110,8 @@
                     </RadzenFieldset>
 
                     <div class="d-flex gap-3 mt-3">
-                        <RadzenButton Text="Descargar como Word" Click="@DescargarDocSimple" />
-                        <RadzenButton Text="Mostrar Historial" Click="@(() => showModal = true)" ButtonStyle="ButtonStyle.Secondary" />
+                        <RadzenButton Text="Descargar como Word" Shade="Shade.Lighter"  Click="@DescargarDocSimple" />
+                        <RadzenButton Text="Mostrar Historial" Shade="Shade.Lighter"  Click="@(() => showModal = true)" ButtonStyle="ButtonStyle.Secondary" />
                     </div>
                 </div>
             </div>
