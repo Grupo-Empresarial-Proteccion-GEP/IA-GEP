@@ -35,13 +35,6 @@
                                  Expanded="@((context) => ((NodoCategoria)context).Expanded)" />
             </RadzenTree>
             </RadzenFieldset>
-            
-            @if (!string.IsNullOrEmpty(mensaje2))
-                {
-                    <div class="alert @(mensaje2.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
-                        @mensaje2
-                    </div>
-                }
 
             
                 <RadzenFieldset Text="Ramificacion Arbol" style="height:100px; overflow-y: auto;">
@@ -58,7 +51,7 @@
     <!-- Columna derecha -->
     <RadzenColumn Width="6" >
 
-        <RadzenFieldset style="height: 840px; overflow-y: auto;">
+        <RadzenFieldset style="height: 845px; overflow-y: auto;">
 
                 <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">
       
@@ -84,50 +77,85 @@
                     <label class="ms-2">¿Es Rama principal?</label>
                 }
 
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                    @if (editando)
-                    {
+
+                @if (editando)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
                         <RadzenButton Icon="done"
                                       Size="ButtonSize.Small"
-                                      ButtonStyle="ButtonStyle.Info"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Shade="Shade.Lighter"
                                       Click="GuardarDocumentoYRama" />
 
                         <RadzenButton Icon="highlight_off"
                                       Size="ButtonSize.Small"
-                                      ButtonStyle="ButtonStyle.Secondary"
+                                      ButtonStyle="ButtonStyle.Base"
+                                      Shade="Shade.Lighter"
                                       Click="@(() => Cancelar())" />
-                    }
-                    else if (nodoSeleccionado != null)
-                    {
+                    </div>
+                }
+                else if (agregandoHijo)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
+                        <RadzenButton Icon="done"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Shade="Shade.Lighter"
+                                      Click="GuardarDocumentoYRama" />
+
+                        <RadzenButton Icon="highlight_off"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Base"
+                                      Shade="Shade.Lighter"
+                                      Click="@(() => Cancelar())" />
+                    </div>
+                }
+                else if (nodoSeleccionado != null)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
+                        <RadzenButton Icon="add_circle"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Primary"
+                                      Shade="Shade.Lighter"
+                                      Click="@PrepararNuevoNodoComoHijo" />
+
                         <RadzenButton Icon="edit"
                                       Size="ButtonSize.Small"
-                                      ButtonStyle="ButtonStyle.Secondary"
+                                      ButtonStyle="ButtonStyle.Warning"
+                                      Shade="Shade.Lighter"
                                       Click="@(() => CargarNodoParaEditar(nodoSeleccionado))" />
 
                         <RadzenButton Icon="delete"
                                       Size="ButtonSize.Small"
-                                      ButtonStyle="ButtonStyle.Secondary"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Shade="Shade.Lighter"
                                       Click="@(() => EliminarNodo(nodoSeleccionado))" />
 
                         <RadzenButton Icon="highlight_off"
                                       Size="ButtonSize.Small"
-                                      ButtonStyle="ButtonStyle.Secondary"
+                                      ButtonStyle="ButtonStyle.Base"
+                                      Shade="Shade.Lighter"
                                       Click="@(() => Cancelar())" />
-                    }
-                    else if (nodoSeleccionado == null)
-                    {
+                    </div>
+                }
+                else if (nodoSeleccionado == null)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
                         <RadzenButton Icon="done"
                                       Size="ButtonSize.Small"
-                                      ButtonStyle="ButtonStyle.Info"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Shade="Shade.Lighter"
                                       Click="GuardarDocumentoYRama" />
-                    }
-                </div>
+                    </div>
+                }
+
+
 
 
 
         </RadzenFieldset>
      <!--/////////////////////////////////////////////////////////////////////////////////////////-->
-        <RadzenFieldset Style="margin-top: 10px; height: 610px; overflow-y: auto;">
+        <RadzenFieldset Style="margin-top: 10px; height: 593px; overflow-y: auto;">
         <RadzenTabs>
             <Tabs>
                 <RadzenTabsItem Text="Vista previa del documento">
@@ -140,7 +168,7 @@
                                 <embed src="@rutaSeleccionada"
                                        type="application/pdf"
                                        width="100%"
-                                       height="505px"
+                                       height="491px"
                                        style="border: 1px solid #ccc; border-radius: 8px;" />
                             }
                             else
@@ -162,7 +190,7 @@
                                     PageSize="7"
                                     AllowSorting="true"
                                     ShowPagingSummary="true"
-                                    Style="height: 505; width: 100%; overflow-y: auto;">
+                                            Style="height: 491px; width: 100%; overflow-y: auto;">
                         <Columns>
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Nombre" Title="Nombre">
                                 <HeaderTemplate>
@@ -176,8 +204,6 @@
 
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Referencia" Title="Referencia" />
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="NombrePlantilla" Title="Plantilla" />
-                            <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Categoria" Title="Categoría" />
-
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
                                 <Template Context="doc">
                                  <!--<RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
@@ -266,7 +292,6 @@
     </div>
 }
 
-
 @code {
 
     string mensajes;
@@ -275,6 +300,7 @@
     int IdAplicacion = 18;
     private string mensaje;
     private string? mensaje2;
+    bool agregandoHijo = false;
     Plantilla plantilla = new();
     Documento documento = new();
     string tipoSeleccionado = "";
@@ -389,12 +415,24 @@
     {
         try
         {
+            // ❌ Validar si el nodo tiene hijos
             if (nodosExistentes.Any(n => n.PadreId == nodo.Id))
             {
                 mensaje = "❌ No se puede eliminar un nodo que tiene hijos.";
                 return;
             }
 
+            // ❌ Validar si el nodo tiene documentos asociados
+            var sql = $@"SELECT COUNT(*) FROM DocumentoCategoria WHERE NodoCategoriaId = {nodo.Id}";
+            var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+            if (dt.Rows.Count > 0 && Convert.ToInt32(dt.Rows[0][0]) > 0)
+            {
+                mensaje = "❌ No se puede eliminar un nodo que tiene documentos asociados.";
+                return;
+            }
+
+            // ✅ Eliminar nodo
             var tabla = new DataTable("NodoCategoria");
             tabla.Columns.Add("Id", typeof(int));
             var row = tabla.NewRow();
@@ -403,6 +441,7 @@
 
             await ServicioUsuario.EliminarFilaAsync(tabla, 18);
             mensaje = "✅ Nodo eliminado correctamente.";
+
             await CargarNodos();
         }
         catch (Exception ex)
@@ -731,18 +770,6 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    void PrepararNuevoNodoComoHijo()
-    {
-        nuevoNodo = new NodoCategoria
-        {
-            PadreId = nodoSeleccionado?.Id,
-            EsCategoria = false,
-            Nombre = ""
-        };
-
-        editando = false;
-    }
 
     private void ExpandirNodoPadre(int? padreId)
     {
@@ -1619,7 +1646,6 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
  
     private void Cancelar() => Navigation.NavigateTo("/Documentos", forceLoad: true);
 
-
     private async void CargarNodoParaEditar(NodoCategoria nodo)
 {
     if (nodo == null)
@@ -1664,6 +1690,26 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
 
     StateHasChanged();
 }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    void PrepararNuevoNodoComoHijo()
+    {
+        nuevoNodo = new NodoCategoria
+        {
+            PadreId = nodoSeleccionado?.Id,
+            EsCategoria = false,
+            Nombre = ""
+        };
+
+        documento = new Documento(); // Limpia el documento
+        nombreComun = "";            // Limpia el textbox
+        documento.PlantillaId = null; // Limpia el dropdown
+        rutaSeleccionada = null;     // Limpia el visor
+
+        editando = false;
+        agregandoHijo = true;
+    }
 
 
 }
