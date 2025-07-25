@@ -17,17 +17,18 @@
     <!-- Columna izquierda: Formulario -->
     <RadzenColumn Width="6">
         <RadzenFieldset Text="Cargar / Editar Plantilla" Style="max-width: 100%;">
-            <RadzenTextBox @bind-Value="plantilla.NombreArchivo"
-                           Placeholder="Nombre de la plantilla"
-                           Class="w-100 mb-3" />
 
-            <RadzenTextBox @bind-Value="plantilla.Version"
-                           Placeholder="Versión"
-                           Class="w-100 mb-3" />
+            <RadzenFormField Text="Nombre de la plantilla" Class="w-100 mb-2">
+            <RadzenTextBox @bind-Value="plantilla.NombreArchivo"/>
+             </RadzenFormField>
 
-            <RadzenTextBox @bind-Value="plantilla.Referencia"
-                           Placeholder="Referencia"
-                           Class="w-100 mb-3" />
+            <RadzenFormField Text="Versión" Class="w-100 mb-2">
+            <RadzenTextBox @bind-Value="plantilla.Version"/>
+            </RadzenFormField>
+
+            <RadzenFormField Text="Codificación" Class="w-100 mb-2">
+            <RadzenTextBox @bind-Value="plantilla.Referencia"/>
+            </RadzenFormField>
 
             <RadzenDropDown @bind-Value="plantilla.Estado"
                             Data="@estadosDisponibles"
@@ -78,7 +79,7 @@
                     <RadzenDataGridColumn TItem="Plantilla" Property="Id" Title="ID" Width="50px" />
                     <RadzenDataGridColumn TItem="Plantilla" Property="NombreArchivo" Title="Nombre" />
                     <RadzenDataGridColumn TItem="Plantilla" Property="Version" Title="Versión" />
-                    <RadzenDataGridColumn TItem="Plantilla" Property="Referencia" Title="Referencia" />
+                    <RadzenDataGridColumn TItem="Plantilla" Property="Referencia" Title="Codificación" />
                     <RadzenDataGridColumn TItem="Plantilla" Property="Estado" Title="Estado" />
                     <RadzenDataGridColumn TItem="Plantilla" Title="Acción">
                         <Template Context="data">

@@ -1,29 +1,33 @@
 ﻿@page "/Documentos"
+@page "/rdocumento/{Id:int}"
+
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
+@inject NotificationService notificationService
+@inject NavigationManager Navigation
 @inject DialogService dialogService
-@rendermode InteractiveServer
+
 @using System.Data
 @using Radzen
 @using Radzen.Blazor
 @using QrBlazorServices.Clases
 
-@inject NavigationManager Navigation
-@inject NotificationService notificationService
-
-
-    @page "/rdocumento/{Id:int}"
-@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 
 <h3 class="mb-3">Gestión de Arbol Documental</h3>
 
 <RadzenRow>
+    <!--///////////////////////////////////////////////////////////////////////////////////////////////-->
     <!-- Columna izquierda -->
     <RadzenColumn Width="6">
      <RadzenFieldset>
-            <RadzenFieldset Text="@tituloSubnodos" Style="height: 780px; overflow-y: auto;">
-            <RadzenTextBox @bind-Value="textoBusqueda" Placeholder="Buscar categoría..." Style="width: 100%" Change="BuscarNodo" />                      
+            <RadzenFieldset Text="@tituloSubnodos" Style="height: 725px; overflow-y: auto;">
+
+            <RadzenFormField Text="Buscar categoría..." Class="w-100 mb-2">
+            <RadzenTextBox @bind-Value="textoBusqueda" Change="BuscarNodo" />                      
+            </RadzenFormField>
+
             <RadzenTree Data="@nodosRaiz"
                         Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
                 <RadzenTreeLevel TextProperty="Nombre"
@@ -31,29 +35,36 @@
                                  Expanded="@((context) => ((NodoCategoria)context).Expanded)" />
             </RadzenTree>
             </RadzenFieldset>
-                @if (!string.IsNullOrEmpty(mensaje2))
+            
+            @if (!string.IsNullOrEmpty(mensaje2))
                 {
                     <div class="alert @(mensaje2.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
                         @mensaje2
                     </div>
                 }
-      </RadzenFieldset>
-</RadzenColumn>
 
+            
+                <RadzenFieldset Text="Ramificacion Arbol" style="height:100px; overflow-y: auto;">
+                            @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
+            {
+                <p><strong>📂 Ruta:</strong> @string.Join(" / ", jerarquiaSeleccionada.Select(j => j.Nombre))</p>
+            }
+            </RadzenFieldset>
+
+      </RadzenFieldset>
+
+</RadzenColumn>
+    <!--/////////////////////////////////////////aqui//////////////////////////////////////////////////-->
     <!-- Columna derecha -->
     <RadzenColumn Width="6" >
 
-         <!--/////////////////////////////////////////aqui//////////////////////////////////////////////////-->
-        <RadzenFieldset style="height: 800px; overflow-y: auto;">
+        <RadzenFieldset style="height: 840px; overflow-y: auto;">
 
                 <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">
-                
-                @if (!DocumentoId.HasValue)
-                {
+      
                     <RadzenFormField Text="Nombre de la Rama / Documento" Class="w-100 mb-2">
                         <RadzenTextBox @bind-Value="nombreComun" Style="width: 100%" />
                     </RadzenFormField>
-                }
 
                 <RadzenDropDown 
                     @bind-Value="documento.PlantillaId"
@@ -78,32 +89,38 @@
                 @if (!DocumentoId.HasValue)
                 {
 
-                    <RadzenButton Text="Guardar"
-                                  ButtonStyle="ButtonStyle.Success"
-                                  Click="@GuardarDocumentoYRama"
-                                  Icon=""
-                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+
+                <RadzenButton 
+                    Icon="done" 
+                    Size="ButtonSize.Small" 
+                    ButtonStyle="ButtonStyle.Info" 
+                    Click="GuardarDocumentoYRama" />
+
                 }
                 @if (editando)
                 {
-                    <RadzenButton Text="Cancelar"
-                                  ButtonStyle="ButtonStyle.Secondary"
-                                  Click="@CancelarEdicion"
-                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+                <RadzenButton 
+                    Icon="highlight_off" 
+                    Size="ButtonSize.Small" 
+                    ButtonStyle="ButtonStyle.Secondary" 
+                    Click="@CancelarEdicion"/>
+
                 }
                 else if (nodoSeleccionado != null)
                 {
-                    <RadzenButton Text="Editar nodo"
-                                  ButtonStyle="ButtonStyle.Warning"
-                                  Icon=""
-                                  Click="@(() => CargarNodoParaEditar(nodoSeleccionado))"
-                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
 
-                    <RadzenButton Text="Eliminar nodo"
-                                  ButtonStyle="ButtonStyle.Danger"
-                                  Icon=""
-                                  Click="@(() => EliminarNodo(nodoSeleccionado))"
-                                  Style="font-size: 0.85rem; padding: 6px 12px;" />
+                <RadzenButton 
+                    Icon="edit" 
+                    Size="ButtonSize.Small" 
+                    ButtonStyle="ButtonStyle.Secondary" 
+                    Click="@(() => CargarNodoParaEditar(nodoSeleccionado))"/>
+
+
+                <RadzenButton 
+                    Icon="delete" 
+                    Size="ButtonSize.Small" 
+                    ButtonStyle="ButtonStyle.Secondary" 
+                    Click="@(() => EliminarNodo(nodoSeleccionado))"/>
                 }
                 @if (DocumentoId.HasValue)
                 {
@@ -126,11 +143,8 @@
                 </div>
 
         </RadzenFieldset>
-
-        <!--////////////////////////////////////////aqui///////////////////////////////////////////////-->
-        <!--///////////////////////////////////////////////////////////////////////////////////////////-->
-
-        <RadzenFieldset Style="margin-top: 20px; height: 430px; overflow-y: auto;">
+     <!--/////////////////////////////////////////////////////////////////////////////////////////-->
+        <RadzenFieldset Style="margin-top: 10px; height: 580px; overflow-y: auto;">
         <RadzenTabs>
             <Tabs>
                 <RadzenTabsItem Text="Vista previa del documento">
@@ -143,7 +157,7 @@
                                 <embed src="@rutaSeleccionada"
                                        type="application/pdf"
                                        width="100%"
-                                       height="320px"
+                                       height="480px"
                                        style="border: 1px solid #ccc; border-radius: 8px;" />
                             }
                             else
@@ -158,7 +172,7 @@
                     }
                 </RadzenTabsItem>
 
-                <RadzenTabsItem Text="Documentos Arbol Documental">
+          <!--      <RadzenTabsItem Text="Documentos Arbol Documental">
 
                     <RadzenDataGrid Data="@documentosFiltrados"
                                     TItem="DocumentoExtendido"
@@ -188,26 +202,19 @@
                                                   Click="() => EditarDocumento(doc.Id)" />
                                     <RadzenButton Icon="delete" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Danger"
                                                   Click="() => EliminarDocumento(doc.Id)" />
-                                    <RadzenButton Icon="pageview" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
+                                    <RadzenButton Icon="visibility" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
                                                   Click="@(() => MostrarVisor(doc))" />
                                 </Template>
                             </RadzenDataGridColumn>
                         </Columns>
                     </RadzenDataGrid>
 
-                </RadzenTabsItem>
+                </RadzenTabsItem>-->
             </Tabs>
         </RadzenTabs>
         </RadzenFieldset>
-            <RadzenFieldset Text="Ramificacion Arbol" style="height:100px; overflow-y: auto;">
-                            @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
-            {
-                <p><strong>📂 Ruta:</strong> @string.Join(" / ", jerarquiaSeleccionada.Select(j => j.Nombre))</p>
-            }
-            </RadzenFieldset>
 
-            <!--///////////////////////////////////////////////////////////////////////////////////////////-->
-            <!--///////////////////////////////////////////////////////////////////////////////////////////-->       
+     <!--///////////////////////////////////////////////////////////////////////////////////////////-->
 	</RadzenFieldset>
 </RadzenColumn>
 </RadzenRow>
@@ -861,38 +868,49 @@
         if (string.IsNullOrWhiteSpace(textoBusqueda))
             return;
 
-        LimpiarResaltado(nodosRaiz); 
+        LimpiarResaltado(nodosRaiz);
 
-        var nodoEncontrado = BuscarNodoPorNombre(nodosRaiz, textoBusqueda.Trim());
+        var nodosCoincidentes = BuscarNodosPorNombre(nodosRaiz, textoBusqueda.Trim());
 
-        if (nodoEncontrado != null)
+        if (nodosCoincidentes.Any())
         {
-            nodoIdEncontrado = nodoEncontrado.Id;
-            ExpandirRutaHastaNodo(nodoIdEncontrado);
+            nodoIdEncontrado = nodosCoincidentes.First().Id;
+
+            foreach (var nodo in nodosCoincidentes)
+            {
+                ExpandirRutaHastaNodo(nodo.Id);
+            }
+
             await InvokeAsync(StateHasChanged);
         }
         else
         {
-            mensaje = "❌ Nodo no encontrado.";
+            mensaje = "❌ No se encontró ningún nodo coincidente.";
         }
     }
 
-    private NodoCategoria BuscarNodoPorNombre(List<NodoCategoria> nodos, string texto)
+    private List<NodoCategoria> BuscarNodosPorNombre(List<NodoCategoria> nodos, string texto)
     {
+        List<NodoCategoria> encontrados = new();
+
         foreach (var nodo in nodos)
         {
-            if (nodo.NombreOriginal.Contains(texto, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(nodo.NombreOriginal) &&
+                nodo.NombreOriginal.Contains(texto, StringComparison.OrdinalIgnoreCase))
             {
                 nodo.EsNodoBuscado = true;
                 nodo.Nombre = $"👉 {nodo.NombreOriginal}";
-                return nodo;
+                encontrados.Add(nodo);
             }
 
-            var encontrado = BuscarNodoPorNombre(nodo.Hijos, texto);
-            if (encontrado != null)
-                return encontrado;
+            if (nodo.Hijos != null && nodo.Hijos.Any())
+            {
+                var hijosEncontrados = BuscarNodosPorNombre(nodo.Hijos, texto);
+                encontrados.AddRange(hijosEncontrados);
+            }
         }
-        return null;
+
+        return encontrados;
     }
 
     private void LimpiarResaltado(List<NodoCategoria> nodos)
@@ -995,19 +1013,19 @@
         {
             var nodoRaiz = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
             if (nodoRaiz != null && nodoRaiz.PadreId == 0 && nodoRaiz.EsCategoria)
-            {
+                /*   {
                 Console.WriteLine($"✅ Nodo raíz '{nodoRaiz.Nombre}' detectado. Se permite continuar sin subcategoría.");
             }
-            else
+        else*/
             {
-                mensaje = $"⚠️ No se encontró ninguna subcategoría válida en la jerarquía ascendente desde el nodo ID: {nodoSeleccionadoId}";
-                return;
-            }
+            mensaje = $"⚠️ No se encontró ninguna subcategoría válida en la jerarquía ascendente desde el nodo ID: {nodoSeleccionadoId}";
+            return;
         }
+    }
 
-        Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
+    Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
 
-        await GuardarDocumento();
+    await GuardarDocumento();
     }
 
     private async Task GuardarNodo()
@@ -1227,72 +1245,7 @@
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
-    {
-        if (nodo == null)
-            return;
-
-        nodoSeleccionado = nodo;
-        jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
-
-        var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
-        var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
-
-        if (categoria != null)
-        {
-            categoriaSeleccionadaId = categoria.Id;
-            FiltrarSubcategorias(categoria.Id);
-        }
-
-        if (subcategoria != null)
-        {
-            var sub = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == subcategoria.Nombre.Trim());
-            if (sub != null)
-            {
-                subCategoriaSeleccionadaId = sub.Id;
-                FiltrarNodos(sub.Id);
-            }
-        }
-
-        var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
-        if (nodoFinal != null)
-        {
-            nodoSeleccionadoId = nodoFinal.Id;
-            InicializarJerarquiaDesdeNodo(nodoFinal.Id);
-
-            if (editando)
-            {
-
-                nuevoNodo = new NodoCategoria
-            {
-                Id = nodoFinal.Id,
-                Nombre = nodoFinal.Nombre,
-                PadreId = nodoFinal.PadreId,
-                EsCategoria = nodoFinal.EsCategoria
-            };
-            }
-            else
-            {
-
-                nuevoNodo = new NodoCategoria
-            {
-                PadreId = nodoFinal.Id,
-                EsCategoria = false, 
-                Nombre = ""
-            };
-            }
-
-            Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
-        }
-        else
-        {
-            Console.WriteLine("⚠️ No se pudo determinar el nodo final desde la jerarquía.");
-        }
-
-        StateHasChanged();
-    }
-
+   
     async Task GuardarDocumento()
     {
         try
@@ -1550,39 +1503,106 @@
         }
     }
 
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
     private List<DocumentoExtendido> documentosFiltrados = new();
-    private string filtroNombre = "";
     private string _filtroNombre = "";
-
-private string FiltroNombre
-{
-    get => _filtroNombre;
-    set
+    private string FiltroNombre
     {
-        if (_filtroNombre != value)
+        get => _filtroNombre;
+        set
         {
-            _filtroNombre = value;
-            AplicarFiltroNombre();
+            if (_filtroNombre != value)
+            {
+                _filtroNombre = value;
+                AplicarFiltroNombre();
+            }
         }
     }
-}
 
-  private void AplicarFiltroNombre()
-{
-    if (string.IsNullOrWhiteSpace(_filtroNombre))
-        documentosFiltrados = documentos;
-    else
-        documentosFiltrados = documentos
-            .Where(d => d.Nombre?.Contains(_filtroNombre, StringComparison.OrdinalIgnoreCase) == true)
-            .ToList();
-}
+    private void AplicarFiltroNombre()
+    {
+        if (string.IsNullOrWhiteSpace(_filtroNombre))
+        {
+            documentosFiltrados = documentos;
+        }
+        else
+        {
+            documentosFiltrados = documentos
+                .Where(d => d.Nombre?.Contains(_filtroNombre, StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     
+   private void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
+{
+    if (nodo == null)
+        return;
 
+    // Asignar directamente el nombre desde el nodo recibido
+    nombreComun = nodo.Nombre;
+
+    nodoSeleccionado = nodo;
+    jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
+
+    var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
+    var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
+
+    if (categoria != null)
+    {
+        categoriaSeleccionadaId = categoria.Id;
+        FiltrarSubcategorias(categoria.Id);
+    }
+
+    if (subcategoria != null)
+    {
+        var sub = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == subcategoria.Nombre.Trim());
+        if (sub != null)
+        {
+            subCategoriaSeleccionadaId = sub.Id;
+            FiltrarNodos(sub.Id);
+        }
+    }
+
+    var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
+    if (nodoFinal != null)
+    {
+        nodoSeleccionadoId = nodoFinal.Id;
+        InicializarJerarquiaDesdeNodo(nodoFinal.Id);
+
+        if (editando)
+        {
+            nuevoNodo = new NodoCategoria
+            {
+                Id = nodoFinal.Id,
+                Nombre = nodoFinal.Nombre,
+                PadreId = nodoFinal.PadreId,
+                EsCategoria = nodoFinal.EsCategoria
+            };
+        }
+        else
+        {
+            nuevoNodo = new NodoCategoria
+            {
+                PadreId = nodoFinal.Id,
+                EsCategoria = false,
+                Nombre = ""
+            };
+        }
+
+        Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
+    }
+    else
+    {
+        Console.WriteLine("⚠️ No se pudo determinar el nodo final desde la jerarquía.");
+    }
+
+    StateHasChanged();
 }
 
+
+}
 
 <!--Version Funcional 24/07-->
