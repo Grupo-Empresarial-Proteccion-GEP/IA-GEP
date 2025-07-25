@@ -25,17 +25,21 @@
             <RadzenFieldset Text="@tituloSubnodos" Style="height: 725px; overflow-y: auto;">
 
             <RadzenFormField Text="Buscar categoría..." Class="w-100 mb-2">
-            <RadzenTextBox @bind-Value="textoBusqueda" Change="BuscarNodo" />                      
-            </RadzenFormField>
+            <RadzenTextBox @bind-Value="textoBusqueda" Change="BuscarNodo" />
 
-            <RadzenTree Data="@nodosRaiz"
-                        Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
-                <RadzenTreeLevel TextProperty="Nombre"
-                                 ChildrenProperty="Hijos"
-                                 Expanded="@((context) => ((NodoCategoria)context).Expanded)" />
-            </RadzenTree>
+                </RadzenFormField>
+
+                <RadzenTree Data="@nodosRaiz"
+                            Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
+                    <RadzenTreeLevel TextProperty="Nombre"
+                                     ChildrenProperty="Hijos"
+                                    />
+                </RadzenTree>
+
+
+
             </RadzenFieldset>
-
+            
             
                 <RadzenFieldset Text="Ramificacion Arbol" style="height:100px; overflow-y: auto;">
                             @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
@@ -1631,11 +1635,11 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
 
 
             // Esto alimentará el DropDown si está bindeado con documento.PlantillaId
-            Console.WriteLine($"🔍 Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
+            Console.WriteLine($"Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
         }
         else
         {
-            Console.WriteLine("⚠️ No se pudo determinar el nodo final desde la jerarquía.");
+            Console.WriteLine("No se pudo determinar el nodo final desde la jerarquía.");
         }
 
         StateHasChanged();
@@ -1710,7 +1714,6 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
         editando = false;
         agregandoHijo = true;
     }
-
 
 }
 
