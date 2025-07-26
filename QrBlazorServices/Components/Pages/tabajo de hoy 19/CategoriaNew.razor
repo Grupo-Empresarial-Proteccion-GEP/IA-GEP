@@ -24,11 +24,19 @@
      <RadzenFieldset>
             <RadzenFieldset Text="@tituloSubnodos" Style="height: 725px; overflow-y: auto;">
 
-            <RadzenFormField Text="Buscar categoría..." Class="w-100 mb-2">
-            <RadzenTextBox @bind-Value="textoBusqueda" Change="BuscarNodo" />
+                <RadzenFormField Text="Buscar categoría" Class="w-100 mb-2">
+                    
+                        <RadzenTextBox @bind-Value="textoBusqueda"
+                                       Style="width:100%; padding-right:35px;"
+                                        />
 
+                        <RadzenButton Icon="search"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Light"
+                                      Style="position:absolute; right:5px; top:50%; transform:translateY(-50%);"
+                                      Click="BuscarNodo" />
+                               
                 </RadzenFormField>
-
 
                 <RadzenTree Data="@nodosRaiz" Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
                     <RadzenTreeLevel ChildrenProperty="Hijos" Expanded="@(context => ((NodoCategoria)context).Expanded)">
@@ -38,10 +46,8 @@
                     </RadzenTreeLevel>
                 </RadzenTree>
 
-
             </RadzenFieldset>
-            
-            
+                 
                 <RadzenFieldset Text="Ramificacion Arbol" style="height:100px; overflow-y: auto;">
                             @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
             {
@@ -50,20 +56,15 @@
             </RadzenFieldset>
 
       </RadzenFieldset>
-
 </RadzenColumn>
     <!--/////////////////////////////////////////aqui//////////////////////////////////////////////////-->
     <!-- Columna derecha -->
     <RadzenColumn Width="6" >
-
         <RadzenFieldset style="height: 845px; overflow-y: auto;">
-
-                <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">
-      
+                <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">     
                     <RadzenFormField Text="Nombre de la Rama / Documento" Class="w-100 mb-2">
                         <RadzenTextBox @bind-Value="nombreComun" Style="width: 100%" />
                     </RadzenFormField>
-
                 <RadzenDropDown 
                     @bind-Value="documento.PlantillaId"
                     Data="@plantillas"
@@ -74,15 +75,11 @@
                     AllowFiltering="true"
                     FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                     Change="@(args => MostrarVisorPlantilla(Convert.ToInt32(args)))" />
-
-
                 @if (!DocumentoId.HasValue && !editando)
                 {
                     <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" />
                     <label class="ms-2">¿Es Rama principal?</label>
                 }
-
-
                 @if (editando)
                 {
                     <div class="d-flex flex-row justify-content-end gap-2">
@@ -91,7 +88,6 @@
                                       ButtonStyle="ButtonStyle.Success"
                                       Shade="Shade.Lighter"
                                       Click="GuardarDocumentoYRama" />
-
                         <RadzenButton Icon="highlight_off"
                                       Size="ButtonSize.Small"
                                       ButtonStyle="ButtonStyle.Base"
@@ -153,11 +149,6 @@
                                       Click="GuardarDocumentoYRama" />
                     </div>
                 }
-
-
-
-
-
         </RadzenFieldset>
      <!--/////////////////////////////////////////////////////////////////////////////////////////-->
         <RadzenFieldset Style="margin-top: 10px; height: 593px; overflow-y: auto;">
@@ -188,7 +179,6 @@
                     }
                 </RadzenTabsItem>
            <RadzenTabsItem Text="Documentos Arbol Documental">
-
                     <RadzenDataGrid Data="@documentosFiltrados"
                                     TItem="DocumentoExtendido"
                                     AllowPaging="true"
@@ -203,19 +193,25 @@
                                             <RadzenFormField Text="Buscar Nombre" Class="w-100 mb-2">
                                                 <RadzenTextBox @bind-Value="FiltroNombre" Style="width: 100%" />
                                             </RadzenFormField>
-                                 
                                 </HeaderTemplate>
                             </RadzenDataGridColumn>
-
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="Referencia" Title="Referencia" />
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Property="NombrePlantilla" Title="Plantilla" />
                             <RadzenDataGridColumn TItem="DocumentoExtendido" Title="Acciones">
                                 <Template Context="doc">
-                                 <!--<RadzenButton Icon="edit" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info"
-                                                             Click="() => EditarDocumento(doc.Id)"/>-->
-                                            <RadzenButton Icon="delete" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Danger" Shade="Shade.Lighter"
-                                                  Click="() => EliminarDocumento(doc.Id)" />
-                                            <RadzenButton Icon="visibility" Size="ButtonSize.Small" Style="margin-right: 5px;" ButtonStyle="ButtonStyle.Info" Shade="Shade.Lighter"
+
+                                            <RadzenButton Icon="delete"
+                                                          Size="ButtonSize.Small"
+                                                          Style="margin-right: 5px;"
+                                                          ButtonStyle="ButtonStyle.Danger"
+                                                          Shade="Shade.Lighter"
+                                                          Click="() => EliminarDocumento(doc.Id)" />
+
+                                            <RadzenButton Icon="visibility" 
+                                                Size="ButtonSize.Small" 
+                                                Style="margin-right: 5px;"
+                                                ButtonStyle="ButtonStyle.Info"
+                                                Shade="Shade.Lighter"
                                                   Click="@(() => MostrarVisor(doc))" />
                                 </Template>
                             </RadzenDataGridColumn>
@@ -225,11 +221,16 @@
             </Tabs>
         </RadzenTabs>
         </RadzenFieldset>
-
      <!--///////////////////////////////////////////////////////////////////////////////////////////-->
 	</RadzenFieldset>
 </RadzenColumn>
 </RadzenRow>
+
+@if (!string.IsNullOrEmpty(mensajes2))
+{
+    <div class="alert alert-info">@mensajes2</div>
+}
+<RadzenDialog />
 
 @if (showModal)
 {
@@ -290,12 +291,6 @@
 }
 
 
-@if (!string.IsNullOrEmpty(mensajes2))
-{
-    <div class="alert @(mensajes2.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
-        @mensajes2
-    </div>
-}
 
 @code {
 
@@ -420,33 +415,56 @@
     {
         try
         {
-            // ❌ Validar si el nodo tiene hijos
+            if (nodo == null)
+            {
+                mensaje = "⚠️ Nodo no válido.";
+                return;
+            }
+
+            // Validar si tiene hijos
             if (nodosExistentes.Any(n => n.PadreId == nodo.Id))
             {
                 mensaje = "❌ No se puede eliminar un nodo que tiene hijos.";
                 return;
             }
 
-            // ❌ Validar si el nodo tiene documentos asociados
-            var sql = $@"SELECT COUNT(*) FROM DocumentoCategoria WHERE NodoCategoriaId = {nodo.Id}";
+            // Verificar si tiene documentos
+            var sql = $@"SELECT Id FROM DocumentoCategoria WHERE NodoCategoriaId = {nodo.Id}";
             var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
 
-            if (dt.Rows.Count > 0 && Convert.ToInt32(dt.Rows[0][0]) > 0)
+            int cantidadDocumentos = dt.Rows.Count;
+
+            if (cantidadDocumentos > 0)
             {
-                mensaje = "❌ No se puede eliminar un nodo que tiene documentos asociados.";
-                return;
+                var confirmar = await dialogService.Confirm(
+                    $"Este nodo tiene {cantidadDocumentos} documento(s) asociado(s). ¿Deseas eliminarlos también?",
+                    "Documentos asociados",
+                    new ConfirmOptions { OkButtonText = "Sí, eliminar todo", CancelButtonText = "Cancelar" });
+
+                if (confirmar != true)
+                {
+                    mensaje = "⛔ Eliminación cancelada por documentos asociados.";
+                    return;
+                }
+
+                // Usar tu propia función para eliminar documentos
+                foreach (DataRow fila in dt.Rows)
+                {
+                    int documentoId = Convert.ToInt32(fila["Id"]);
+                    await EliminarDocumento(documentoId);
+                }
             }
 
-            // ✅ Eliminar nodo
+            // Eliminar el nodo
             var tabla = new DataTable("NodoCategoria");
             tabla.Columns.Add("Id", typeof(int));
             var row = tabla.NewRow();
             row["Id"] = nodo.Id;
             tabla.Rows.Add(row);
 
-            await ServicioUsuario.EliminarFilaAsync(tabla, 18);
-            mensaje = "✅ Nodo eliminado correctamente.";
+            await ServicioUsuario.EliminarFilaAsync(tabla, IdAplicacion);
 
+            mensaje = "✅ Nodo eliminado correctamente.";
             await CargarNodos();
         }
         catch (Exception ex)
@@ -454,6 +472,7 @@
             mensaje = $"❌ Error al eliminar nodo: {ex.Message}";
         }
     }
+
 
     private void CancelarEdicion()
     {
@@ -726,19 +745,34 @@
 
     async Task EliminarDocumento(int id)
     {
-        try
-        {
-            await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", id.ToString(), IdAplicacion);
-            await ServicioUsuario.EliminarListadeLlavesAsync("Documento", "Id", id.ToString(), IdAplicacion);
+        mensajes2 = "⏳ Esperando confirmación...";
 
-            mensajes2 = "✅ Documento eliminado correctamente.";
-            await CargarDocumentos();
-        }
-        catch (Exception ex)
+        var confirmar = await dialogService.Confirm(
+            $"¿Deseas eliminar el documento seleccionado?",
+            "Confirmar eliminación",
+            new ConfirmOptions { OkButtonText = "Sí", CancelButtonText = "Cancelar" });
+
+        if (confirmar == true)
         {
-            mensajes2 = $"❌ Error al eliminar documento: {ex.Message}";
+            try
+            {
+                await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", id.ToString(), IdAplicacion);
+                await ServicioUsuario.EliminarListadeLlavesAsync("Documento", "Id", id.ToString(), IdAplicacion);
+
+                mensajes2 = "✅ Documento eliminado correctamente.";
+                await CargarDocumentos();
+            }
+            catch (Exception ex)
+            {
+                mensajes2 = $"❌ Error al eliminar documento: {ex.Message}";
+            }
+        }
+        else
+        {
+            mensajes2 = "❌ Cancelado por el usuario.";
         }
     }
+
 
     private void IrARegistro()
     {
@@ -862,7 +896,7 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-   
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1177,7 +1211,7 @@
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-   
+
     async Task GuardarDocumento()
     {
         try
@@ -1467,7 +1501,7 @@
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     private async void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
     {
         if (nodo == null)
@@ -1581,16 +1615,16 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
- 
+
     private void Cancelar() => Navigation.NavigateTo("/Documentos", forceLoad: true);
 
     private async void CargarNodoParaEditar(NodoCategoria nodo)
-{
-    if (nodo == null)
-        return;
+    {
+        if (nodo == null)
+            return;
 
-    // Cargar el nodo en edición
-    nuevoNodo = new NodoCategoria
+        // Cargar el nodo en edición
+        nuevoNodo = new NodoCategoria
     {
         Id = nodo.Id,
         Nombre = nodo.Nombre,
@@ -1598,36 +1632,36 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
         EsCategoria = nodo.EsCategoria
     };
 
-    // Mostrar el nombre del nodo en el TextBox
-    nombreComun = nodo.Nombre;
+        // Mostrar el nombre del nodo en el TextBox
+        nombreComun = nodo.Nombre;
 
-    editando = true;
+        editando = true;
 
-    // 🔍 Buscar si hay un documento asociado a este nodo
-    var sql = $@"SELECT TOP 1 d.* FROM Documento d
+        // 🔍 Buscar si hay un documento asociado a este nodo
+        var sql = $@"SELECT TOP 1 d.* FROM Documento d
                  JOIN DocumentoCategoria dc ON dc.DocumentoId = d.Id
                  WHERE dc.NodoCategoriaId = {nodo.Id}";
 
-    var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+        var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
 
-    if (dt.Rows.Count > 0)
-    {
-        DocumentoId = Convert.ToInt32(dt.Rows[0]["Id"]);
-        documento = new Documento
+        if (dt.Rows.Count > 0)
+        {
+            DocumentoId = Convert.ToInt32(dt.Rows[0]["Id"]);
+            documento = new Documento
         {
             Nombre = dt.Rows[0]["Nombre"]?.ToString(),
             PlantillaId = dt.Rows[0]["PlantillaId"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["PlantillaId"]) : (int?)null,
             NodoCategoriaId = nodo.Id
         };
-    }
-    else
-    {
-        DocumentoId = null;
-        documento = new Documento();
-    }
+        }
+        else
+        {
+            DocumentoId = null;
+            documento = new Documento();
+        }
 
-    StateHasChanged();
-}
+        StateHasChanged();
+    }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1715,7 +1749,7 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
         }
     }
 
-    
+
     private bool ContieneNodo(List<NodoCategoria> lista, int nodoId)
     {
         foreach (var nodo in lista)
@@ -1768,6 +1802,8 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////
+    
+
 }
 
 <!--Version Funcional 24/07-->
