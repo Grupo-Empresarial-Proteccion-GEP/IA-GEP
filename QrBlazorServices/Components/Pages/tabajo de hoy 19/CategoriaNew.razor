@@ -29,13 +29,14 @@
 
                 </RadzenFormField>
 
-                <RadzenTree Data="@nodosRaiz"
-                            Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
-                    <RadzenTreeLevel TextProperty="Nombre"
-                                     ChildrenProperty="Hijos"
-                                    />
-                </RadzenTree>
 
+                <RadzenTree Data="@nodosRaiz" Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
+                    <RadzenTreeLevel ChildrenProperty="Hijos" Expanded="@(context => ((NodoCategoria)context).Expanded)">
+                        <Template Context="item">
+                            @((MarkupString)(((NodoCategoria)item.Value).NombreHtml))
+                        </Template>
+                    </RadzenTreeLevel>
+                </RadzenTree>
 
 
             </RadzenFieldset>
@@ -861,74 +862,7 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    private async Task BuscarNodo()
-    {
-        if (string.IsNullOrWhiteSpace(textoBusqueda))
-            return;
-
-        LimpiarResaltado(nodosRaiz);
-
-        var nodosCoincidentes = BuscarNodosPorNombre(nodosRaiz, textoBusqueda.Trim());
-
-        if (nodosCoincidentes.Any())
-        {
-            nodoIdEncontrado = nodosCoincidentes.First().Id;
-
-            foreach (var nodo in nodosCoincidentes)
-            {
-                ExpandirRutaHastaNodo(nodo.Id);
-            }
-
-            await InvokeAsync(StateHasChanged);
-        }
-        else
-        {
-            mensaje = "❌ No se encontró ningún nodo coincidente.";
-        }
-    }
-
-    private List<NodoCategoria> BuscarNodosPorNombre(List<NodoCategoria> nodos, string texto)
-    {
-        List<NodoCategoria> encontrados = new();
-
-        foreach (var nodo in nodos)
-        {
-            if (!string.IsNullOrWhiteSpace(nodo.NombreOriginal) &&
-                nodo.NombreOriginal.Contains(texto, StringComparison.OrdinalIgnoreCase))
-            {
-                nodo.EsNodoBuscado = true;
-                nodo.Nombre = $"👉 {nodo.NombreOriginal}";
-                encontrados.Add(nodo);
-            }
-
-            if (nodo.Hijos != null && nodo.Hijos.Any())
-            {
-                var hijosEncontrados = BuscarNodosPorNombre(nodo.Hijos, texto);
-                encontrados.AddRange(hijosEncontrados);
-            }
-        }
-
-        return encontrados;
-    }
-
-    private void LimpiarResaltado(List<NodoCategoria> nodos)
-    {
-        foreach (var nodo in nodos)
-        {
-            if (nodo.EsNodoBuscado)
-            {
-                nodo.EsNodoBuscado = false;
-                nodo.Nombre = nodo.NombreOriginal; 
-            }
-
-            if (nodo.Hijos?.Any() == true)
-                LimpiarResaltado(nodo.Hijos);
-        }
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
+   
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1715,6 +1649,125 @@ WHERE dc.NodoCategoriaId = {nodoFinal.Id}
         agregandoHijo = true;
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private async Task BuscarNodo()
+    {
+        if (string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            LimpiarResaltado(nodosRaiz);
+            ColapsarTodo(nodosRaiz);
+            nodosRaiz = new List<NodoCategoria>(nodosRaiz); // 🔥 Forzar refresco
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        // ✅ Colapsar todo antes de aplicar búsqueda
+        ColapsarTodo(nodosRaiz);
+        LimpiarResaltado(nodosRaiz);
+
+        var nodosCoincidentes = BuscarNodosPorNombre(nodosRaiz, textoBusqueda.Trim());
+
+        if (nodosCoincidentes.Any())
+        {
+            foreach (var nodo in nodosCoincidentes)
+            {
+                nodo.EsNodoBuscado = true;
+                ExpandirRutaHastaNodo(nodo.Id, nodosRaiz);
+            }
+        }
+        else
+        {
+            mensaje = "❌ No se encontró ningún nodo coincidente.";
+        }
+
+        // ✅ Forzar refresco completo del árbol
+        nodosRaiz = new List<NodoCategoria>(nodosRaiz);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ColapsarTodo(List<NodoCategoria> nodos)
+    {
+        foreach (var nodo in nodos)
+        {
+            nodo.Expanded = false; // 🔒 Colapsar todo
+            if (nodo.Hijos?.Any() == true)
+                ColapsarTodo(nodo.Hijos);
+        }
+    }
+
+    private void ExpandirRutaHastaNodo(int nodoId, List<NodoCategoria> lista)
+    {
+        foreach (var nodo in lista)
+        {
+            if (nodo.Id == nodoId)
+            {
+                nodo.Expanded = true;
+                return;
+            }
+
+            if (ContieneNodo(nodo.Hijos, nodoId))
+            {
+                nodo.Expanded = true;
+                ExpandirRutaHastaNodo(nodoId, nodo.Hijos);
+            }
+        }
+    }
+
+    
+    private bool ContieneNodo(List<NodoCategoria> lista, int nodoId)
+    {
+        foreach (var nodo in lista)
+        {
+            if (nodo.Id == nodoId)
+                return true;
+
+            if (nodo.Hijos.Any() && ContieneNodo(nodo.Hijos, nodoId))
+                return true;
+        }
+        return false;
+    }
+
+    private List<NodoCategoria> BuscarNodosPorNombre(List<NodoCategoria> nodos, string texto)
+    {
+        List<NodoCategoria> encontrados = new();
+
+        foreach (var nodo in nodos)
+        {
+            if (!string.IsNullOrWhiteSpace(nodo.NombreOriginal) &&
+                nodo.NombreOriginal.Contains(texto, StringComparison.OrdinalIgnoreCase))
+            {
+                nodo.EsNodoBuscado = true;
+                encontrados.Add(nodo);
+            }
+
+            if (nodo.Hijos != null && nodo.Hijos.Any())
+            {
+                var hijosEncontrados = BuscarNodosPorNombre(nodo.Hijos, texto);
+                encontrados.AddRange(hijosEncontrados);
+            }
+        }
+
+        return encontrados;
+    }
+
+    private void LimpiarResaltado(List<NodoCategoria> nodos)
+    {
+        foreach (var nodo in nodos)
+        {
+            if (nodo.EsNodoBuscado)
+            {
+                nodo.EsNodoBuscado = false;
+                nodo.Nombre = nodo.NombreOriginal;
+            }
+
+            if (nodo.Hijos?.Any() == true)
+                LimpiarResaltado(nodo.Hijos);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 <!--Version Funcional 24/07-->

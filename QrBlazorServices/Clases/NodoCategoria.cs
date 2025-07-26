@@ -12,5 +12,8 @@
         public bool EsNodoBuscado { get; set; } = false; // 🌟 Para resaltar
         public string NombreOriginal { get; set; }
 
+        public string NombreHtml => EsNodoBuscado
+? $"<span style='color:red;font-weight:bold'>{Nombre}</span>"
+: Nombre;
     }
 }
