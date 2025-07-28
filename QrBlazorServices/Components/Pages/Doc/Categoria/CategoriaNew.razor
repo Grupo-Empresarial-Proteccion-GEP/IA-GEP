@@ -1,0 +1,1827 @@
+﻿<!--page "/Documentos"
+page "/rdocumento/{Id:int}"-->
+
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
+@inject NotificationService notificationService
+@inject NavigationManager Navigation
+@inject DialogService dialogService
+
+@using System.Data
+@using Radzen
+@using Radzen.Blazor
+@using QrBlazorServices.Clases
+
+@rendermode InteractiveServer
+
+
+<h3 class="mb-3">Gestión de Arbol Documental</h3>
+
+<RadzenRow>
+    <!-- Columna izquierda -->
+    <RadzenColumn Width="6">
+     <RadzenFieldset>
+            <RadzenFieldset Text="@tituloSubnodos" Style="height: 725px; overflow-y: auto;">
+
+                <RadzenFormField Text="Buscar categoría" Class="w-100 mb-2">
+                    
+                        <RadzenTextBox @bind-Value="textoBusqueda"
+                                       Style="width:100%; padding-right:35px;"
+                                        />
+
+                        <RadzenButton Icon="search"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Light"
+                                      Style="position:absolute; right:5px; top:50%; transform:translateY(-50%);"
+                                      Click="BuscarNodo" />
+                               
+                </RadzenFormField>
+
+                <RadzenTree Data="@nodosRaiz" Change="@(args => SeleccionarNodoDesdeArbol(args.Value as NodoCategoria))">
+                    <RadzenTreeLevel ChildrenProperty="Hijos" Expanded="@(context => ((NodoCategoria)context).Expanded)">
+                        <Template Context="item">
+                            @((MarkupString)(((NodoCategoria)item.Value).NombreHtml))
+                        </Template>
+                    </RadzenTreeLevel>
+                </RadzenTree>
+
+            </RadzenFieldset>
+                 
+                <RadzenFieldset Text="Ramificacion Arbol" style="height:100px; overflow-y: auto;">
+                            @if (jerarquiaSeleccionada != null && jerarquiaSeleccionada.Any())
+            {
+                <p><strong>📂 Ruta:</strong> @string.Join(" / ", jerarquiaSeleccionada.Select(j => j.Nombre))</p>
+            }
+            </RadzenFieldset>
+      </RadzenFieldset>
+</RadzenColumn>
+    <!-- Columna derecha -->
+    <RadzenColumn Width="6" >
+        <RadzenFieldset style="height: 845px; overflow-y: auto;">
+                <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">     
+                    <RadzenFormField Text="Nombre de la Rama / Documento" Class="w-100 mb-2">
+                        <RadzenTextBox @bind-Value="nombreComun" Style="width: 100%" />
+                    </RadzenFormField>
+                <RadzenDropDown 
+
+                    @bind-Value="documento.PlantillaId"
+                    Data="@plantillas"
+                    TextProperty="NombreArchivo"
+                    ValueProperty="Id"
+                    Placeholder="Seleccione plantilla"
+                    Class="w-100 mb-2"
+                    AllowFiltering="true"
+                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    Change="@(args => MostrarVisorPlantilla(Convert.ToInt32(args)))" />
+
+                @if (!DocumentoId.HasValue && !editando)
+                {
+                    <RadzenCheckBox @bind-Value="nuevoNodo.EsCategoria" />
+                    <label class="ms-2">¿Es Rama principal?</label>
+                }
+                @if (editando)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
+                        <RadzenButton Icon="done"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Shade="Shade.Lighter"
+                                      Click="GuardarDocumentoYRama" />
+                        <RadzenButton Icon="highlight_off"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Base"
+                                      Shade="Shade.Lighter"
+                                      Click="@(() => Cancelar())" />
+                    </div>
+                }
+                else if (agregandoHijo)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
+                        <RadzenButton Icon="done"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Shade="Shade.Lighter"
+                                      Click="GuardarDocumentoYRama" />
+
+                        <RadzenButton Icon="highlight_off"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Base"
+                                      Shade="Shade.Lighter"
+                                      Click="@(() => Cancelar())" />
+                    </div>
+                }
+                else if (nodoSeleccionado != null)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
+                        <RadzenButton Icon="add_circle"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Primary"
+                                      Shade="Shade.Lighter"
+                                      Click="@PrepararNuevoNodoComoHijo" />
+
+                        <RadzenButton Icon="edit"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Warning"
+                                      Shade="Shade.Lighter"
+                                      Click="@(() => CargarNodoParaEditar(nodoSeleccionado))" />
+
+                        <RadzenButton Icon="delete"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Shade="Shade.Lighter"
+                                      Click="@(() => EliminarNodo(nodoSeleccionado))" />
+
+                        <RadzenButton Icon="highlight_off"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Base"
+                                      Shade="Shade.Lighter"
+                                      Click="@(() => Cancelar())" />
+                    </div>
+                }
+                else if (nodoSeleccionado == null)
+                {
+                    <div class="d-flex flex-row justify-content-end gap-2">
+                        <RadzenButton Icon="done"
+                                      Size="ButtonSize.Small"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Shade="Shade.Lighter"
+                                      Click="GuardarDocumentoYRama" />
+                    </div>
+                }
+        </RadzenFieldset>
+        <RadzenFieldset Style="margin-top: 10px; height: 593px; overflow-y: auto;">
+        <RadzenTabs>
+            <Tabs>
+                <RadzenTabsItem Text="Vista previa del documento">
+                    @if (!string.IsNullOrWhiteSpace(rutaSeleccionada))
+                    {
+                        <div class="d-flex justify-content-center">
+                            @if (rutaSeleccionada.StartsWith("data:application/pdf", StringComparison.OrdinalIgnoreCase)
+                                || rutaSeleccionada.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <embed src="@rutaSeleccionada"
+                                       type="application/pdf"
+                                       width="100%"
+                                       height="491px"
+                                       style="border: 1px solid #ccc; border-radius: 8px;" />
+                            }
+                            else
+                            {
+                                <p class="text-danger">⚠️ El archivo no es un PDF válido.</p>
+                            }
+                        </div>
+                        @if (documento != null)
+{
+    <RadzenCard Class="mt-3" Style="width:100%; background-color:#ffffff; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); padding:15px;">
+        
+        <!-- Encabezado centrado -->
+        <RadzenCardHeader>
+            <h5 style="text-align:center; margin:0; font-weight:700; color:#444;">
+                📄 Detalles del Documento
+            </h5>
+        </RadzenCardHeader>
+        
+        <RadzenCardBody>
+            <div style="
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                gap:50px;
+                flex-wrap:wrap;
+                font-size:16px;
+            ">
+                <div>
+                    <b>Referencia:</b> <span>@documento.Referencia</span>
+                </div>
+                <div>
+                    <b>Versión:</b> <span>@documento.Version</span>
+                </div>
+                <div>
+                    <b>Estado:</b>
+                    <span style="
+                        padding:6px 14px;
+                        border-radius:20px;
+                        color:white;
+                        font-weight:bold;
+                        display:inline-block;
+                        background-color:@(ObtenerColorEstado(documento.Estado));
+                    ">
+                        @documento.Estado
+                    </span>
+                </div>
+            </div>
+        </RadzenCardBody>
+    </RadzenCard>
+}
+
+
+                    }
+                    else
+                    {
+                        <p class="text-muted">Seleccione un documento desde la pestaña anterior para previsualizarlo aquí.</p>
+                    }
+                </RadzenTabsItem>
+         <!--  <RadzenTabsItem Text="Documentos Arbol Documental">
+                               </RadzenTabsItem>-->
+            </Tabs>
+        </RadzenTabs>
+        </RadzenFieldset>
+	</RadzenFieldset>
+</RadzenColumn>
+</RadzenRow>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+        <div style="
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex; justify-content: center; align-items: center;
+        z-index: 9999;"> 
+
+    <div style="
+            position: fixed;
+            top: 45%;
+            left: 57%;
+            transform: translate(-50%, -50%);
+            background: rgb(255,255,255);
+            color: black;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            z-index: 9999;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        ">
+        @mensaje
+    </div>
+    </div>
+}
+
+<div style="position: fixed; top: -6%; left: 6%;">
+    <RadzenDialog />
+</div>
+
+@code {
+
+
+    bool esNuevo = true;
+    int IdAplicacion = 18;
+    //private string mensaje;
+    bool agregandoHijo = false;
+    string tipoSeleccionado = "";
+    private bool editando = false;
+    private bool showModal = false;
+    string nombreSeleccionado = "";
+    private string? rutaSeleccionada;
+    private string _filtroNombre = "";
+    private int? plantillaSeleccionadaId;
+    private int? nodoIdEncontrado = null;
+    private string textoBusqueda = string.Empty;
+
+    Plantilla plantilla = new();
+    Documento documento = new();
+
+    List<Plantilla> plantillas = new();
+    List<Categoria> categorias = new();
+    List<NodoCategoria> ListaNodos = new(); 
+    List<NodoCategoria> todosNodos = new();
+    List<Plantilla> listaPlantillas = new();
+    List<NodoCategoria> nodosFiltrados = new();
+    List<DocumentoExtendido> documentos = new();
+    List<NodoSeleccion> nivelesDinamicos = new();
+    List<SubCategoria> todasSubcategorias = new();
+    List<SubCategoria> subcategoriasFiltradas = new();
+    List<NodoCategoria> jerarquiaSeleccionada = new();
+
+    private NodoCategoria? nodoSeleccionado;
+    private NodoCategoria nuevoNodo = new();
+    private List<NodoCategoria> nodosRaiz = new();
+    private List<NodoCategoria> nodosExistentes = new();
+    public List<NodoCategoria> Hijos { get; set; } = new();
+    private List<DocumentoExtendido> documentosFiltrados = new();
+
+    [Parameter] public int Id { get; set;}
+    [Parameter] public int? NodoId { get; set; }
+    [Parameter] public int? DocumentoId { get; set; }
+
+    List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
+    private string tituloSubnodos => $"Rama del Arbol Seleccionada: {nodoSeleccionado?.Nombre ?? "..."}";
+
+    int? nodoJerarquicoSeleccionadoId,
+    categoriaSeleccionadaId,
+    subCategoriaSeleccionadaId,
+    nodoSeleccionadoId,
+    nodoNivel1Id,
+    nodoNivel2Id,
+    nodoNivel3Id,
+    nodoSeleccionadoFinalId;
+
+    private string nombreComun = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        nuevoNodo = new NodoCategoria(); 
+        await CargarNodos();
+        await CargarPlantillas();
+        await CargarCategorias();
+        await CargarSubcategorias();
+        await CargarNodos2();
+        await CargarDocumentos();
+        await CargarDocumento();
+        AplicarFiltroNombre();
+
+        if (NodoId.HasValue)
+        {
+            nodoSeleccionadoFinalId = NodoId.Value;
+            await CargarJerarquiaDesdeNodo(nodoSeleccionadoFinalId.Value);
+        }
+
+        if (DocumentoId.HasValue)
+        {
+            await CargarDocumentoParaEditar(DocumentoId.Value);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private async Task CargarNodos()
+    {
+        nodosExistentes.Clear();
+        nodosRaiz.Clear();
+
+        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT Id, Nombre, PadreId, EsCategoria FROM NodoCategoria", 18);
+
+        nodosExistentes = dt.Rows.Cast<DataRow>().Select(row => new NodoCategoria
+        {
+            Id = Convert.ToInt32(row["Id"]),
+            Nombre = row["Nombre"].ToString() ?? "",
+            NombreOriginal = row["Nombre"].ToString() ?? "", // 👈 guardar nombre original
+            PadreId = row["PadreId"] != DBNull.Value ? Convert.ToInt32(row["PadreId"]) : (int?)null,
+            EsCategoria = Convert.ToBoolean(row["EsCategoria"])
+        }).ToList();
+
+
+        var nodosPadres = nodosExistentes.Where(n => n.PadreId == null).ToList();
+
+        foreach (var raiz in nodosPadres)
+        {
+            nodosRaiz.Add(ConstruirJerarquia(raiz));
+        }
+    }
+
+    private NodoCategoria ConstruirJerarquia(NodoCategoria nodo)
+    {
+        nodo.Hijos = nodosExistentes.Where(n => n.PadreId == nodo.Id).Select(ConstruirJerarquia).ToList();
+        return nodo;
+    }
+
+    private async Task<bool> ExisteCategoria(int idCategoria)
+    {
+        var dt = await ServicioUsuario.TraerConsultaAsync($"SELECT COUNT(*) AS Total FROM Categoria WHERE Id = {idCategoria}", 18);
+        return Convert.ToInt32(dt.Rows[0]["Total"]) > 0;
+    }
+
+    private async Task EliminarNodo(NodoCategoria nodo)
+    {
+        try
+        {
+            if (nodo == null)
+            {
+                mensaje = "⚠️ Nodo no válido.";
+                return;
+            }
+
+            // ✅ Validar hijos
+            if (nodosExistentes.Any(n => n.PadreId == nodo.Id))
+            {
+                mensaje = "❌ No se puede eliminar un nodo que tiene hijos.";
+                return;
+            }
+
+            // ✅ Verificar si tiene documentos asociados
+            var sql = $@"SELECT DocumentoId FROM DocumentoCategoria WHERE NodoCategoriaId = {nodo.Id}";
+            var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+            if (dt.Rows.Count > 0)
+            {
+                var confirmar = await dialogService.Confirm(
+                    $"Este nodo tiene {dt.Rows.Count} documento(s) asociado(s). ¿Deseas eliminarlos también?",
+                    "Documentos asociados",
+                    new ConfirmOptions { OkButtonText = "Sí, eliminar todo", CancelButtonText = "Cancelar" });
+
+                if (confirmar != true)
+                {
+                    mensaje = "⛔ Eliminación cancelada por documentos asociados.";
+                    return;
+                }
+
+                // ✅ 1. Construir lista de IDs de documentos
+                var listaIds = string.Join(",", dt.AsEnumerable().Select(r => r["DocumentoId"].ToString()));
+
+                // ✅ 2. Eliminar relaciones primero en DocumentoCategoria
+                await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "NodoCategoriaId", nodo.Id.ToString(), IdAplicacion);
+
+                // ✅ 3. Luego eliminar los documentos en Documento
+                await ServicioUsuario.EliminarListadeLlavesAsync("Documento", "Id", listaIds, IdAplicacion);
+            }
+
+            // ✅ 4. Eliminar el nodo
+            var tablaNodo = new DataTable("NodoCategoria");
+            tablaNodo.Columns.Add("Id", typeof(int));
+            var rowNodo = tablaNodo.NewRow();
+            rowNodo["Id"] = nodo.Id;
+            tablaNodo.Rows.Add(rowNodo);
+
+            await ServicioUsuario.EliminarFilaAsync(tablaNodo, IdAplicacion);
+
+            mensaje = "✅ Nodo y documentos eliminados correctamente.";
+            await CargarNodos();
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al eliminar nodo: {ex.Message}";
+        }
+    }
+
+    private void CancelarEdicion()
+    {
+        nuevoNodo = new();
+        editando = false;
+    }
+
+    private async Task SeleccionarNodo(NodoCategoria nodo)
+    {
+        nodoSeleccionado = nodo;
+    }
+
+    private void PrepararNuevaCategoria()
+    {
+        nuevoNodo = new NodoCategoria
+        {
+            Id = 0,
+            Nombre = "",
+            PadreId = null,
+            EsCategoria = true
+        };
+
+        editando = false;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    async Task CargarPlantillas()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("Plantilla", IdAplicacion);
+
+        plantillas = ds.AsEnumerable().Select(r => new Plantilla
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            NombreArchivo = r["NombreArchivo"].ToString(),
+            RutaBase64 = r.Table.Columns.Contains("RutaArchivo") && r["RutaArchivo"] != DBNull.Value
+                    ? r["RutaArchivo"].ToString()
+                    : null,
+            Referencia = r.Table.Columns.Contains("Referencia") && r["Referencia"] != DBNull.Value
+                    ? r["Referencia"].ToString()
+                    : string.Empty,
+            Version = r.Table.Columns.Contains("Version") && r["Version"] != DBNull.Value
+                    ? r["Version"].ToString()
+                    : string.Empty,
+            Estado = r.Table.Columns.Contains("Estado") && r["Estado"] != DBNull.Value
+                    ? r["Estado"].ToString()
+                    : string.Empty
+        }).ToList();
+    }
+
+    async Task CargarCategorias()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("Categoria", IdAplicacion);
+        categorias = ds.AsEnumerable().Select(r => new Categoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString()
+        }).ToList();
+    }
+
+    async Task CargarSubcategorias()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("SubCategoria", IdAplicacion);
+
+
+
+        todasSubcategorias = ds.AsEnumerable().Select(r => new SubCategoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            CategoriaId = Convert.ToInt32(r["CategoriaId"])
+        }).ToList();
+    }
+
+    async Task CargarNodos2()
+    {
+        var ds = await ServicioUsuario.TraerTablaAsync("NodoCategoria", IdAplicacion);
+        todosNodos = ds.AsEnumerable().Select(r => new NodoCategoria
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            PadreId = r["PadreId"] == DBNull.Value ? 0 : Convert.ToInt32(r["PadreId"]) // Manejo seguro de NULL
+        }).ToList();
+    }
+
+    void FiltrarSubcategorias(int categoriaId)
+    {
+        subcategoriasFiltradas = todasSubcategorias.Where(x => x.CategoriaId == categoriaId).ToList();
+        subCategoriaSeleccionadaId = null;
+        nodoSeleccionadoId = null;
+        nodosFiltrados.Clear();
+    }
+
+    void FiltrarNodos(int subcategoriaId)
+    {
+        // Buscar el nodo padre relacionado al nombre de la subcategoría
+        var subcategoria = todasSubcategorias.FirstOrDefault(x => x.Id == subcategoriaId);
+        if (subcategoria == null)
+        {
+            nodosFiltrados.Clear();
+            return;
+        }
+
+        // Buscar nodo cuyo nombre coincida con el de la subcategoría
+        var nodoPadre = todosNodos.FirstOrDefault(n =>
+            n.Nombre != null &&
+            subcategoria.Nombre != null &&
+            n.Nombre.Trim().Equals(subcategoria.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (nodoPadre != null)
+        {
+            nodosFiltrados = todosNodos.Where(n => n.PadreId == nodoPadre.Id).ToList();
+        }
+        else
+        {
+            nodosFiltrados.Clear();
+        }
+
+        nodoSeleccionadoId = null;
+    }
+
+    void InicializarJerarquiaDesdeNodo(int? nodoRaizId)
+    {
+        nivelesDinamicos.Clear();
+
+        if (!nodoRaizId.HasValue)
+            return;
+
+        var hijos = todosNodos.Where(n => n.PadreId == nodoRaizId).ToList();
+
+        if (hijos.Any())
+        {
+            nivelesDinamicos.Add(new NodoSeleccion
+            {
+                NodoSeleccionadoId = null,
+                Hijos = hijos
+            });
+        }
+    }
+
+    void ManejarCambioNodo(int nivel, int? nodoId)
+    {
+        if (nivel >= nivelesDinamicos.Count)
+            return; 
+
+        nivelesDinamicos[nivel].NodoSeleccionadoId = nodoId;
+
+        if (nivelesDinamicos.Count > nivel + 1)
+            nivelesDinamicos.RemoveRange(nivel + 1, nivelesDinamicos.Count - (nivel + 1));
+
+        if (nodoId == null)
+            return;
+
+        var hijos = todosNodos.Where(n => n.PadreId == nodoId).ToList();
+
+        if (hijos.Any())
+        {
+            nivelesDinamicos.Add(new NodoSeleccion
+            {
+                NodoSeleccionadoId = null,
+                Hijos = hijos
+            });
+        }
+
+        StateHasChanged();
+    }
+
+    async Task CargarDocumentoParaEditar(int id)
+    {
+        var consulta = await ServicioUsuario.TraerConsultaAsync(
+            $"SELECT d.Id, d.Nombre, d.PlantillaId, dc.SubCategoriaId, dc.NodoCategoriaId " +
+            $"FROM Documento d LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId WHERE d.Id = {id}", IdAplicacion);
+
+        if (consulta.Rows.Count > 0)
+        {
+            var row = consulta.Rows[0];
+
+            documento = new Documento
+            {
+                Nombre = row["Nombre"].ToString(),
+
+                PlantillaId = row["PlantillaId"] == DBNull.Value ? null : Convert.ToInt32(row["PlantillaId"])
+            };
+
+            subCategoriaSeleccionadaId = row["SubCategoriaId"] == DBNull.Value ? null : Convert.ToInt32(row["SubCategoriaId"]);
+            nodoSeleccionadoId = row["NodoCategoriaId"] == DBNull.Value ? null : Convert.ToInt32(row["NodoCategoriaId"]);
+
+            if (subCategoriaSeleccionadaId is int subCatId)
+            {
+                var sub = todasSubcategorias.FirstOrDefault(x => x.Id == subCatId);
+                if (sub != null)
+                {
+                    categoriaSeleccionadaId = sub.CategoriaId;
+                    FiltrarSubcategorias(sub.CategoriaId);
+                    FiltrarNodos(subCatId);
+                }
+            }
+
+            if (nodoSeleccionadoId is int nodoId)
+            {
+                InicializarJerarquiaDesdeNodo(nodoId);
+            }
+        }
+    }
+
+    private void IrAInicio() => Navigation.NavigateTo("/ver");
+
+    private async Task CargarJerarquiaDesdeNodo(int nodoId)
+    {
+        var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoId);
+        if (nodo == null) return;
+
+        // Buscar recursivamente hasta llegar a un nodo cuyo nombre esté en SubCategoria
+        var subCategoria = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == nodo.Nombre.Trim());
+        if (subCategoria != null)
+        {
+            subCategoriaSeleccionadaId = subCategoria.Id;
+            categoriaSeleccionadaId = subCategoria.CategoriaId;
+        }
+        else
+        {
+            // Nodo puede ser subnodo, buscamos hacia arriba
+            var padre = todosNodos.FirstOrDefault(p => p.Id == nodo.PadreId);
+            if (padre != null)
+            {
+                await CargarJerarquiaDesdeNodo(padre.Id);
+            }
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private List<NodoCategoria> ObtenerRutaJerarquica(NodoCategoria nodoFinal)
+    {
+        var ruta = new List<NodoCategoria>();
+
+        var actual = nodoFinal;
+        while (actual != null)
+        {
+            ruta.Insert(0, actual);
+            actual = nodosExistentes.FirstOrDefault(n => n.Id == actual.PadreId);
+        }
+
+        return ruta;
+    }
+
+    private string ObtenerRutaJerarquica()
+    {
+        if (jerarquiaSeleccionada == null || !jerarquiaSeleccionada.Any())
+            return string.Empty;
+
+        var partes = new List<string>();
+
+        for (int i = 0; i < jerarquiaSeleccionada.Count; i++)
+        {
+            var nodo = jerarquiaSeleccionada[i];
+            string etiqueta = i switch
+            {
+                0 => "Categoría",
+                1 => "Subcategoría",
+                _ => $"Nodo {i - 1}"
+            };
+
+            partes.Add($"{etiqueta}: {nodo.Nombre}");
+        }
+
+        return string.Join(" ➝ ", partes);
+    }
+
+    void MostrarVisor(DocumentoExtendido doc)
+    {
+        rutaSeleccionada = doc?.RutaBase64;
+        showModal = !string.IsNullOrWhiteSpace(rutaSeleccionada);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    async Task EliminarDocumento(int id)
+    {
+        mensaje = "⏳ Esperando confirmación...";
+
+        var confirmar = await dialogService.Confirm(
+            $"¿Deseas eliminar el documento seleccionado?",
+            "Confirmar eliminación",
+            new ConfirmOptions { OkButtonText = "Sí", CancelButtonText = "Cancelar" });
+
+        if (confirmar == true)
+        {
+            try
+            {
+                await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", id.ToString(), IdAplicacion);
+                await ServicioUsuario.EliminarListadeLlavesAsync("Documento", "Id", id.ToString(), IdAplicacion);
+
+                mensaje = "✅ Documento eliminado correctamente.";
+                await CargarDocumentos();
+            }
+            catch (Exception ex)
+            {
+                mensaje = $"❌ Error al eliminar documento: {ex.Message}";
+            }
+        }
+        else
+        {
+            mensaje = "❌ Cancelado por el usuario.";
+        }
+    }
+
+    private void IrARegistro()
+    {
+        Navigation.NavigateTo("/Documentos");
+    }
+
+    void NuevoDocumento()
+    {
+        documento = new();
+        DocumentoId = null;
+        esNuevo = true;
+        mensaje = string.Empty;
+        subCategoriaSeleccionadaId = null;
+    }
+
+    void EditarDocumento(int id)
+    {
+        Navigation.NavigateTo($"/rdocumento/{id}");
+    }
+
+    void CancelarEdicion2()
+    {
+        DocumentoId = null;
+        documento = new Documento();
+        subCategoriaSeleccionadaId = null;
+        nodoSeleccionadoId = null;
+        nodoSeleccionadoFinalId = null;
+        mensaje = string.Empty;
+        _ = CargarDocumentos(); 
+        NuevoDocumento();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private void ExpandirNodoPadre(int? padreId)
+    {
+        if (!padreId.HasValue)
+            return;
+
+        void Expandir(NodoCategoria nodo)
+        {
+            if (nodo.Id == padreId)
+            {
+                nodo.Expanded = true;
+                return;
+            }
+
+            foreach (var hijo in nodo.Hijos)
+            {
+                Expandir(hijo);
+            }
+        }
+
+        foreach (var raiz in nodosRaiz)
+        {
+            Expandir(raiz);
+        }
+    }
+
+    private void ExpandirRutaHastaNodo(int? nodoIdFinal)
+    {
+        if (!nodoIdFinal.HasValue)
+            return;
+
+        void Expandir(NodoCategoria nodo, List<int> ruta)
+        {
+            if (ruta.Contains(nodo.Id))
+                nodo.Expanded = true;
+
+            foreach (var hijo in nodo.Hijos)
+            {
+                Expandir(hijo, ruta);
+            }
+        }
+
+        // 🧠 Obtener la ruta desde raíz hasta el nodo con ese ID
+        List<int> rutaIds = ObtenerRutaIds(nodoIdFinal.Value);
+        foreach (var raiz in nodosRaiz)
+        {
+            Expandir(raiz, rutaIds);
+        }
+    }
+
+    private List<int> ObtenerRutaIds(int nodoIdDestino)
+    {
+        List<int> ruta = new();
+
+        bool BuscarRuta(NodoCategoria nodo)
+        {
+            if (nodo.Id == nodoIdDestino)
+            {
+                ruta.Add(nodo.Id);
+                return true;
+            }
+
+            foreach (var hijo in nodo.Hijos)
+            {
+                if (BuscarRuta(hijo))
+                {
+                    ruta.Add(nodo.Id); // Agrega al subir
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        foreach (var raiz in nodosRaiz)
+        {
+            if (BuscarRuta(raiz))
+                break;
+        }
+
+        ruta.Reverse(); // De raíz a destino
+        return ruta;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    async Task GuardarDocumentoYRama()
+    {
+
+        mensaje = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(nombreComun))
+            mensaje += "❌ Debes escribir un nombre para la rama y el documento.\n";
+
+        if (!documento.PlantillaId.HasValue || documento.PlantillaId.Value == 0)
+            mensaje += "❌ Debes seleccionar una plantilla para el documento.\n";
+
+        // ✅ DETENER si hay errores
+        if (!string.IsNullOrEmpty(mensaje))
+            return;
+
+        nuevoNodo.Nombre = nombreComun;
+        documento.Nombre = nombreComun;
+
+        await GuardarNodo();
+
+        var nombreEscapado = nombreComun.Replace("'", "''");
+        var dtNodoReciente = await ServicioUsuario.TraerConsultaAsync($@"
+            SELECT TOP 1 * FROM NodoCategoria 
+            WHERE Nombre = '{nombreEscapado}'
+            ORDER BY Id DESC", 18);
+
+        if (dtNodoReciente.Rows.Count > 0)
+        {
+            nodoSeleccionadoId = Convert.ToInt32(dtNodoReciente.Rows[0]["Id"]);
+            Console.WriteLine($"✅ Nodo creado y confirmado con ID: {nodoSeleccionadoId}");
+
+            documento.NodoCategoriaId = nodoSeleccionadoId;
+        }
+        else
+        {
+            mensaje = "⚠️ No se encontró el nodo recién creado desde la base de datos.";
+            return;
+        }
+
+        await CargarNodos2();
+        await CargarSubcategorias();
+
+        nivelesDinamicos ??= new List<NodoSeleccion>();
+        nivelesDinamicos.Clear();
+        nivelesDinamicos.Add(new NodoSeleccion
+        {
+            NodoSeleccionadoId = nodoSeleccionadoId
+        });
+
+        var actual = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
+        subCategoriaSeleccionadaId = null;
+
+        while (actual != null)
+        {
+            var sub = todasSubcategorias.FirstOrDefault(s =>
+                s.Nombre.Trim().Equals(actual.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (sub != null)
+            {
+                subCategoriaSeleccionadaId = sub.Id;
+                FiltrarNodos(sub.Id);
+                Console.WriteLine($"✅ SubCategoría encontrada: {sub.Nombre} (ID: {sub.Id})");
+                break;
+            }
+
+            if (actual.PadreId == 0)
+            {
+                Console.WriteLine($"🟨 Nodo '{actual.Nombre}' es una categoría raíz. No se buscarán más subcategorías.");
+                break;
+            }
+
+            actual = todosNodos.FirstOrDefault(n => n.Id == actual.PadreId);
+        }
+
+        if (!subCategoriaSeleccionadaId.HasValue)
+        {
+            var nodoRaiz = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
+            if (nodoRaiz != null && nodoRaiz.PadreId == 0 && nodoRaiz.EsCategoria)
+                /*   {
+                Console.WriteLine($"✅ Nodo raíz '{nodoRaiz.Nombre}' detectado. Se permite continuar sin subcategoría.");
+            }
+        else*/
+            {
+            mensaje = $"⚠️ No se encontró ninguna subcategoría válida en la jerarquía ascendente desde el nodo ID: {nodoSeleccionadoId}";
+            return;
+        }
+    }
+
+    Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
+
+    await GuardarDocumento();
+    }
+
+    private async Task GuardarNodo()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoNodo.Nombre))
+        {
+            notificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = "Campo requerido",
+            Detail = "El nombre del nodo no puede estar vacío.",
+            Duration = 4000
+        });
+            return;
+        }
+
+        try
+        {
+            var tablaNodo = new DataTable("NodoCategoria");
+            tablaNodo.Columns.Add("Id", typeof(int));
+            tablaNodo.Columns.Add("Nombre", typeof(string));
+            tablaNodo.Columns.Add("PadreId", typeof(int));
+            tablaNodo.Columns.Add("EsCategoria", typeof(bool));
+
+            var rowNodo = tablaNodo.NewRow();
+            rowNodo["Id"] = nuevoNodo.Id;
+            rowNodo["Nombre"] = nuevoNodo.Nombre;
+            rowNodo["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId : DBNull.Value;
+            rowNodo["EsCategoria"] = nuevoNodo.EsCategoria;
+            tablaNodo.Rows.Add(rowNodo);
+
+            if (editando)
+            {
+                await ServicioUsuario.ActualizarFilasAsync(tablaNodo, 18);
+                mensaje = "✅ Nodo actualizado correctamente.";
+
+                var nodoAnterior = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.Id);
+                if (nodoAnterior != null)
+                {
+
+                    if (!nodoAnterior.EsCategoria && nuevoNodo.EsCategoria)
+                    {
+                        var tablaCat = new DataTable("Categoria");
+                        tablaCat.Columns.Add("Id", typeof(int));
+                        tablaCat.Columns.Add("Nombre", typeof(string));
+                        tablaCat.Columns.Add("PadreId", typeof(int));
+
+                        var rowCat = tablaCat.NewRow();
+                        rowCat["Id"] = nuevoNodo.Id;
+                        rowCat["Nombre"] = nuevoNodo.Nombre;
+                        rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
+                        tablaCat.Rows.Add(rowCat);
+
+                        await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+
+                        var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
+                        var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
+                        int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
+
+                        if (cantidad == 0)
+                        {
+                            var eliminarSub = new DataTable("SubCategoria");
+                            eliminarSub.Columns.Add("Id", typeof(int));
+                            var rowDel = eliminarSub.NewRow();
+                            rowDel["Id"] = nuevoNodo.Id;
+                            eliminarSub.Rows.Add(rowDel);
+                            await ServicioUsuario.EliminarFilaAsync(eliminarSub, 18);
+                        }
+                        else
+                        {
+                            mensaje += $" ⚠ No se eliminó SubCategoría porque tiene documentos relacionados.";
+                        }
+                    }
+
+                    // 🔄 Cambio de Categoría → Subcategoría
+                    else if (nodoAnterior.EsCategoria && !nuevoNodo.EsCategoria && nuevoNodo.PadreId.HasValue)
+                    {
+                        var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
+                        if (padre != null && padre.EsCategoria)
+                        {
+                            var nombreEscapadoInterno = padre.Nombre.Replace("'", "''");
+                            var consultaSql = $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoInterno}'";
+                            var dtCategoria = await ServicioUsuario.TraerConsultaAsync(consultaSql, 18);
+
+                            if (dtCategoria.Rows.Count > 0)
+                            {
+                                int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+
+                                var tablaSub = new DataTable("SubCategoria");
+                                tablaSub.Columns.Add("Id", typeof(int));
+                                tablaSub.Columns.Add("CategoriaId", typeof(int));
+                                tablaSub.Columns.Add("Nombre", typeof(string));
+
+                                var rowSub = tablaSub.NewRow();
+                                rowSub["Id"] = nuevoNodo.Id;
+                                rowSub["CategoriaId"] = categoriaId;
+                                rowSub["Nombre"] = nuevoNodo.Nombre;
+                                tablaSub.Rows.Add(rowSub);
+
+                                await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                            }
+                        }
+
+                        // 🔐 Validar dependencias antes de eliminar Categoria
+                        var consultaDependencias = $@"SELECT COUNT(*) FROM Documento WHERE PlantillaId = {nuevoNodo.Id}";
+                        var resultado = await ServicioUsuario.TraerConsultaAsync(consultaDependencias, 18);
+                        int cantidad = Convert.ToInt32(resultado.Rows[0][0]);
+
+                        if (cantidad == 0)
+                        {
+                            var eliminarCat = new DataTable("Categoria");
+                            eliminarCat.Columns.Add("Id", typeof(int));
+                            var rowCatDel = eliminarCat.NewRow();
+                            rowCatDel["Id"] = nuevoNodo.Id;
+                            eliminarCat.Rows.Add(rowCatDel);
+                            await ServicioUsuario.EliminarFilaAsync(eliminarCat, 18);
+                        }
+                        else
+                        {
+                            mensaje += $" ⚠ No se eliminó Categoría porque tiene documentos relacionados.";
+                        }
+                    }
+                }
+            }
+
+            else
+            {
+                await ServicioUsuario.InsertarTablaAsync(tablaNodo, "NodoCategoria", 18);
+                mensaje = "✅ Nodo guardado correctamente.";
+
+                var nombreEscapado = nuevoNodo.Nombre.Replace("'", "''");
+                var dtNuevoNodo = await ServicioUsuario.TraerConsultaAsync($@"
+                SELECT TOP 1 Id FROM NodoCategoria
+                WHERE Nombre = '{nombreEscapado}'
+                ORDER BY Id DESC", 18);
+
+                if (dtNuevoNodo.Rows.Count > 0)
+                {
+                    nuevoNodo.Id = Convert.ToInt32(dtNuevoNodo.Rows[0]["Id"]);
+                    Console.WriteLine($"✅ Nodo creado con ID: {nuevoNodo.Id}");
+                }
+                else
+                {
+                    throw new Exception("No se pudo recuperar el ID del nuevo nodo.");
+                }
+
+
+                if (nuevoNodo.EsCategoria)
+                {
+                    var tablaCat = new DataTable("Categoria");
+                    tablaCat.Columns.Add("Id", typeof(int));
+                    tablaCat.Columns.Add("Nombre", typeof(string));
+                    tablaCat.Columns.Add("PadreId", typeof(int));
+
+                    var rowCat = tablaCat.NewRow();
+                    rowCat["Id"] = nuevoNodo.Id;
+                    rowCat["Nombre"] = nuevoNodo.Nombre;
+                    rowCat["PadreId"] = nuevoNodo.PadreId.HasValue ? nuevoNodo.PadreId.Value : DBNull.Value;
+                    tablaCat.Rows.Add(rowCat);
+
+                    await ServicioUsuario.InsertarTablaAsync(tablaCat, "Categoria", 18);
+                    Console.WriteLine($"📁 Categoría '{nuevoNodo.Nombre}' creada.");
+                }
+                else if (nuevoNodo.PadreId.HasValue)
+                {
+
+                    var padre = nodosExistentes.FirstOrDefault(n => n.Id == nuevoNodo.PadreId.Value);
+                    if (padre != null && padre.EsCategoria)
+                    {
+                        var nombreEscapadoPadre = padre.Nombre.Replace("'", "''");
+                        var dtCategoria = await ServicioUsuario.TraerConsultaAsync(
+                            $@"SELECT Id FROM Categoria WHERE Nombre = '{nombreEscapadoPadre}'", 18);
+
+                        if (dtCategoria.Rows.Count == 0)
+                        {
+                            throw new Exception($"❌ El nodo padre con ID {padre.Id} no existe en la tabla Categoria.");
+                        }
+
+                        int categoriaId = Convert.ToInt32(dtCategoria.Rows[0]["Id"]);
+
+                        var tablaSub = new DataTable("SubCategoria");
+                        tablaSub.Columns.Add("Id", typeof(int));
+                        tablaSub.Columns.Add("CategoriaId", typeof(int));
+                        tablaSub.Columns.Add("Nombre", typeof(string));
+
+                        var rowSub = tablaSub.NewRow();
+                        rowSub["Id"] = nuevoNodo.Id; 
+                        rowSub["CategoriaId"] = categoriaId;
+                        rowSub["Nombre"] = nuevoNodo.Nombre;
+                        tablaSub.Rows.Add(rowSub);
+
+                        await ServicioUsuario.InsertarTablaAsync(tablaSub, "SubCategoria", 18);
+                        Console.WriteLine($"📂 Subcategoría '{nuevoNodo.Nombre}' creada bajo Categoría ID {categoriaId}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ El nodo padre no es una categoría válida. No se creó subcategoría.");
+                    }
+                }
+            }
+
+            int? padreIdAnterior = nuevoNodo.PadreId;
+
+            nuevoNodo = new();
+            editando = false;
+
+            await CargarNodos(); 
+            ExpandirNodoPadre(padreIdAnterior);
+            ExpandirRutaHastaNodo(padreIdAnterior);
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al guardar nodo: {ex.Message}";
+            Console.WriteLine($"❌ EXCEPCIÓN: {ex}");
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    async Task GuardarDocumento()
+    {
+        try
+        {
+            mensaje = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(documento.Nombre))
+                mensaje += "❌ El nombre del documento es obligatorio.\n";
+
+            if (!documento.PlantillaId.HasValue || documento.PlantillaId.Value == 0)
+                mensaje += "❌ Debes seleccionar una plantilla para el documento.\n";
+
+            if (!string.IsNullOrEmpty(mensaje))
+                return;
+
+            var nodoCategoriaIdFinal = ObtenerNodoCategoriaIdFinal();
+
+            if (nodoCategoriaIdFinal.HasValue)
+            {
+                Console.WriteLine($"✅ NodoCategoriaId a guardar: {nodoCategoriaIdFinal.Value}");
+            }
+            else
+            {
+                Console.WriteLine("⚠️ No se encontró NodoCategoriaId válido en nivelesDinamicos ni en nodoSeleccionadoId.");
+            }
+
+
+            if (DocumentoId.HasValue)
+            {
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
+
+                fila["Id"] = DocumentoId.Value;
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
+
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.ActualizarFilasAsync(dtDocumento, IdAplicacion);
+
+                if (subCategoriaSeleccionadaId.HasValue)
+                {
+                    await ServicioUsuario.EliminarListadeLlavesAsync("DocumentoCategoria", "DocumentoId", DocumentoId.Value.ToString(), IdAplicacion);
+
+                    var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                    var filaRelacion = dtRelacion.NewRow();
+
+                    filaRelacion["DocumentoId"] = DocumentoId.Value;
+                    filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.Value;
+                    filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                    dtRelacion.Rows.Add(filaRelacion);
+                    await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+                }
+
+                mensaje = "✅ Documento actualizado correctamente.";
+                await CargarDocumentos();
+            }
+            else
+            {
+
+                var dtDocumento = await ServicioUsuario.TraerEsquemaTablaAsync("Documento", IdAplicacion);
+                var fila = dtDocumento.NewRow();
+
+                fila["Nombre"] = documento.Nombre.Trim();
+                fila["PlantillaId"] = documento.PlantillaId ?? 0;
+                fila["FechaCreacion"] = DateTime.Now;
+
+                dtDocumento.Rows.Add(fila);
+                await ServicioUsuario.InsertarTablaAsync(dtDocumento, "Documento", IdAplicacion);
+
+                var consecutivo = await ServicioUsuario.TraerUltimoConsecutivoAsync("Documento", IdAplicacion);
+                int nuevoDocumentoId = Convert.ToInt32(consecutivo.Rows[0][0]);
+
+                var dtRelacion = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoCategoria", IdAplicacion);
+                var filaRelacion = dtRelacion.NewRow();
+
+                filaRelacion["DocumentoId"] = nuevoDocumentoId;
+                filaRelacion["SubCategoriaId"] = subCategoriaSeleccionadaId.HasValue ? subCategoriaSeleccionadaId.Value : (object)DBNull.Value;
+                filaRelacion["NodoCategoriaId"] = nodoCategoriaIdFinal.HasValue ? nodoCategoriaIdFinal.Value : (object)DBNull.Value;
+
+                dtRelacion.Rows.Add(filaRelacion);
+                await ServicioUsuario.InsertarTablaAsync(dtRelacion, "DocumentoCategoria", IdAplicacion);
+
+                mensaje = "✅ Documento registrado correctamente.";
+                documento = new();
+                await CargarDocumentos();
+            }
+            Console.WriteLine($"🧾 NodoCategoriaIdFinal recibido: {nodoCategoriaIdFinal}");
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al guardar documento: {ex.Message}";
+        }
+
+    }
+
+    private int? ObtenerNodoCategoriaIdFinal()
+    {
+        int? nodoId = null;
+
+        if (nivelesDinamicos != null && nivelesDinamicos.Any())
+        {
+            for (int i = nivelesDinamicos.Count - 1; i >= 0; i--)
+            {
+                var nivel = nivelesDinamicos[i];
+                if (nivel.NodoSeleccionadoId.HasValue)
+                {
+                    nodoId = nivel.NodoSeleccionadoId;
+                    var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoId);
+                    Console.WriteLine($"✅ Nodo final desde nivelesDinamicos: {nodo?.Nombre} (ID: {nodo?.Id})");
+                    return nodoId;
+                }
+            }
+        }
+
+        if (nodoSeleccionadoId.HasValue)
+        {
+            var nodo = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId.Value);
+            Console.WriteLine($"✅ Nodo final desde nodoSeleccionadoId: {nodo?.Nombre} (ID: {nodo?.Id})");
+            return nodoSeleccionadoId;
+        }
+
+        Console.WriteLine("❌ No se encontró NodoCategoriaId válido en nivelesDinamicos ni en nodoSeleccionadoId.");
+        return null;
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    async Task CargarDocumentos()
+    {
+        documentos.Clear();
+
+        var dtDocumentos = await ServicioUsuario.TraerTablaAsync("Documento", IdAplicacion);
+        var dtRelacion = await ServicioUsuario.TraerTablaAsync("DocumentoCategoria", IdAplicacion);
+        var dtSubcategorias = await ServicioUsuario.TraerTablaAsync("SubCategoria", IdAplicacion);
+        var dtCategorias = await ServicioUsuario.TraerTablaAsync("Categoria", IdAplicacion);
+        var dtNodos = await ServicioUsuario.TraerTablaAsync("NodoCategoria", IdAplicacion);
+        var dtPlantillas = await ServicioUsuario.TraerTablaAsync("Plantilla", IdAplicacion);
+
+        var subcategorias = dtSubcategorias.AsEnumerable().Select(r => new SubCategoria
+    {
+        Id = Convert.ToInt32(r["Id"]),
+        Nombre = r["Nombre"].ToString(),
+        CategoriaId = Convert.ToInt32(r["CategoriaId"])
+    }).ToList();
+
+        var categorias = dtCategorias.AsEnumerable().Select(r => new Categoria
+    {
+        Id = Convert.ToInt32(r["Id"]),
+        Nombre = r["Nombre"].ToString()
+    }).ToList();
+
+        var nodos = dtNodos.AsEnumerable().Select(r => new NodoCategoria
+    {
+        Id = Convert.ToInt32(r["Id"]),
+        Nombre = r["Nombre"].ToString()
+    }).ToList();
+
+        var plantillas = dtPlantillas.AsEnumerable().Select(r => new Plantilla
+    {
+        Id = Convert.ToInt32(r["Id"]),
+        NombreArchivo = r["NombreArchivo"].ToString(),
+        Referencia = r.Table.Columns.Contains("Referencia") ? r["Referencia"]?.ToString() : null,
+        RutaBase64 = r.Table.Columns.Contains("RutaArchivo") ? r["RutaArchivo"]?.ToString() : null // 👈 Importante
+    }).ToList();
+
+        var relaciones = dtRelacion.AsEnumerable().ToList();
+
+        documentos = dtDocumentos.AsEnumerable().Select(doc =>
+        {
+            int id = Convert.ToInt32(doc["Id"]);
+
+            var relacion = relaciones.FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == id);
+
+            var subCatId = (relacion != null && relacion["SubCategoriaId"] != DBNull.Value)
+                ? Convert.ToInt32(relacion["SubCategoriaId"])
+                : 0;
+
+            var nodoId = (relacion != null && relacion["NodoCategoriaId"] != DBNull.Value)
+                ? Convert.ToInt32(relacion["NodoCategoriaId"])
+                : 0;
+
+            var subcategoria = subcategorias.FirstOrDefault(s => s.Id == subCatId);
+            var categoria = categorias.FirstOrDefault(c => c.Id == subcategoria?.CategoriaId);
+            var nodo = nodos.FirstOrDefault(n => n.Id == nodoId);
+
+            Plantilla plantilla = null;
+            string? rutaBase64 = null;
+
+            if (doc.Table.Columns.Contains("PlantillaId") && doc["PlantillaId"] != DBNull.Value)
+            {
+                int idPlantilla = Convert.ToInt32(doc["PlantillaId"]);
+                plantilla = plantillas.FirstOrDefault(p => p.Id == idPlantilla);
+                rutaBase64 = plantilla?.RutaBase64;
+            }
+
+            return new DocumentoExtendido
+        {
+            Id = id,
+            Nombre = doc["Nombre"].ToString(),
+            Referencia = plantilla?.Referencia ?? "",
+            NombrePlantilla = plantilla?.NombreArchivo ?? "",
+            FechaCreacion = doc["FechaCreacion"] == DBNull.Value ? DateTime.MinValue : Convert.ToDateTime(doc["FechaCreacion"]),
+            Categoria = categoria?.Nombre ?? "",
+            SubCategoria = subcategoria?.Nombre ?? "",
+            Nodo = nodo?.Nombre ?? "",
+            RutaBase64 = rutaBase64 
+        };
+        }).ToList();
+        AplicarFiltroNombre();
+    }
+
+    async Task CargarDocumento()
+    {
+        var dt = await ServicioUsuario.TraerTablaAsync("Documento", IdAplicacion);
+        var fila = dt.AsEnumerable().FirstOrDefault(d => Convert.ToInt32(d["Id"]) == Id);
+
+        if (fila != null)
+        {
+            DocumentoId = Id; 
+
+            documento = new Documento
+            {
+                Nombre = fila["Nombre"].ToString(),
+                PlantillaId = fila["PlantillaId"] != DBNull.Value ? Convert.ToInt32(fila["PlantillaId"]) : (int?)null
+            };
+
+            var relacion = (await ServicioUsuario.TraerTablaAsync("DocumentoCategoria", IdAplicacion))
+                .AsEnumerable()
+                .FirstOrDefault(r => Convert.ToInt32(r["DocumentoId"]) == Id);
+
+            if (relacion != null)
+            {
+                subCategoriaSeleccionadaId = Convert.ToInt32(relacion["SubCategoriaId"]);
+                nodoSeleccionadoId = relacion["NodoCategoriaId"] != DBNull.Value
+                    ? Convert.ToInt32(relacion["NodoCategoriaId"])
+                    : (int?)null;
+            }
+        }
+    }
+    
+    void MostrarVisorPlantilla(int plantillaId)
+    {
+        var plantilla = plantillas.FirstOrDefault(p => p.Id == plantillaId);
+
+        if (plantilla != null)
+        {
+            // ✅ Mostrar PDF si existe
+            if (!string.IsNullOrWhiteSpace(plantilla.RutaBase64)
+                && plantilla.RutaBase64.StartsWith("data:application/pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                rutaSeleccionada = plantilla.RutaBase64;
+            }
+            else
+            {
+                rutaSeleccionada = null;
+            }
+
+            // ✅ Actualizar el objeto documento para la card
+            documento.Referencia = plantilla.Referencia;  // Debe existir en tu modelo
+            documento.Version = plantilla.Version;        // Debe existir en tu modelo
+            documento.Estado = plantilla.Estado;          // Debe existir en tu modelo
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private string FiltroNombre
+    {
+        get => _filtroNombre;
+        set
+        {
+            if (_filtroNombre != value)
+            {
+                _filtroNombre = value;
+                AplicarFiltroNombre();
+            }
+        }
+    }
+
+    private void AplicarFiltroNombre()
+    {
+        if (string.IsNullOrWhiteSpace(_filtroNombre))
+        {
+            documentosFiltrados = documentos;
+        }
+        else
+        {
+            documentosFiltrados = documentos
+                .Where(d => d.Nombre?.Contains(_filtroNombre, StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private async void SeleccionarNodoDesdeArbol(NodoCategoria nodo)
+    {
+        if (nodo == null)
+            return;
+
+        nombreComun = nodo.Nombre;
+        nodoSeleccionado = nodo;
+        jerarquiaSeleccionada = ObtenerRutaJerarquica(nodo);
+
+        var categoria = jerarquiaSeleccionada.FirstOrDefault(j => j.EsCategoria);
+        var subcategoria = jerarquiaSeleccionada.Skip(1).FirstOrDefault(j => !j.EsCategoria);
+
+        if (categoria != null)
+        {
+            categoriaSeleccionadaId = categoria.Id;
+            FiltrarSubcategorias(categoria.Id);
+        }
+
+        if (subcategoria != null)
+        {
+            var sub = todasSubcategorias.FirstOrDefault(s => s.Nombre.Trim() == subcategoria.Nombre.Trim());
+            if (sub != null)
+            {
+                subCategoriaSeleccionadaId = sub.Id;
+                FiltrarNodos(sub.Id);
+            }
+        }
+
+        var nodoFinal = jerarquiaSeleccionada.LastOrDefault();
+        if (nodoFinal != null)
+        {
+            nodoSeleccionadoId = nodoFinal.Id;
+            InicializarJerarquiaDesdeNodo(nodoFinal.Id);
+
+            if (editando)
+            {
+                nuevoNodo = new NodoCategoria
+                {
+                    Id = nodoFinal.Id,
+                    Nombre = nodoFinal.Nombre,
+                    PadreId = nodoFinal.PadreId,
+                    EsCategoria = nodoFinal.EsCategoria
+                };
+            }
+            else
+            {
+                nuevoNodo = new NodoCategoria
+                {
+                    PadreId = nodoFinal.Id,
+                    EsCategoria = false,
+                    Nombre = ""
+                };
+            }
+
+            // 🔍 Cargar documento asociado al nodo
+            var sql = $@"
+            SELECT TOP 1
+                d.Id AS DocumentoId,
+                d.Nombre,
+                d.PlantillaId,
+                p.RutaArchivo,
+                p.Referencia,
+                p.Version,
+                p.Estado
+            FROM Documento d
+            JOIN DocumentoCategoria dc ON dc.DocumentoId = d.Id
+            JOIN Plantilla p ON p.Id = d.PlantillaId
+            WHERE dc.NodoCategoriaId = {nodoFinal.Id}
+            ";
+
+
+            var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+            if (dt.Rows.Count > 0)
+            {
+                DocumentoId = Convert.ToInt32(dt.Rows[0]["DocumentoId"]);
+                documento = new Documento
+                {
+                    Nombre = dt.Rows[0]["Nombre"]?.ToString(),
+                    PlantillaId = dt.Rows[0]["PlantillaId"] != DBNull.Value
+                     ? Convert.ToInt32(dt.Rows[0]["PlantillaId"])
+                     : (int?)null,
+                    NodoCategoriaId = nodoFinal.Id,
+                    Referencia = dt.Rows[0]["Referencia"]?.ToString(),
+                    Version = dt.Rows[0]["Version"]?.ToString(),
+                    Estado = dt.Rows[0]["Estado"]?.ToString()
+                };
+
+                var rutaArchivo = dt.Rows[0]["RutaArchivo"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(rutaArchivo))
+                {
+                    rutaSeleccionada = rutaArchivo; // esto lo renderiza el visor PDF
+                }
+                else
+                {
+                    rutaSeleccionada = null;
+                }
+            }
+            else
+            {
+                DocumentoId = null;
+                documento = new Documento();
+                rutaSeleccionada = null;
+            }
+
+
+
+
+            // Esto alimentará el DropDown si está bindeado con documento.PlantillaId
+            Console.WriteLine($"Nodo seleccionado final: {nodoFinal.Nombre} (ID: {nodoFinal.Id})");
+        }
+        else
+        {
+            Console.WriteLine("No se pudo determinar el nodo final desde la jerarquía.");
+        }
+
+        StateHasChanged();
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+
+    private void Cancelar() => Navigation.NavigateTo("/Documentos", forceLoad: true);
+
+    private async void CargarNodoParaEditar(NodoCategoria nodo)
+    {
+        if (nodo == null)
+            return;
+
+        // Cargar el nodo en edición
+        nuevoNodo = new NodoCategoria
+    {
+        Id = nodo.Id,
+        Nombre = nodo.Nombre,
+        PadreId = nodo.PadreId,
+        EsCategoria = nodo.EsCategoria
+    };
+
+        // Mostrar el nombre del nodo en el TextBox
+        nombreComun = nodo.Nombre;
+
+        editando = true;
+
+        // 🔍 Buscar si hay un documento asociado a este nodo
+        var sql = $@"SELECT TOP 1 d.* FROM Documento d
+                 JOIN DocumentoCategoria dc ON dc.DocumentoId = d.Id
+                 WHERE dc.NodoCategoriaId = {nodo.Id}";
+
+        var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+        if (dt.Rows.Count > 0)
+        {
+            DocumentoId = Convert.ToInt32(dt.Rows[0]["Id"]);
+            documento = new Documento
+        {
+            Nombre = dt.Rows[0]["Nombre"]?.ToString(),
+            PlantillaId = dt.Rows[0]["PlantillaId"] != DBNull.Value ? Convert.ToInt32(dt.Rows[0]["PlantillaId"]) : (int?)null,
+            NodoCategoriaId = nodo.Id
+        };
+        }
+        else
+        {
+            DocumentoId = null;
+            documento = new Documento();
+        }
+
+        StateHasChanged();
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    void PrepararNuevoNodoComoHijo()
+    {
+        nuevoNodo = new NodoCategoria
+        {
+            PadreId = nodoSeleccionado?.Id,
+            EsCategoria = false,
+            Nombre = ""
+        };
+
+        documento = new Documento(); // Limpia el documento
+        nombreComun = "";            // Limpia el textbox
+        documento.PlantillaId = null; // Limpia el dropdown
+        rutaSeleccionada = null;     // Limpia el visor
+
+        editando = false;
+        agregandoHijo = true;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private async Task BuscarNodo()
+    {
+        if (string.IsNullOrWhiteSpace(textoBusqueda))
+        {
+            LimpiarResaltado(nodosRaiz);
+            ColapsarTodo(nodosRaiz);
+            nodosRaiz = new List<NodoCategoria>(nodosRaiz); // 🔥 Forzar refresco
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        // ✅ Colapsar todo antes de aplicar búsqueda
+        ColapsarTodo(nodosRaiz);
+        LimpiarResaltado(nodosRaiz);
+
+        var nodosCoincidentes = BuscarNodosPorNombre(nodosRaiz, textoBusqueda.Trim());
+
+        if (nodosCoincidentes.Any())
+        {
+            foreach (var nodo in nodosCoincidentes)
+            {
+                nodo.EsNodoBuscado = true;
+                ExpandirRutaHastaNodo(nodo.Id, nodosRaiz);
+            }
+        }
+        else
+        {
+            mensaje = "❌ No se encontró ningún nodo coincidente.";
+        }
+
+        // ✅ Forzar refresco completo del árbol
+        nodosRaiz = new List<NodoCategoria>(nodosRaiz);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ColapsarTodo(List<NodoCategoria> nodos)
+    {
+        foreach (var nodo in nodos)
+        {
+            nodo.Expanded = false; // 🔒 Colapsar todo
+            if (nodo.Hijos?.Any() == true)
+                ColapsarTodo(nodo.Hijos);
+        }
+    }
+
+    private void ExpandirRutaHastaNodo(int nodoId, List<NodoCategoria> lista)
+    {
+        foreach (var nodo in lista)
+        {
+            if (nodo.Id == nodoId)
+            {
+                nodo.Expanded = true;
+                return;
+            }
+
+            if (ContieneNodo(nodo.Hijos, nodoId))
+            {
+                nodo.Expanded = true;
+                ExpandirRutaHastaNodo(nodoId, nodo.Hijos);
+            }
+        }
+    }
+
+
+    private bool ContieneNodo(List<NodoCategoria> lista, int nodoId)
+    {
+        foreach (var nodo in lista)
+        {
+            if (nodo.Id == nodoId)
+                return true;
+
+            if (nodo.Hijos.Any() && ContieneNodo(nodo.Hijos, nodoId))
+                return true;
+        }
+        return false;
+    }
+
+    private List<NodoCategoria> BuscarNodosPorNombre(List<NodoCategoria> nodos, string texto)
+    {
+        List<NodoCategoria> encontrados = new();
+
+        foreach (var nodo in nodos)
+        {
+            if (!string.IsNullOrWhiteSpace(nodo.NombreOriginal) &&
+                nodo.NombreOriginal.Contains(texto, StringComparison.OrdinalIgnoreCase))
+            {
+                nodo.EsNodoBuscado = true;
+                encontrados.Add(nodo);
+            }
+
+            if (nodo.Hijos != null && nodo.Hijos.Any())
+            {
+                var hijosEncontrados = BuscarNodosPorNombre(nodo.Hijos, texto);
+                encontrados.AddRange(hijosEncontrados);
+            }
+        }
+
+        return encontrados;
+    }
+
+    private void LimpiarResaltado(List<NodoCategoria> nodos)
+    {
+        foreach (var nodo in nodos)
+        {
+            if (nodo.EsNodoBuscado)
+            {
+                nodo.EsNodoBuscado = false;
+                nodo.Nombre = nodo.NombreOriginal;
+            }
+
+            if (nodo.Hijos?.Any() == true)
+                LimpiarResaltado(nodo.Hijos);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private string _mensaje;
+    private string mensaje
+    {
+        get => _mensaje;
+        set
+        {
+            _mensaje = value;
+
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                _ = OcultarMensajeDespuesDeTiempo(); // Inicia la tarea en segundo plano
+            }
+        }
+    }
+
+    private async Task OcultarMensajeDespuesDeTiempo()
+    {
+
+        await Task.Delay(1500); // Espera 2 segundos
+        _mensaje = null;
+        await InvokeAsync(StateHasChanged); // Refresca UI para ocultarlo
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+    private string ObtenerColorEstado(string estado)
+    {
+        return estado switch
+        {
+            "Activa" => "#28a745",       // Verde
+            "Inactiva" => "#6c757d",     // Gris
+            "Obsoleta" => "#dc3545",     // Rojo
+            "En revisión" => "#ffc107",  // Amarillo
+            _ => "#007bff"               // Azul por defecto
+        };
+    }
+    
+}
+
+<!--Version Funcional 24/07-->

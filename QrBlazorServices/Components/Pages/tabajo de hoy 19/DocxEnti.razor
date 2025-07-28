@@ -171,58 +171,89 @@
                             }
                         </div>
                         @if (documento != null)
-{
-    <RadzenCard Class="mt-3" Style="width:100%; background-color:#ffffff; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); padding:15px;">
-        
-        <!-- Encabezado centrado -->
-        <RadzenCardHeader>
-            <h5 style="text-align:center; margin:0; font-weight:700; color:#444;">
-                📄 Detalles del Documento
-            </h5>
-        </RadzenCardHeader>
-        
-        <RadzenCardBody>
-            <div style="
-                display:flex;
-                justify-content:center;
-                align-items:center;
-                gap:50px;
-                flex-wrap:wrap;
-                font-size:16px;
-            ">
-                <div>
-                    <b>Referencia:</b> <span>@documento.Referencia</span>
-                </div>
-                <div>
-                    <b>Versión:</b> <span>@documento.Version</span>
-                </div>
-                <div>
-                    <b>Estado:</b>
-                    <span style="
-                        padding:6px 14px;
-                        border-radius:20px;
-                        color:white;
-                        font-weight:bold;
-                        display:inline-block;
-                        background-color:@(ObtenerColorEstado(documento.Estado));
-                    ">
-                        @documento.Estado
-                    </span>
-                </div>
-            </div>
-        </RadzenCardBody>
-    </RadzenCard>
-}
-
-
+                        {
+                            <RadzenCard Class="mt-3" Style="width:100%; background-color:#ffffff; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); padding:15px;">
+                                <!-- Encabezado centrado -->
+                                <RadzenCardHeader>
+                                    <h5 style="text-align:center; margin:0; font-weight:700; color:#444;">
+                                        📄 Detalles del Documento
+                                    </h5>
+                                </RadzenCardHeader>
+                                <RadzenCardBody>
+                                    <div style="
+                                        display:flex;
+                                        justify-content:center;
+                                        align-items:center;
+                                        gap:50px;
+                                        flex-wrap:wrap;
+                                        font-size:16px;
+                                    ">
+                                        <div>
+                                            <b>Referencia:</b> <span>@documento.Referencia</span>
+                                        </div>
+                                        <div>
+                                            <b>Versión:</b> <span>@documento.Version</span>
+                                        </div>
+                                        <div>
+                                            <b>Estado:</b>
+                                            <span style="
+                                                padding:6px 14px;
+                                                border-radius:20px;
+                                                color:white;
+                                                font-weight:bold;
+                                                display:inline-block;
+                                                background-color:@(ObtenerColorEstado(documento.Estado));
+                                            ">
+                                                @documento.Estado
+                                            </span>
+                                        </div>
+                                    </div>
+                                </RadzenCardBody>
+                            </RadzenCard>
+                        }
                     }
                     else
                     {
                         <p class="text-muted">Seleccione un documento desde la pestaña anterior para previsualizarlo aquí.</p>
                     }
                 </RadzenTabsItem>
-         <!--  <RadzenTabsItem Text="Documentos Arbol Documental">
-                               </RadzenTabsItem>-->
+
+
+           <RadzenTabsItem Text="Documentos Por Entidad ">
+
+                                     <RadzenDropDown @bind-Value="entidadSeleccionadaId"
+                                        Data="@entidades"
+                                        TextProperty="Nombre"
+                                        ValueProperty="Id"
+                                        Placeholder="Seleccione una entidad"
+                                        Class="w-100 mb-3"
+                                        AllowFiltering="true"
+                                        Change="OnEntidadSeleccionada"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+
+                        <RadzenDropDown @bind-Value="servicioSeleccionadoId"
+                                        Data="@serviciosFiltrados"
+                                        TextProperty="ServicioBrindado"
+                                        ValueProperty="Id"
+                                        Placeholder="Seleccione un servicio"
+                                        Class="w-100 mb-3"
+                                        Disabled="@(!entidadSeleccionadaId.HasValue)"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+
+                        <RadzenDropDown @bind-Value="subdivisionSeleccionadaId"
+                                        Data="@subdivisionesFiltradas"
+                                        TextProperty="NombreSubdiv"
+                                        ValueProperty="Id"
+                                        Placeholder="Seleccione una subdivisión"
+                                        Class="w-100 mb-3"
+                                        Disabled="@(!entidadSeleccionadaId.HasValue)"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+
+                               </RadzenTabsItem>
+
+
             </Tabs>
         </RadzenTabs>
         </RadzenFieldset>
@@ -262,6 +293,9 @@
 <div style="position: fixed; top: -6%; left: 6%;">
     <RadzenDialog />
 </div>
+
+
+
 
 @code {
 
@@ -331,6 +365,10 @@
         await CargarDocumentos();
         await CargarDocumento();
         AplicarFiltroNombre();
+        await CargarEntidades();
+        await CargarServicios();
+        await CargarSubdivisiones();
+
 
         if (NodoId.HasValue)
         {
@@ -1419,7 +1457,7 @@
             }
         }
     }
-    
+
     void MostrarVisorPlantilla(int plantillaId)
     {
         var plantilla = plantillas.FirstOrDefault(p => p.Id == plantillaId);
@@ -1821,7 +1859,79 @@
             _ => "#007bff"               // Azul por defecto
         };
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
     
+    // Selecciones
+    private int? entidadSeleccionadaId;
+    private int? servicioSeleccionadoId;
+    private int? subdivisionSeleccionadaId;
+
+    // Datos cargados
+    private List<Entidad> entidades = new();
+    private List<Servicio> servicios = new();
+    private List<Subdivision> subdivisiones = new();
+
+    // Filtrados según la entidad seleccionada
+    private List<Servicio> serviciosFiltrados = new();
+    private List<Subdivision> subdivisionesFiltradas = new();
+
+
+    private async Task CargarEntidades()
+    {
+        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT Id, Nombre, TipoDocumento, NumeroDocumento FROM Entidades", IdAplicacion);
+        entidades = dt.AsEnumerable().Select(r => new Entidad
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            Nombre = r["Nombre"].ToString(),
+            TipoDocumento = r["TipoDocumento"].ToString(),
+            NumeroDocumento = r["NumeroDocumento"].ToString()
+        }).ToList();
+    }
+
+    private async Task CargarServicios()
+    {
+        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT Id, EntidadId, ServicioBrindado FROM Servicios", IdAplicacion);
+        servicios = dt.AsEnumerable().Select(r => new Servicio
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            EntidadId = Convert.ToInt32(r["EntidadId"]),
+            ServicioBrindado = r["ServicioBrindado"].ToString()
+        }).ToList();
+    }
+
+    private async Task CargarSubdivisiones()
+    {
+        var dt = await ServicioUsuario.TraerConsultaAsync("SELECT Id, EntidadId, NombreSubdiv FROM Subdivisiones", IdAplicacion);
+        subdivisiones = dt.AsEnumerable().Select(r => new Subdivision
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            EntidadId = Convert.ToInt32(r["EntidadId"]),
+            NombreSubdiv = r["NombreSubdiv"].ToString()
+        }).ToList();
+    }
+
+    private void OnEntidadSeleccionada(object valor)
+    {
+        if (valor is int entidadId)
+        {
+            entidadSeleccionadaId = entidadId;
+
+            serviciosFiltrados = servicios
+                .Where(s => s.EntidadId == entidadId)
+                .ToList();
+
+            subdivisionesFiltradas = subdivisiones
+                .Where(s => s.EntidadId == entidadId)
+                .ToList();
+
+            servicioSeleccionadoId = null;
+            subdivisionSeleccionadaId = null;
+        }
+    }
+
 }
 
 <!--Version Funcional 24/07-->
