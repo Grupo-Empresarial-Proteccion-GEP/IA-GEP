@@ -3,12 +3,14 @@
 
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @inject NavigationManager Navigation
-@rendermode InteractiveServer
+
 @using System.ComponentModel.DataAnnotations
 @using System.Data
 @using Radzen
 @using Radzen.Blazor
 @using QrBlazorServices.Clases
+
+@rendermode InteractiveServer
 
 <RadzenTemplateForm Data="@entidad" Submit="@GuardarEntidad" TItem="Entidad">
     <div class="p-4">

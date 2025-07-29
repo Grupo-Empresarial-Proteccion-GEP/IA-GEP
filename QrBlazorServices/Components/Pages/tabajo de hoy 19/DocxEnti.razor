@@ -265,8 +265,9 @@
                                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
 
                             <!-- Botón para guardar -->
-                            <RadzenButton Text="Guardar asociación"
+                            <RadzenButton Text=" asociación"
                                           Icon="save"
+                                          Shade="Shade.Lighter"
                                           ButtonStyle="ButtonStyle.Primary"
                                           Click="GuardarAsignaciones"
                                           Disabled="@(!documentosSeleccionados.Any() || entidadSeleccionadaId == null)" />
@@ -313,8 +314,6 @@
 <div style="position: fixed; top: -6%; left: 6%;">
     <RadzenDialog />
 </div>
-
-
 
 
 @code {
@@ -2016,7 +2015,7 @@
         }
     }
 
-    private List<int> documentosSeleccionados = new(); // múltiples documentos seleccionados
+    private List<int> documentosSeleccionados = new(); 
     
     private async Task GuardarAsignaciones()
     {
