@@ -1,24 +1,25 @@
 ﻿@page "/IA"
 @inject GeminiService GeminiService
-@using static System.Net.WebRequestMethods;
-@inject HttpClient Http
-@using System.Text.Json
+
 @inject IJSRuntime JS
 @inject IJSRuntime JSRuntime
-@using Microsoft.AspNetCore.Hosting
-@using QrBlazorServices.Helpers
 @inject ChatService ChatService
 @inject otraIA otraIA
-@using System.Text.RegularExpressions;
-@rendermode InteractiveServer
-@using System.Data;
-@using System.Text
-
-@using QrBlazorServices.Clases
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
+
+@rendermode InteractiveServer
+
+@using System.Data;
+
+@using System.Text.RegularExpressions;
+@using QrBlazorServices.Clases
 @using Radzen.Blazor
+
 @using Radzen
+
+@using QrBlazorServices.Helpers
+
 
 
 
