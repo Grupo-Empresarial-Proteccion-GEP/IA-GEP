@@ -1,4 +1,4 @@
-﻿@page "/rz"
+﻿@page "/IA"
 @inject GeminiService GeminiService
 @using static System.Net.WebRequestMethods;
 @inject HttpClient Http
@@ -14,9 +14,13 @@
 @using System.Data;
 @using System.Text
 
-
+@using QrBlazorServices.Clases
+@inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
+@inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
 @using Radzen.Blazor
 @using Radzen
+
+
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
     <div class="p-4" style="background-color: #f5f5f5; transform: scale(0.80); transform-origin: top center;">
@@ -31,26 +35,66 @@
                     <RadzenFieldset Text="Buscar Usuario">
                         <div class="d-flex gap-2">
                             <RadzenTextBox Placeholder="Buscar por documento" Style="width: 100%; margin-bottom: 10px;" @bind-Value="nombreBuscado" />
-                            <RadzenButton Icon="search" Text="Buscar" Shade="Shade.Lighter" Click="@BuscarClientePorDocumento" Style="width: 25%; margin-bottom: 10px;" Disabled="@buscandoCliente" />
+                            <RadzenButton Icon="search" Shade="Shade.Lighter" Click="@BuscarClientePorDocumento" Style="width: 20%; margin-bottom: 10px;" Disabled="@buscandoCliente" />
                         </div>
                     </RadzenFieldset>
 
                     <div class="row">
+
                         <!-- Receptor -->
                         <div class="col-md-6">
-                            <RadzenFieldset Text="Receptor">
-                                <RadzenTextBox Placeholder="Nombre" @bind-Value="Receptor" Style="width: 100%; margin-bottom: 10px;" />
-                                <RadzenDropDown Placeholder="Tipo de documento" @bind-Value="Documento_R" Data="@tiposDocumento" Style="width: 100%; margin-bottom: 10px;" />
-                                <RadzenTextBox Placeholder="Número de documento" @bind-Value="NumeroDoc_R" Style="width: 100%; margin-bottom: 10px;" />
-                                <RadzenTextBox Placeholder="Dirección" @bind-Value="Direccion_R" Style="width: 100%; margin-bottom: 10px;" />
-                                <RadzenTextBox Placeholder="Teléfono" @bind-Value="Telefono_R" Style="width: 100%; margin-bottom: 10px;" />
-                                <RadzenTextBox Placeholder="Correo" @bind-Value="Correo_R" Style="width: 100%; margin-bottom: 10px;" />
+                            <RadzenFieldset Text="Entidad">
+
+                                <RadzenDropDown @bind-Value="entidadSeleccionadaId"
+                                                Data="@entidades"
+                                                TextProperty="Nombre"
+                                                ValueProperty="Id"
+                                                Placeholder="Seleccione una entidad"
+                                                Change="@OnEntidadSeleccionada"
+                                                AllowFiltering="true"
+                                                Class="w-100 mb-2" />
+
+                                <RadzenDropDown @bind-Value="subdivisionSeleccionadaId"
+                                                Data="@subdivisiones"
+                                                TextProperty="NombreSubdiv"
+                                                ValueProperty="Id"
+                                                Placeholder="Seleccione una subdivisión"
+                                                Disabled="@(!entidadSeleccionadaId.HasValue)"
+                                                Class="w-100 mb-2" />
+
+                                <RadzenDropDown @bind-Value="servicioSeleccionadoId"
+                                                Data="@servicios"
+                                                TextProperty="ServicioBrindado"
+                                                ValueProperty="Id"
+                                                Placeholder="Seleccione un servicio"
+                                                Disabled="@(!entidadSeleccionadaId.HasValue)"
+                                                Class="w-100 mb-2" />
+
+
+                                <RadzenFieldset Text="Configuracion Adicional">
+
+
+                                    <RadzenDropDown @bind-Value="documentoSeleccionadoId"
+                                                    Data="@documentosDisponibles"
+                                                    TextProperty="NombreCompleto"
+                                                    ValueProperty="DocumentoId"
+                                                    Change="OnDocumentoSeleccionado"
+                                                    Placeholder="Selecciona un documento"
+                                                    Style="width: 100%; margin-bottom: 10px;" />
+
+
+                                                      
+                                    <RadzenDropDown Placeholder="Seleccionar IA" @bind-Value="IASeleccionada" Data="@iasDisponibles" Style="width: 100%; margin-bottom: 10px;"
+                                                    Change="@(value => CambiarIA(value?.ToString()))" />
+                                </RadzenFieldset>
                             </RadzenFieldset>
+
+
                         </div>
 
                         <!-- Emisor -->
                         <div class="col-md-6">
-                            <RadzenFieldset Text="Emisor">
+                            <RadzenFieldset Text="Cliente">
                                 <RadzenTextBox Placeholder="Nombre" @bind-Value="Emisor" Style="width: 100%; margin-bottom: 10px;" />
                                 <RadzenDropDown Placeholder="Tipo de documento" @bind-Value="Documento_E" Data="@tiposDocumento" Style="width: 100%; margin-bottom: 10px;" />
                                 <RadzenTextBox Placeholder="Número de documento" @bind-Value="NumeroDoc_E" Style="width: 100%; margin-bottom: 10px;" />
@@ -61,16 +105,11 @@
                         </div>
                     </div>
 
-                    <RadzenFieldset Text="Información del Documento">
-                        <RadzenDropDown Placeholder="Tipo de documento" @bind-Value="TipoDocumento" Data="@tiposDocumentoDoc" Style="width: 100%; margin-bottom: 10px;" />
-                        <RadzenTextBox Placeholder="Ciudad" @bind-Value="Ciudad" Style="width: 100%; margin-bottom: 10px;" />
-                        <RadzenTextBox Placeholder="Asunto" @bind-Value="Asunto" Style="width: 100%; margin-bottom: 10px;" />
-                    </RadzenFieldset>
+
 
                     <RadzenFieldset Text="Descripción para la IA">
-                        <RadzenDropDown Placeholder="Seleccionar IA" @bind-Value="IASeleccionada" Data="@iasDisponibles" Style="width: 100%; margin-bottom: 10px;"
-                                        Change="@(value => CambiarIA(value?.ToString()))" />
-                        <RadzenTextArea @bind-Value="UserPrompt" Placeholder="Describe claramente qué quieres generar o analizar..." Style="width: 100%; min-height: 180px;" />
+
+                        <RadzenTextArea @bind-Value="UserPrompt" Placeholder="Describe claramente qué quieres generar o analizar..." Style="width: 100%; min-height: 385px;" />
                     </RadzenFieldset>
                 </div>
 
@@ -78,9 +117,9 @@
                 <div class="col-lg-6 d-flex flex-column">
                     <RadzenFieldset Text="Adjuntar archivo">
                         <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
-                        <div class="d-flex gap-2">
-                            <RadzenButton Text="Generar Documento IA" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues" Disabled="@cargando" Style="flex: 1;" />
-                            <RadzenButton Text="Analizar Documento" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues2" Disabled="@cargantwo" ButtonStyle="ButtonStyle.Secondary" Style="flex: 1;" />
+                        <div class="d-flex gap-3 mt-3 justify-content-end">
+                            <RadzenButton Icon="done_all" Text="Generar" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues" Disabled="@cargando" ButtonStyle="ButtonStyle.Success" Style="width: 20%; margin-bottom: 10px;" />
+                            <RadzenButton Icon="chrome_reader_mode" Text="Analizar" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues2" Disabled="@cargantwo" ButtonStyle="ButtonStyle.Warning" Style="width: 20%; margin-bottom: 10px;" />
                         </div>
                     </RadzenFieldset>
 
@@ -109,9 +148,9 @@
                         </div>
                     </RadzenFieldset>
 
-                    <div class="d-flex gap-3 mt-3">
-                        <RadzenButton Text="Descargar como Word" Shade="Shade.Lighter"  Click="@DescargarDocSimple" />
-                        <RadzenButton Text="Mostrar Historial" Shade="Shade.Lighter"  Click="@(() => showModal = true)" ButtonStyle="ButtonStyle.Secondary" />
+                    <div class="d-flex gap-3 mt-3 justify-content-end">
+                        <RadzenButton Text="Descargar" Shade="Shade.Lighter" Click="@DescargarDocSimple" Icon="download" Style="width: 20%; margin-bottom: 10px;" ButtonStyle="ButtonStyle.Success" />
+                        <RadzenButton Text="Historial" Shade="Shade.Lighter" Click="@(() => showModal = true)"  Icon="history" Style="width: 20%; margin-bottom: 10px;" ButtonStyle="ButtonStyle.Warning" />
                     </div>
                 </div>
             </div>
@@ -119,16 +158,25 @@
     </div>
 </EditForm>
 
+<!--@if (!string.IsNullOrEmpty(documentoSeleccionado?.RutaArchivo))
+{
+    <iframe src="@documentoSeleccionado.RutaArchivo" type="application/pdf" width="100%" height="600px"></iframe>
+}
+
+@if (documentoSeleccionado is not null)
+{
+    <p><strong>Nombre:</strong> @documentoSeleccionado.Nombre</p>
+    <p><strong>Categoría:</strong> @documentoSeleccionado.Categoria</p>
+    <p><strong>Subcategoría:</strong> @documentoSeleccionado.SubCategoria</p>
+    <p><strong>Nodo:</strong> @documentoSeleccionado.Nodo</p>
+} -->
+
 @code {
     private List<string> tiposDocumento = new()
     {
         "Cédula de Ciudadanía", "Tarjeta de Identidad", "PEP", "Permiso por Protección Temporal", "NIT"
     };
 
-    private List<string> tiposDocumentoDoc = new()
-    {
-        "DERECHO DE PETICIÓN", "CARTA LABORAL", "CONSTANCIA", "RECURSO DE REPOSICIÓN", "SOLICITUD GENERAL"
-    };
 
     private List<string> iasDisponibles = new()
     {
@@ -137,9 +185,6 @@
 
     private string IASeleccionada = "openai";
 }
-
-
-
 
 @if (showModal)
 {
@@ -205,22 +250,39 @@
     private bool showModal = false;
 }
 
+<link href="css/mi-spinner.css" rel="stylesheet" />
 
-@if (cargantwo)
+@if (cargando || cargantwo)
 {
-    <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
-        <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <div class="spinner-overlay">
+        <div class="spinner"></div>
         <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
     </div>
 }
 
-@if (cargando)
+
+
+@if (!string.IsNullOrEmpty(Servicio_R) || !string.IsNullOrEmpty(Subdiv_R))
 {
-    <div class="spinner-overlay" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1050;">
-        <div class="spinner" style="border-top: 4px solid rgb(255, 150, 0); border-right: 4px solid transparent; border-bottom: 4px solid transparent; border-left: 4px solid transparent; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-        <p style="margin-top: 10px;"><em>CARGANDO, POR FAVOR ESPERA...</em></p>
+    <div class="border p-3 mt-3 bg-light">
+        <h6 class="fw-bold">Información del Servicio y Subdivisión</h6>
+
+        @if (!string.IsNullOrEmpty(Servicio_R))
+        {
+            <p><strong>Servicio:</strong> @Servicio_R</p>
+            <p><strong>Dirección servicio:</strong> @DireccionServicio_R</p>
+        }
+
+        @if (!string.IsNullOrEmpty(Subdiv_R))
+        {
+            <p><strong>Subdivisión:</strong> @Subdiv_R</p>
+            <p><strong>Responsable:</strong> @Responsable_R</p>
+            <p><strong>Teléfono:</strong> @TelefonoSubdiv_R</p>
+            <p><strong>Correo:</strong> @CorreoSubdiv_R</p>
+        }
     </div>
 }
+
 
 @code {
     private string userInput = "";
@@ -246,7 +308,6 @@
         isHistorialVisible = !isHistorialVisible;
     }
 }
-
 @foreach (var item in opcionesCheckbox)
 {
     <div>
@@ -260,12 +321,33 @@
 
 @code {
 
+    int IdAplicacion = 18;
+
     private ElementReference editorRef;
 
-    private string? Ciudad, Receptor,Documento_R,NumeroDoc_R,Direccion_R,Telefono_R,Correo_R,Emisor,Documento_E,NumeroDoc_E,Direccion_E,Telefono_E,Correo_E,Asunto,
-    TipoDocumento,UserPrompt,ResponseText,fileContent,contenidoAuxiliar = "",textoParcial = "";
+    private string? Ciudad;
+    private string? Receptor;
+    private string? Documento_R;
+    private string? NumeroDoc_R;
+    private string? Direccion_R;
+    private string? Telefono_R;
+    private string? Correo_R;
+    private string? Emisor;
+    private string? Documento_E;
+    private string? NumeroDoc_E;
+    private string? Direccion_E;
+    private string? Telefono_E;
+    private string? Correo_E;
+    private string? Asunto;
+    private string? TipoDocumento;
+    private string? UserPrompt;
+    private string? ResponseText;
+    private string? fileContent;
+    private string contenidoAuxiliar = "";
+    private string textoParcial = "";
 
     public string UsuarioActual { get; set; } = "Invitado";
+
     private bool mostrarHtml = true;
     private bool isLoading = false;
     private bool cargando = false;
@@ -283,9 +365,15 @@
 
     private List<string> opcionesGeneradas = new();
     private List<string> opcionesSeleccionadas = new();
+    private List<Servicio> servicios = new();
+    private List<Subdivision> subdivisiones = new();
+    private List<OpcionCheckbox> opcionesCheckbox = new();
+    private List<Entidad> entidades = new();
+    private List<DocumentoSeleccion> documentosDisponibles = new();
 
 
-    string nombreBuscado, mensaje;
+    string nombreBuscado; // input para búsqueda
+    string mensaje; // para mostrar mensajes al usuario
     bool buscandoCliente = false;
 
     int intentos = 0;
@@ -295,7 +383,18 @@
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
     private string selectedIA = "openai";
 
-    private List<OpcionCheckbox> opcionesCheckbox = new();
+    private int? servicioSeleccionadoId;
+    private int? subdivisionSeleccionadaId; 
+    private int? entidadSeleccionadaId;
+    private string? Servicio_R;
+    private string? DireccionServicio_R;
+    private string? Subdiv_R;
+    private string? Responsable_R;
+    private string? DireccionSubdiv_R;
+    private string? TelefonoSubdiv_R;
+    private string? CorreoSubdiv_R;
+    private int? documentoSeleccionadoId;
+
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
@@ -677,9 +776,16 @@
                 return;
             }
 
+
+            // 2. Obtener datos del servicio y subdivisión seleccionados
+            var servicioSeleccionado = servicios.FirstOrDefault(s => s.Id == servicioSeleccionadoId);
+            var subdivisionSeleccionada = subdivisiones.FirstOrDefault(s => s.Id == subdivisionSeleccionadaId);
+
+                    
             string plantillaPrompt = resultado.Rows[0]["Plantilla"].ToString();
 
-            // 2. Construir el prompt
+
+            // 3. Construir el prompt reemplazando las variables
             string promptFinal = plantillaPrompt
                 .Replace("{TipoDocumento}", TipoDocumento)
                 .Replace("{UserPrompt}", UserPrompt ?? "")
@@ -699,28 +805,40 @@
                 .Replace("{Correo_E}", Correo_E ?? "")
                 .Replace("{Asunto}", Asunto ?? "")
                 .Replace("{contenidoAuxiliar}", contenidoAuxiliar ?? "")
-                .Replace("{fileContent}", fileContent ?? "");
+                .Replace("{fileContent}", fileContent ?? "")
 
-            // 3. Validación mínima de datos (prompt básico si está vacío)
+                // NUEVO: Servicio y Subdivisión
+                .Replace("{Servicio_R}", servicioSeleccionado?.ServicioBrindado ?? "")
+                .Replace("{Subdiv_R}", subdivisionSeleccionada?.NombreSubdiv ?? "")
+                .Replace("{Responsable_R}", subdivisionSeleccionada?.Responsable ?? "")
+                .Replace("{DireccionSubdiv_R}", subdivisionSeleccionada?.Direccion ?? "")
+                .Replace("{TelefonoSubdiv_R}", subdivisionSeleccionada?.Telefono ?? "")
+                .Replace("{CorreoSubdiv_R}", subdivisionSeleccionada?.Correo ?? "")
+                .Replace("{NombreDocumento}", documentoSeleccionado?.Nombre ?? "")
+                .Replace("{ReferenciaDoc}", documentoSeleccionado?.Referencia ?? "")
+                .Replace("{VersionDoc}", documentoSeleccionado?.Version ?? "")
+                .Replace("{EstadoDoc}", documentoSeleccionado?.Estado ?? "");
+
+
+
+            // 4. Validación básica
             if (string.IsNullOrWhiteSpace(Ciudad + Emisor + Receptor + fileContent))
             {
                 promptFinal = $"Instrucciones del usuario: {UserPrompt}\n\nPor favor genera la respuesta como HTML usando etiquetas como <strong>, <p>, <ul>, <li>, <br>, <h2>, etc. No uses Markdown.";
             }
 
+            // 5. Guardar sesión y mensajes
             int sesionId = await GuardarSesionConversacionAsync(TipoDocumento, Asunto);
 
-            // Guardar selección de opciones (si existen)
             if (opcionesSeleccionadas?.Any() == true)
             {
                 string opcionesTexto = string.Join("\n", opcionesSeleccionadas.Select((op, i) => $"{i + 1}. {op}"));
                 await GuardarMensajeConversacionAsync(sesionId, "user", $"Opciones seleccionadas:\n{opcionesTexto}");
             }
 
-            // Guardar mensaje enviado por el usuario
             await GuardarMensajeConversacionAsync(sesionId, "user", promptFinal);
 
-
-            // 5. Enviar a IA con reintentos
+            // 6. Enviar a IA con reintentos
             int intentos = 0;
             int maxIntentos = 5;
             int esperaMs = 2000;
@@ -919,6 +1037,165 @@
 
         return respuestas;
     }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- /////////PROCESO NUEVO CON CARUGE DE INFORMACION DESDE OTROS FORM ////////////////// --> 
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarEntidades();
+        await CargarDocumentosParaSeleccion();
+    }
+
+    private async Task CargarEntidades()
+    {
+        var dt = await ServicioUsuario.TraerTablaAsync("Entidades", IdAplicacion);
+        entidades = dt.AsEnumerable().Select(row => new Entidad
+        {
+            Id = Convert.ToInt32(row["Id"]),
+            Nombre = row["Nombre"]?.ToString(),
+            TipoDocumento = row["TipoDocumento"]?.ToString(),
+            NumeroDocumento = row["NumeroDocumento"]?.ToString(),
+            Direccion = row["Direccion"]?.ToString(),
+            Telefono = row["Telefono"]?.ToString(),
+            Correo = row["Correo"]?.ToString(),
+            Ciudad = row["Ciudad"]?.ToString(),
+            Departamento = row["Departamento"]?.ToString(),
+            TipoEntidadId = Convert.ToInt32(row["TipoEntidadId"]) // ya lo tienes
+        }).ToList();
+    }
+
+    private async Task OnEntidadSeleccionada(object value)
+    {
+        entidadSeleccionadaId = (int?)value;
+
+        var entidad = entidades.FirstOrDefault(e => e.Id == entidadSeleccionadaId);
+        if (entidad != null)
+        {
+            Receptor = entidad.Nombre;
+            Documento_R = entidad.TipoDocumento;
+            NumeroDoc_R = entidad.NumeroDocumento;
+            Direccion_R = entidad.Direccion;
+            Telefono_R = entidad.Telefono;
+            Correo_R = entidad.Correo;
+        }
+
+        await CargarServicios();
+        await CargarSubdivisiones();
+
+        // Selección automática del primer servicio y subdivisión
+        var servicio = servicios.FirstOrDefault();
+        var subdiv = subdivisiones.FirstOrDefault();
+
+        servicioSeleccionadoId = servicio?.Id;
+        subdivisionSeleccionadaId = subdiv?.Id;
+
+        // ✅ Asignar información adicional del servicio
+        Servicio_R = servicio?.ServicioBrindado;
+        DireccionServicio_R = entidad?.Direccion; // o puede venir de otro lado si aplica
+
+        // ✅ Asignar información adicional de la subdivisión
+        Subdiv_R = subdiv?.NombreSubdiv;
+        Responsable_R = subdiv?.Responsable;
+        DireccionSubdiv_R = subdiv?.Direccion;
+        TelefonoSubdiv_R = subdiv?.Telefono;
+        CorreoSubdiv_R = subdiv?.Correo;
+    }
+
+    private async Task CargarServicios()
+    {
+        var dt = await ServicioUsuario.TraerConsultaAsync(
+            $"SELECT * FROM Servicios WHERE EntidadId = {entidadSeleccionadaId}", IdAplicacion);
+
+        servicios = dt.AsEnumerable().Select(r => new Servicio
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            EntidadId = Convert.ToInt32(r["EntidadId"]),
+            ServicioBrindado = r["ServicioBrindado"].ToString()
+        }).ToList();
+    }
+
+    private async Task CargarSubdivisiones()
+    {
+        var dt = await ServicioUsuario.TraerConsultaAsync(
+            $"SELECT * FROM Subdivisiones WHERE EntidadId = {entidadSeleccionadaId}", IdAplicacion);
+
+        subdivisiones = dt.AsEnumerable().Select(r => new Subdivision
+        {
+            Id = Convert.ToInt32(r["Id"]),
+            EntidadId = Convert.ToInt32(r["EntidadId"]),
+            NombreSubdiv = r["NombreSubdiv"].ToString(),
+            Ciudad = r["Ciudad"].ToString(),
+            Direccion = r["Direccion"].ToString(),
+            Telefono = r["Telefono"].ToString(),
+            Correo = r["Correo"].ToString(),
+            Responsable = r["Responsable"].ToString()
+        }).ToList();
+    }
+
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
+    private async Task CargarDocumentosParaSeleccion()
+    {
+        var sql = @"
+SELECT
+    d.Id AS DocumentoId,
+    d.Nombre AS NombreDocumento,
+    c.Nombre AS Categoria,
+    sc.Nombre AS SubCategoria,
+    nc.Nombre AS Nodo,
+    p.Referencia,
+    p.Version,
+    p.Estado,
+    p.RutaArchivo
+FROM Documento d
+LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId
+LEFT JOIN SubCategoria sc ON dc.SubCategoriaId = sc.Id
+LEFT JOIN Categoria c ON sc.CategoriaId = c.Id
+LEFT JOIN NodoCategoria nc ON dc.NodoCategoriaId = nc.Id
+LEFT JOIN Plantilla p ON d.PlantillaId = p.Id
+
+    ";
+
+        var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+        documentosDisponibles = dt.AsEnumerable().Select(r => new DocumentoSeleccion
+        {
+            DocumentoId = Convert.ToInt32(r["DocumentoId"]),
+            Nombre = r["NombreDocumento"]?.ToString() ?? "",
+            Categoria = r["Categoria"]?.ToString() ?? "-",
+            SubCategoria = r["SubCategoria"]?.ToString() ?? "-",
+            Nodo = r["Nodo"]?.ToString() ?? "-",
+            Referencia = r["Referencia"]?.ToString() ?? "",
+            Version = r["Version"]?.ToString() ?? "",
+            Estado = r["Estado"]?.ToString() ?? "",
+            RutaArchivo = r["RutaArchivo"]?.ToString() ?? ""
+        }).ToList();
+
+    }
+
+    private DocumentoSeleccion? documentoSeleccionado;
+    private async Task OnDocumentoSeleccionado(object value)
+    {
+        if (value is null)
+            return;
+
+        if (int.TryParse(value.ToString(), out int id))
+        {
+            documentoSeleccionadoId = id;
+            documentoSeleccionado = documentosDisponibles.FirstOrDefault(d => d.DocumentoId == id);
+
+            if (documentoSeleccionado is not null)
+            {
+                Asunto = documentoSeleccionado.Nombre;
+                TipoDocumento = documentoSeleccionado.Nombre; 
+            }
+
+        }
+    }
+
 
 }
 <!--Version Funcional 18/08-->

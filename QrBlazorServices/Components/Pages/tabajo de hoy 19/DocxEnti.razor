@@ -330,8 +330,13 @@
     string nombreSeleccionado = "";
     private string? rutaSeleccionada;
     private string _filtroNombre = "";
+    private int? entidadSeleccionadaId;
+    private int? servicioSeleccionadoId;
     private int? plantillaSeleccionadaId;
+    private int? documentoSeleccionadoId;
     private int? nodoIdEncontrado = null;
+    private int? subdivisionSeleccionadaId;
+    private string nombreComun = string.Empty;
     private string textoBusqueda = string.Empty;
 
     Plantilla plantilla = new();
@@ -342,6 +347,8 @@
     List<NodoCategoria> ListaNodos = new(); 
     List<NodoCategoria> todosNodos = new();
     List<Plantilla> listaPlantillas = new();
+    private List<Entidad> entidades = new();
+    private List<Servicio> servicios = new();
     List<NodoCategoria> nodosFiltrados = new();
     List<DocumentoExtendido> documentos = new();
     List<NodoSeleccion> nivelesDinamicos = new();
@@ -352,9 +359,13 @@
     private NodoCategoria? nodoSeleccionado;
     private NodoCategoria nuevoNodo = new();
     private List<NodoCategoria> nodosRaiz = new();
+    private List<Subdivision> subdivisiones = new();
+    private List<Servicio> serviciosFiltrados = new();
     private List<NodoCategoria> nodosExistentes = new();
     public List<NodoCategoria> Hijos { get; set; } = new();
+    private List<Subdivision> subdivisionesFiltradas = new();
     private List<DocumentoExtendido> documentosFiltrados = new();
+    private List<DocumentoSeleccion> documentosDisponibles = new();
 
     [Parameter] public int Id { get; set;}
     [Parameter] public int? NodoId { get; set; }
@@ -371,8 +382,6 @@
     nodoNivel2Id,
     nodoNivel3Id,
     nodoSeleccionadoFinalId;
-
-    private string nombreComun = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1885,21 +1894,6 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Selecciones
-    private int? entidadSeleccionadaId;
-    private int? servicioSeleccionadoId;
-    private int? subdivisionSeleccionadaId;
-
-    // Datos cargados
-    private List<Entidad> entidades = new();
-    private List<Servicio> servicios = new();
-    private List<Subdivision> subdivisiones = new();
-
-    // Filtrados según la entidad seleccionada
-    private List<Servicio> serviciosFiltrados = new();
-    private List<Subdivision> subdivisionesFiltradas = new();
-
-
     private async Task CargarEntidades()
     {
         var dt = await ServicioUsuario.TraerConsultaAsync("SELECT Id, Nombre, TipoDocumento, NumeroDocumento FROM Entidades", IdAplicacion);
@@ -1957,22 +1951,7 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     
-    public class DocumentoSeleccion
-    {
-        public int DocumentoId { get; set; }
-        public string Nombre { get; set; }           // Nombre del documento
-        public string Categoria { get; set; }
-        public string SubCategoria { get; set; }
-        public string Nodo { get; set; }
 
-        public string NombreCompleto =>
-            $"{Nombre}";
-        //({Categoria}> {SubCategoria} > {Nodo})
-    }
-
-    private List<DocumentoSeleccion> documentosDisponibles = new();
-    private int? documentoSeleccionadoId;
-    
     private async Task CargarDocumentosParaSeleccion()
     {
         var sql = @"
@@ -2000,7 +1979,6 @@
             Nodo = r["Nodo"]?.ToString() ?? "-"
         }).ToList();
     }
-
 
     private async Task GuardarRelacion(int documentoId, int entidadId, int? servicioId, int? subdivisionId)
     {
@@ -2038,7 +2016,6 @@
         }
     }
 
-
     private List<int> documentosSeleccionados = new(); // múltiples documentos seleccionados
     
     private async Task GuardarAsignaciones()
@@ -2068,7 +2045,6 @@
             Duration = 4000
         });
     }
-
 
 }
 

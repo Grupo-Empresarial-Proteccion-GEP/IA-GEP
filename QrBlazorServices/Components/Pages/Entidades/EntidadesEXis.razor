@@ -6,6 +6,8 @@
 @using Radzen.Blazor
 @rendermode InteractiveServer
 @using QrBlazorServices.Clases
+@inject DialogService dialogService
+@inject NotificationService notificationService
 
 <h3 class="mb-4">Lista de Entidades</h3>
 
@@ -27,12 +29,19 @@
 
         <RadzenDataGridColumn TItem="Entidad" Title="Acciones" Filterable="false" Sortable="false">
             <Template Context="entidad">
-                <RadzenButton Text="Editar" Icon="edit" Shade="Shade.Lighter"
+                <RadzenButton Icon="edit" Shade="Shade.Lighter"
                               Click="@(args => IrAEditarEntidad(entidad))"
                               ButtonStyle="ButtonStyle.Primary" Style="margin-right:5px" />
-                <RadzenButton Text="Servicios" Icon="build" Shade="Shade.Lighter"
+
+                <RadzenButton Icon="build" Shade="Shade.Lighter"
                               Click="@(args => IrAAgregarServicios(entidad))"
                               ButtonStyle="ButtonStyle.Info" />
+
+                <RadzenButton Icon="delete"
+                              Click="@(() => EliminarEntidad(entidad))"
+                              ButtonStyle="ButtonStyle.Danger"
+                              Style="margin-left: 5px" />
+
             </Template>
         </RadzenDataGridColumn>
     </Columns>
@@ -43,12 +52,43 @@
     <RadzenAlert Severity="AlertSeverity.Info">No hay entidades registradas aún.</RadzenAlert>
 }
 
-<RadzenButton Text="Nueva Entidad" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle" Style="margin-bottom: 10px; margin-right: 10px;" />
+<RadzenButton Text="Nueva" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Primary" Click="@IrARegistro" Icon="add_circle" Style="margin-bottom: 10px; margin-right: 10px;" />
 
 <RadzenButton Text="Buscar" Click="@(() => mostrarBuscador = !mostrarBuscador)" Shade="Shade.Lighter"
               ButtonStyle="ButtonStyle.Secondary" Icon="search"  Style="margin-bottom: 10px; margin-right: 10px;"  />
 
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div style="
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999;">
 
+        <div style="
+                position: fixed;
+                top: 45%;
+                left: 57%;
+                transform: translate(-50%, -50%);
+                background: rgb(255,255,255);
+                color: black;
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-size: 16px;
+                z-index: 9999;
+                text-align: center;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            ">
+            @mensaje
+        </div>
+    </div>
+}
+
+<div style="position: fixed; top: -6%; left: 6%;">
+    <RadzenDialog />
+</div>
 
 @if (mostrarBuscador)
 {
@@ -69,11 +109,13 @@
     public int EntidadId { get; set; }
 
     private List<Entidad> entidades = new();
-  
+
     private List<Entidad> entidadesFiltradas = new();
     private bool mostrarBuscador = false;
     private string filtroNombre = "";
     private string filtroNumeroDocumento = "";
+    
+    int IdAplicacion = 18;
 
 protected override async Task OnInitializedAsync()
 {
@@ -149,5 +191,90 @@ protected override async Task OnInitializedAsync()
             ).ToList();
     }
 
+    private async Task EliminarEntidad(Entidad entidad)
+    {
+        try
+        {
+            if (entidad == null)
+            {
+                mensaje = "⚠️ Entidad no válida.";
+                return;
+            }
+
+            // Verificar servicios asociados
+            var dtServicios = await ServicioUsuario.TraerConsultaAsync(
+                $"SELECT Id FROM Servicios WHERE EntidadId = {entidad.Id}", IdAplicacion);
+
+            // Verificar subdivisiones asociadas
+            var dtSubdivisiones = await ServicioUsuario.TraerConsultaAsync(
+                $"SELECT Id FROM Subdivisiones WHERE EntidadId = {entidad.Id}", IdAplicacion);
+
+            int totalAsociados = dtServicios.Rows.Count + dtSubdivisiones.Rows.Count;
+
+            if (totalAsociados > 0)
+            {
+                var confirmar = await dialogService.Confirm(
+                    $"La entidad tiene {dtServicios.Rows.Count} servicio(s) y {dtSubdivisiones.Rows.Count} subdivisión(es) asociadas. ¿Deseas eliminarlas también?",
+                    "Confirmar eliminación",
+                    new ConfirmOptions { OkButtonText = "Sí, eliminar todo", CancelButtonText = "Cancelar" });
+
+                if (confirmar != true)
+                {
+                    mensaje = "⛔ Eliminación cancelada.";
+                    return;
+                }
+
+                // Eliminar servicios
+                if (dtServicios.Rows.Count > 0)
+                    await ServicioUsuario.EliminarListadeLlavesAsync("Servicios", "EntidadId", entidad.Id.ToString(), IdAplicacion);
+
+                // Eliminar subdivisiones
+                if (dtSubdivisiones.Rows.Count > 0)
+                    await ServicioUsuario.EliminarListadeLlavesAsync("Subdivisiones", "EntidadId", entidad.Id.ToString(), IdAplicacion);
+            }
+
+            // Eliminar entidad
+            var tablaEntidad = new DataTable("Entidades");
+            tablaEntidad.Columns.Add("Id", typeof(int));
+            var row = tablaEntidad.NewRow();
+            row["Id"] = entidad.Id;
+            tablaEntidad.Rows.Add(row);
+
+            await ServicioUsuario.EliminarFilaAsync(tablaEntidad, IdAplicacion);
+
+            entidades.Remove(entidad);
+            AplicarFiltro();
+
+            mensaje = $"✅ Entidad '{entidad.Nombre}' y sus datos relacionados fueron eliminados.";
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al eliminar entidad: {ex.Message}";
+        }
+    }
+
+    private string _mensaje;
+    private string mensaje
+    {
+        get => _mensaje;
+        set
+        {
+            _mensaje = value;
+
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                _ = OcultarMensajeDespuesDeTiempo(); // Inicia la tarea en segundo plano
+            }
+        }
+    }
+
+    private async Task OcultarMensajeDespuesDeTiempo()
+    {
+
+        await Task.Delay(1500); // Espera 2 segundos
+        _mensaje = null;
+        await InvokeAsync(StateHasChanged); // Refresca UI para ocultarlo
+    }
 }
 <!--Version Funcional 18/08-->

@@ -12,9 +12,12 @@
 
     <!-- Barra de navegación con estilo Radzen -->
     <div class="d-flex mb-3 gap-2 justify-content-center">
-        <RadzenButton Text="Plantillas Documentos"
+        <RadzenButton Text="Plantillas Registro"
                       Click="@(args => CambiarFormulario("DocxEnti"))"
                       ButtonStyle="@(formActivo == "DocxEnti" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+        <RadzenButton Text="IA"
+                      Click="@(args => CambiarFormulario("DestroyerGeminixd"))"
+                      ButtonStyle="@(formActivo == "DestroyerGeminixd" ? ButtonStyle.Primary : ButtonStyle.Light)" />
       
     </div>
 
@@ -28,7 +31,10 @@
                 case "DocxEnti":
                     <DocxEnti />
                     break;
-             
+
+                case "DestroyerGeminixd":
+                    <DestroyerGeminixd />
+                    break;
             }
 
         </div>
