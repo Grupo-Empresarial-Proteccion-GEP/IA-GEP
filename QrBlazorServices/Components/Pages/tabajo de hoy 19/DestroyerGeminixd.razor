@@ -21,8 +21,6 @@
 @using QrBlazorServices.Helpers
 
 
-
-
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
     <div class="p-4" style="background-color: #f5f5f5; transform: scale(0.80); transform-origin: top center;">
         <RadzenCard Style="padding: 20px;">
@@ -83,13 +81,11 @@
                                                     Placeholder="Selecciona un documento"
                                                     Style="width: 100%; margin-bottom: 10px;" />
 
-
-                                                      
+       
                                     <RadzenDropDown Placeholder="Seleccionar IA" @bind-Value="IASeleccionada" Data="@iasDisponibles" Style="width: 100%; margin-bottom: 10px;"
                                                     Change="@(value => CambiarIA(value?.ToString()))" />
                                 </RadzenFieldset>
                             </RadzenFieldset>
-
 
                         </div>
 
@@ -105,8 +101,6 @@
                             </RadzenFieldset>
                         </div>
                     </div>
-
-
 
                     <RadzenFieldset Text="Descripción para la IA">
 
@@ -158,19 +152,6 @@
         </RadzenCard>
     </div>
 </EditForm>
-
-<!--@if (!string.IsNullOrEmpty(documentoSeleccionado?.RutaArchivo))
-{
-    <iframe src="@documentoSeleccionado.RutaArchivo" type="application/pdf" width="100%" height="600px"></iframe>
-}
-
-@if (documentoSeleccionado is not null)
-{
-    <p><strong>Nombre:</strong> @documentoSeleccionado.Nombre</p>
-    <p><strong>Categoría:</strong> @documentoSeleccionado.Categoria</p>
-    <p><strong>Subcategoría:</strong> @documentoSeleccionado.SubCategoria</p>
-    <p><strong>Nodo:</strong> @documentoSeleccionado.Nodo</p>
-} -->
 
 @code {
     private List<string> tiposDocumento = new()
@@ -309,6 +290,7 @@
         isHistorialVisible = !isHistorialVisible;
     }
 }
+
 @foreach (var item in opcionesCheckbox)
 {
     <div>
@@ -317,7 +299,7 @@
     </div>
 }
 
-<!-- //////////////////////////////////////////////////////////////////////////////////// -->
+
 <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
 @code {
@@ -326,26 +308,12 @@
 
     private ElementReference editorRef;
 
-    private string? Ciudad;
-    private string? Receptor;
-    private string? Documento_R;
-    private string? NumeroDoc_R;
-    private string? Direccion_R;
-    private string? Telefono_R;
-    private string? Correo_R;
-    private string? Emisor;
-    private string? Documento_E;
-    private string? NumeroDoc_E;
-    private string? Direccion_E;
-    private string? Telefono_E;
-    private string? Correo_E;
-    private string? Asunto;
-    private string? TipoDocumento;
-    private string? UserPrompt;
-    private string? ResponseText;
-    private string? fileContent;
-    private string contenidoAuxiliar = "";
-    private string textoParcial = "";
+    private string? Ciudad, Receptor,Documento_R,NumeroDoc_R,Direccion_R,Telefono_R,Correo_R,Emisor, Documento_E,NumeroDoc_E,Direccion_E,
+    Telefono_E,Correo_E,Asunto,TipoDocumento, UserPrompt, ResponseText, fileContent, contenidoAuxiliar = "",
+    textoParcial = "", Servicio_R, DireccionServicio_R, Subdiv_R, Responsable_R, DireccionSubdiv_R,TelefonoSubdiv_R,CorreoSubdiv_R,
+    selectedIA = "openai";
+
+    string nombreBuscado, mensaje; 
 
     public string UsuarioActual { get; set; } = "Invitado";
 
@@ -373,32 +341,22 @@
     private List<DocumentoSeleccion> documentosDisponibles = new();
 
 
-    string nombreBuscado; // input para búsqueda
-    string mensaje; // para mostrar mensajes al usuario
     bool buscandoCliente = false;
 
     int intentos = 0;
     int maxIntentos = 5;
-    int espera = 2000; // milisegundos
+    int espera = 2000; 
 
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
-    private string selectedIA = "openai";
-
+   
+    
+    private int? entidadSeleccionadaId;
     private int? servicioSeleccionadoId;
     private int? subdivisionSeleccionadaId; 
-    private int? entidadSeleccionadaId;
-    private string? Servicio_R;
-    private string? DireccionServicio_R;
-    private string? Subdiv_R;
-    private string? Responsable_R;
-    private string? DireccionSubdiv_R;
-    private string? TelefonoSubdiv_R;
-    private string? CorreoSubdiv_R;
     private int? documentoSeleccionadoId;
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private void CambiarIA(string nuevaIA)
     {
         selectedIA = nuevaIA;
@@ -410,8 +368,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task ActualizarTextoEditable()
     {
         if (moduloJS != null)
@@ -421,8 +378,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    
+        
     private async Task EnviarYLimpiarDespues()
     {
         cargando = true;
@@ -464,8 +420,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task EnviarYLimpiarDespues2()
     {
         cargantwo = true; // Activar el spinner
@@ -503,8 +458,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private void SeleccionarRespuesta(string contenido)
     {
         ResponseText = contenido;
@@ -513,8 +467,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private string LimpiarInstrucciones(string texto)
     {
         if (string.IsNullOrWhiteSpace(texto)) return string.Empty;
@@ -559,8 +512,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private string ExtraerContenidoHtml(string respuesta)
     {
         if (string.IsNullOrEmpty(respuesta)) return string.Empty;
@@ -576,8 +528,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     public class OpcionCheckbox
     {
         public string Texto { get; set; }
@@ -585,8 +536,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     void OnCheckboxChanged(string opcion, bool isChecked)
     {
         // Agrega o elimina la opción seleccionada de la lista
@@ -606,8 +556,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private void GuardarSeleccionadas()
     {
         // Unimos las opciones seleccionadas en un solo string
@@ -625,8 +574,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     public static string EliminarDuplicadosConCheckboxes(string texto)
     {
         // Expresión regular para capturar solo las opciones numeradas dentro de <li> o <p>
@@ -654,8 +602,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
 
@@ -687,8 +634,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task SendResumenDesdeArchivo()
     {
         try
@@ -742,8 +688,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task SimularEscritura(string textoCompleto)
     {
         textoParcial = "";
@@ -758,8 +703,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+   
     private async Task SendToGemini()
     {
         cargando = true;
@@ -888,8 +832,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -905,8 +848,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task DescargarDocSimple()
     {
         if (jsListo && moduloJS is not null)
@@ -916,8 +858,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task BuscarClientePorDocumento()
     {
         buscandoCliente = true;
@@ -966,7 +907,6 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
 
     private async Task<int> GuardarSesionConversacionAsync(string tipoDocumento, string asunto)
     {
@@ -991,7 +931,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
+    
 
     private async Task GuardarMensajeConversacionAsync(int sesionId, string rol, string contenido)
     {
@@ -1015,8 +955,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task<List<string>> ObtenerRespuestasAnterioresAsync(string tipoDoc)
     {
         string consulta = $@"
@@ -1136,8 +1075,7 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-
+    
     private async Task CargarDocumentosParaSeleccion()
     {
         var sql = @"
