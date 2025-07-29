@@ -1,24 +1,20 @@
 ﻿@page "/IA"
-@inject GeminiService GeminiService
-
-@inject IJSRuntime JS
-@inject IJSRuntime JSRuntime
-@inject ChatService ChatService
-@inject otraIA otraIA
 @inject AccesoDatos.AccesoDatosSoapClient ServicioUsuario
 @inject AccesoDatos.AccesoDatosSoapClient ServicioSoap
-
-@rendermode InteractiveServer
-
-@using System.Data;
+@inject GeminiService GeminiService
+@inject ChatService ChatService
+@inject IJSRuntime JSRuntime
+@inject otraIA otraIA
+@inject IJSRuntime JS
 
 @using System.Text.RegularExpressions;
+@using QrBlazorServices.Helpers
 @using QrBlazorServices.Clases
 @using Radzen.Blazor
-
+@using System.Data;
 @using Radzen
 
-@using QrBlazorServices.Helpers
+@rendermode InteractiveServer
 
 
 <EditForm Model="@this" OnValidSubmit="SendToGemini">
@@ -114,7 +110,7 @@
                         <InputFile OnChange="HandleFileSelected" @key="inputFileKey" class="form-control mb-3" disabled="@cargantwo" />
                         <div class="d-flex gap-3 mt-3 justify-content-end">
                             <RadzenButton Icon="done_all" Text="Generar" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues" Disabled="@cargando" ButtonStyle="ButtonStyle.Success" Style="width: 20%; margin-bottom: 10px;" />
-                            <RadzenButton Icon="chrome_reader_mode" Text="Analizar" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues2" Disabled="@cargantwo" ButtonStyle="ButtonStyle.Warning" Style="width: 20%; margin-bottom: 10px;" />
+                            <RadzenButton Icon="chrome_reader_mode" Text="Analizar" Shade="Shade.Lighter" Click="@EnviarYLimpiarDespues2" Disabled="@cargantwo" ButtonStyle="ButtonStyle.Danger" Style="width: 20%; margin-bottom: 10px;" />
                         </div>
                     </RadzenFieldset>
 
@@ -145,7 +141,7 @@
 
                     <div class="d-flex gap-3 mt-3 justify-content-end">
                         <RadzenButton Text="Descargar" Shade="Shade.Lighter" Click="@DescargarDocSimple" Icon="download" Style="width: 20%; margin-bottom: 10px;" ButtonStyle="ButtonStyle.Success" />
-                        <RadzenButton Text="Historial" Shade="Shade.Lighter" Click="@(() => showModal = true)"  Icon="history" Style="width: 20%; margin-bottom: 10px;" ButtonStyle="ButtonStyle.Warning" />
+                        <RadzenButton Text="Historial" Shade="Shade.Lighter" Click="@(() => showModal = true)"  Icon="history" Style="width: 20%; margin-bottom: 10px;" ButtonStyle="ButtonStyle.Primary" />
                     </div>
                 </div>
             </div>
@@ -340,7 +336,6 @@
     private List<Entidad> entidades = new();
     private List<DocumentoSeleccion> documentosDisponibles = new();
 
-
     bool buscandoCliente = false;
 
     int intentos = 0;
@@ -349,7 +344,6 @@
 
     private AccesoDatos.AccesoDatosSoapClient _servicioUsuario = new AccesoDatos.AccesoDatosSoapClient(AccesoDatos.AccesoDatosSoapClient.EndpointConfiguration.AccesoDatosSoap12);
    
-    
     private int? entidadSeleccionadaId;
     private int? servicioSeleccionadoId;
     private int? subdivisionSeleccionadaId; 

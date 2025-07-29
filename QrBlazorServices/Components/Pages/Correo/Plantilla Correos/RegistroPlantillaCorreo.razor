@@ -6,12 +6,12 @@
 @using QrBlazorServices.Clases
 @rendermode InteractiveServer
 
-<h3>📧 Registro de Plantilla de Correo</h3>
+<h3>Registro de Plantilla de Correo</h3>
 
 <RadzenRow>
     <!-- Columna izquierda: Formulario -->
     <RadzenColumn Width="6">
-        <RadzenFieldset Text="📤 Datos de la Plantilla" Style="max-width: 100%;">
+        <RadzenFieldset Text="Datos de la Plantilla" Style="max-width: 100%;">
             <RadzenTextBox @bind-Value="plantilla.Nombre" Placeholder="Nombre" Class="w-100 mb-2" />
             <RadzenTextBox @bind-Value="plantilla.Asunto" Placeholder="Asunto" Class="w-100 mb-2" />
             <RadzenTextBox @bind-Value="plantilla.Tipo" Placeholder="Tipo (Ej: Bienvenida)" Class="w-100 mb-2" />
@@ -32,7 +32,7 @@
                     <img src="@plantilla.Imagen" style="max-width: 75%; max-height: 125px;" />
                 }
 
-                <RadzenButton Text="Guardar Plantilla"
+                <RadzenButton Text="Plantilla"
                               Icon="save"
                               Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Success"
@@ -46,7 +46,7 @@
 
     <!-- Columna derecha: Tabla -->
     <RadzenColumn Width="6">
-        <h4 class="mt-4">📋 Plantillas registradas</h4>
+        <h4 class="mt-4">Plantillas registradas</h4>
 
         <RadzenDataGrid Data="@plantillas" TItem="PlantillaCorreo" AllowPaging="true" PageSize="10"
                         AllowSorting="true"

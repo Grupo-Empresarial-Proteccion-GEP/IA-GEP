@@ -81,7 +81,7 @@
                             <RadzenTextBox Name="NuevoServicio" @bind-Value="nuevoServicio" Placeholder="Servicios Ej: Capacitación" Class="w-100" />
                         </RadzenFormField>
 
-                        <RadzenButton Icon="add_circle" Text="Agregar Servicio" Click="@AgregarServicio" Shade="Shade.Lighter"  ButtonStyle="ButtonStyle.Secondary" />
+                        <RadzenButton Icon="add_circle" Text="Servicio" Click="@AgregarServicio" Shade="Shade.Lighter"  ButtonStyle="ButtonStyle.Secondary" />
 
                         <ul class="mt-2">
                             @foreach (var s in listaServicios)
@@ -120,7 +120,7 @@
                             <RadzenTextBox Name="SubdivResponsable" @bind-Value="subdiv.Responsable" Placeholder="Contacto" Class="w-100" />
                         </RadzenFormField>
 
-                        <RadzenButton Icon="add_circle" Shade="Shade.Lighter" Text="Agregar Departamento" Click="@AgregarSubdiv" ButtonStyle="ButtonStyle.Secondary" />
+                        <RadzenButton Icon="add_circle" Shade="Shade.Lighter" Text="Departamento" Click="@AgregarSubdiv" ButtonStyle="ButtonStyle.Secondary" />
 
                         <ul class="mt-2">
                             @foreach (var sd in listaSubdiv)
@@ -136,8 +136,8 @@
                 }
             </div>
 
-            <RadzenButton Text="Registrar entidad" Shade="Shade.Lighter"  ButtonStyle="ButtonStyle.Success" Type="Submit" Style="margin-top: 20px;" />
-            <RadzenButton Text="Volver" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
+            <RadzenButton Icon="save" Text="Entidad" Shade="Shade.Lighter"  ButtonStyle="ButtonStyle.Success" Type="Submit" Style="margin-top: 20px;" />
+            <RadzenButton Icon="arrow_back"  Text="Volver" Shade="Shade.Lighter" ButtonStyle="ButtonStyle.Primary" Click="@IrAInicio" Style="margin-left: 10px;" />
 
         </RadzenFieldset>
 

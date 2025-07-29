@@ -58,8 +58,8 @@
     <!-- Columna derecha -->
     <RadzenColumn Width="6" >
         <RadzenFieldset style="height: 845px; overflow-y: auto;">
-                <RadzenFieldset Text="@((editando ? "Editar Rama" : "Nuevo Rama"))">     
-                    <RadzenFormField Text="Nombre de la Rama / Documento" Class="w-100 mb-2">
+            <RadzenFieldset Text="@((editando ? "Editar Docuento" : "Nuevo Docuento"))">
+                <RadzenFormField Text="Nombre de la Rama / Documento" Class="w-100 mb-2">
                         <RadzenTextBox @bind-Value="nombreComun" Style="width: 100%" />
                     </RadzenFormField>
                 <RadzenDropDown 
@@ -82,7 +82,7 @@
                 @if (editando)
                 {
                     <div class="d-flex flex-row justify-content-end gap-2">
-                        <RadzenButton Icon="done"
+                        <RadzenButton Icon="save"
                                       Size="ButtonSize.Small"
                                       ButtonStyle="ButtonStyle.Success"
                                       Shade="Shade.Lighter"
@@ -97,7 +97,7 @@
                 else if (agregandoHijo)
                 {
                     <div class="d-flex flex-row justify-content-end gap-2">
-                        <RadzenButton Icon="done"
+                        <RadzenButton Icon="save"
                                       Size="ButtonSize.Small"
                                       ButtonStyle="ButtonStyle.Success"
                                       Shade="Shade.Lighter"
@@ -141,7 +141,7 @@
                 else if (nodoSeleccionado == null)
                 {
                     <div class="d-flex flex-row justify-content-end gap-2">
-                        <RadzenButton Icon="done"
+                        <RadzenButton Icon="Done"
                                       Size="ButtonSize.Small"
                                       ButtonStyle="ButtonStyle.Success"
                                       Shade="Shade.Lighter"
@@ -218,40 +218,42 @@
                     }
                 </RadzenTabsItem>
 
+                        <RadzenTabsItem Text="Documentos Por Entidad">
 
-           <RadzenTabsItem Text="Documentos Por Entidad ">
+                            <!-- Selección de Entidad -->
+                            <RadzenDropDown @bind-Value="entidadSeleccionadaId"
+                                            Data="@entidades"
+                                            TextProperty="Nombre"
+                                            ValueProperty="Id"
+                                            Placeholder="Seleccione una entidad"
+                                            Class="w-100 mb-3"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            Change="OnEntidadSeleccionada" />
 
-                                     <RadzenDropDown @bind-Value="entidadSeleccionadaId"
-                                        Data="@entidades"
-                                        TextProperty="Nombre"
-                                        ValueProperty="Id"
-                                        Placeholder="Seleccione una entidad"
-                                        Class="w-100 mb-3"
-                                        AllowFiltering="true"
-                                        Change="OnEntidadSeleccionada"
-                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                            <!-- Selección de Servicio -->
+                            <RadzenDropDown @bind-Value="servicioSeleccionadoId"
+                                            Data="@serviciosFiltrados"
+                                            TextProperty="ServicioBrindado"
+                                            ValueProperty="Id"
+                                            Placeholder="Seleccione un servicio"
+                                            Class="w-100 mb-3"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            Disabled="@(!entidadSeleccionadaId.HasValue)" />
 
-                        <RadzenDropDown @bind-Value="servicioSeleccionadoId"
-                                        Data="@serviciosFiltrados"
-                                        TextProperty="ServicioBrindado"
-                                        ValueProperty="Id"
-                                        Placeholder="Seleccione un servicio"
-                                        Class="w-100 mb-3"
-                                        Disabled="@(!entidadSeleccionadaId.HasValue)"
-                                        AllowFiltering="true"
-                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+                            <!-- Selección de Subdivisión -->
+                            <RadzenDropDown @bind-Value="subdivisionSeleccionadaId"
+                                            Data="@subdivisionesFiltradas"
+                                            TextProperty="NombreSubdiv"
+                                            ValueProperty="Id"
+                                            Placeholder="Seleccione una subdivisión"
+                                            Class="w-100 mb-3"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            Disabled="@(!entidadSeleccionadaId.HasValue)" />
 
-                        <RadzenDropDown @bind-Value="subdivisionSeleccionadaId"
-                                        Data="@subdivisionesFiltradas"
-                                        TextProperty="NombreSubdiv"
-                                        ValueProperty="Id"
-                                        Placeholder="Seleccione una subdivisión"
-                                        Class="w-100 mb-3"
-                                        Disabled="@(!entidadSeleccionadaId.HasValue)"
-                                        AllowFiltering="true"
-                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
-
-
+                            <!-- Selección de Documentos -->
                             <RadzenDropDown @bind-Value="documentosSeleccionados"
                                             Data="@documentosDisponibles"
                                             TextProperty="NombreCompleto"
@@ -262,16 +264,14 @@
                                             AllowFiltering="true"
                                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
 
-
+                            <!-- Botón para guardar -->
                             <RadzenButton Text="Guardar asociación"
                                           Icon="save"
                                           ButtonStyle="ButtonStyle.Primary"
                                           Click="GuardarAsignaciones"
                                           Disabled="@(!documentosSeleccionados.Any() || entidadSeleccionadaId == null)" />
 
-
-                               </RadzenTabsItem>
-
+                        </RadzenTabsItem>
 
 
             </Tabs>

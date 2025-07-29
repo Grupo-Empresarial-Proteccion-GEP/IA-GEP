@@ -41,23 +41,20 @@
                        class="form-control mb-3" />
 
             <div class="mb-3">
-                <RadzenButton Text="Registrar Nueva"
-                              Icon="save"
+                <RadzenButton Icon="save"
                               Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Success"
                               Click="AgregarPlantilla"
                               Class="me-2" />
 
-                <RadzenButton Text="Actualizar"
-                              Icon="edit"
+                <RadzenButton Icon="edit"
                               Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Warning"
                               Click="ActualizarPlantilla"
                               Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)"
                               Class="me-2" />
 
-                <RadzenButton Text="Eliminar"
-                              Icon="delete"
+                <RadzenButton Icon="delete"
                               Shade="Shade.Lighter"
                               ButtonStyle="ButtonStyle.Danger"
                               Click="EliminarPlantilla"
@@ -103,7 +100,7 @@
                 <div class="d-flex justify-content-center">
                     @if (rutaSeleccionada.StartsWith("data:application/pdf", StringComparison.OrdinalIgnoreCase))
                     {
-                        <iframe src="@rutaSeleccionada" width="90%" height="500px" style="border: 1px solid #ccc; border-radius: 8px;" />
+                        <iframe src="@rutaSeleccionada" width="90%" height="755px" style="border: 1px solid #ccc; border-radius: 8px;" />
                     }
                     else
                     {
