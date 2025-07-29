@@ -21,7 +21,7 @@
     <div class="p-4" style="background-color: #f5f5f5; transform: scale(0.80); transform-origin: top center;">
         <RadzenCard Style="padding: 20px;">
             <div class="text-center mb-4">
-                <h6 class="fw-bold fs-6">📄 Generador Inteligente de Documentos</h6>
+                <h6 class="fw-bold fs-6">Generador Inteligente de Documentos</h6>
             </div>
 
             <div class="row gy-4">
@@ -29,8 +29,21 @@
                 <div class="col-lg-6">
                     <RadzenFieldset Text="Buscar Usuario">
                         <div class="d-flex gap-2">
-                            <RadzenTextBox Placeholder="Buscar por documento" Style="width: 100%; margin-bottom: 10px;" @bind-Value="nombreBuscado" />
-                            <RadzenButton Icon="search" Shade="Shade.Lighter" Click="@BuscarClientePorDocumento" Style="width: 20%; margin-bottom: 10px;" Disabled="@buscandoCliente" />
+
+                            <RadzenFormField Text="Buscar por documento" Class="w-100 mb-2">
+
+                                <RadzenTextBox @bind-Value="nombreBuscado"
+                                               Style="width:100%; padding-right:35px;" />
+
+                                <RadzenButton Icon="search"
+                                              Size="ButtonSize.Small"
+                                              ButtonStyle="ButtonStyle.Light"
+                                              Style="position:absolute; right:5px; top:50%; transform:translateY(-50%);"
+                                              Click="@BuscarClientePorDocumento" />
+
+                            </RadzenFormField>
+
+                        
                         </div>
                     </RadzenFieldset>
 
