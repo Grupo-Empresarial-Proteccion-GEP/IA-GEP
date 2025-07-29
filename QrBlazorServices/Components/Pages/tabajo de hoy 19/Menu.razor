@@ -13,9 +13,8 @@
     <!-- Barra de navegación con estilo Radzen -->
     <div class="d-flex mb-3 gap-2 justify-content-center">
         <RadzenButton Text="Plantillas Documentos"
-
-                      Click="@(args => CambiarFormulario("CategoriaNew"))"
-                      ButtonStyle="@(formActivo == "CategoriaNew" ? ButtonStyle.Primary : ButtonStyle.Light)" />
+                      Click="@(args => CambiarFormulario("DocxEnti"))"
+                      ButtonStyle="@(formActivo == "DocxEnti" ? ButtonStyle.Primary : ButtonStyle.Light)" />
       
     </div>
 
@@ -26,8 +25,8 @@
             @switch (formActivo)
             {
 
-                case "CategoriaNew":
-                    <CategoriaNew />
+                case "DocxEnti":
+                    <DocxEnti />
                     break;
              
             }
@@ -37,7 +36,7 @@
 </div>
 
 @code {
-    private string formActivo = "CategoriaNew";
+    private string formActivo = "DocxEnti";
 
     void CambiarFormulario(string nombre)
     {

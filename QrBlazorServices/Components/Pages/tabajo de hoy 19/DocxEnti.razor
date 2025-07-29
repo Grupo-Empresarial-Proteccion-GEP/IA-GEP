@@ -251,7 +251,27 @@
                                         AllowFiltering="true"
                                         FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
 
+
+                            <RadzenDropDown @bind-Value="documentosSeleccionados"
+                                            Data="@documentosDisponibles"
+                                            TextProperty="NombreCompleto"
+                                            ValueProperty="DocumentoId"
+                                            Multiple="true"
+                                            Class="w-100 mb-3"
+                                            Placeholder="Seleccione uno o más documentos"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+
+
+                            <RadzenButton Text="Guardar asociación"
+                                          Icon="save"
+                                          ButtonStyle="ButtonStyle.Primary"
+                                          Click="GuardarAsignaciones"
+                                          Disabled="@(!documentosSeleccionados.Any() || entidadSeleccionadaId == null)" />
+
+
                                </RadzenTabsItem>
+
 
 
             </Tabs>
@@ -368,6 +388,7 @@
         await CargarEntidades();
         await CargarServicios();
         await CargarSubdivisiones();
+        await CargarDocumentosParaSeleccion();
 
 
         if (NodoId.HasValue)
@@ -1863,7 +1884,7 @@
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     // Selecciones
     private int? entidadSeleccionadaId;
     private int? servicioSeleccionadoId;
@@ -1931,6 +1952,123 @@
             subdivisionSeleccionadaId = null;
         }
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    public class DocumentoSeleccion
+    {
+        public int DocumentoId { get; set; }
+        public string Nombre { get; set; }           // Nombre del documento
+        public string Categoria { get; set; }
+        public string SubCategoria { get; set; }
+        public string Nodo { get; set; }
+
+        public string NombreCompleto =>
+            $"{Nombre}";
+        //({Categoria}> {SubCategoria} > {Nodo})
+    }
+
+    private List<DocumentoSeleccion> documentosDisponibles = new();
+    private int? documentoSeleccionadoId;
+    
+    private async Task CargarDocumentosParaSeleccion()
+    {
+        var sql = @"
+    SELECT
+        d.Id AS DocumentoId,
+        d.Nombre AS NombreDocumento,
+        c.Nombre AS Categoria,
+        sc.Nombre AS SubCategoria,
+        nc.Nombre AS Nodo
+    FROM Documento d
+    LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId
+    LEFT JOIN SubCategoria sc ON dc.SubCategoriaId = sc.Id
+    LEFT JOIN Categoria c ON sc.CategoriaId = c.Id
+    LEFT JOIN NodoCategoria nc ON dc.NodoCategoriaId = nc.Id
+    ";
+
+        var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+        documentosDisponibles = dt.AsEnumerable().Select(r => new DocumentoSeleccion
+        {
+            DocumentoId = Convert.ToInt32(r["DocumentoId"]),
+            Nombre = r["NombreDocumento"]?.ToString() ?? "",
+            Categoria = r["Categoria"]?.ToString() ?? "-",
+            SubCategoria = r["SubCategoria"]?.ToString() ?? "-",
+            Nodo = r["Nodo"]?.ToString() ?? "-"
+        }).ToList();
+    }
+
+
+    private async Task GuardarRelacion(int documentoId, int entidadId, int? servicioId, int? subdivisionId)
+    {
+        try
+        {
+            // 1. Insertar en DocumentoEntidad
+            var dtEntidad = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoEntidad", IdAplicacion);
+            var fila1 = dtEntidad.NewRow();
+            fila1["DocumentoId"] = documentoId;
+            fila1["EntidadId"] = entidadId;
+            fila1["FechaAsociacion"] = DateTime.Now;
+            dtEntidad.Rows.Add(fila1);
+            await ServicioUsuario.InsertarTablaAsync(dtEntidad, "DocumentoEntidad", IdAplicacion);
+
+            // 2. Insertar en DocumentoAsignacion
+            var dtAsig = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoAsignacion", IdAplicacion);
+            var fila2 = dtAsig.NewRow();
+            fila2["DocumentoId"] = documentoId;
+            fila2["EntidadId"] = entidadId;
+            fila2["ServicioId"] = servicioId ?? (object)DBNull.Value;
+            fila2["SubdivisionId"] = subdivisionId ?? (object)DBNull.Value;
+            fila2["FechaAsignacion"] = DateTime.Now;
+            // fila2["UsuarioAsignacion"] = usuarioActual;
+
+            dtAsig.Rows.Add(fila2);
+            await ServicioUsuario.InsertarTablaAsync(dtAsig, "DocumentoAsignacion", IdAplicacion);
+
+            mensaje = $"✅ Documento {documentoId} asociado correctamente.";
+
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"❌ Error al asociar el documento {documentoId}: {ex.Message}";
+
+        }
+    }
+
+
+    private List<int> documentosSeleccionados = new(); // múltiples documentos seleccionados
+    
+    private async Task GuardarAsignaciones()
+    {
+        if (!entidadSeleccionadaId.HasValue)
+        {
+            notificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Entidad requerida",
+                Detail = "Debes seleccionar una entidad.",
+                Duration = 4000
+            });
+            return;
+        }
+
+        foreach (var documentoId in documentosSeleccionados)
+        {
+            await GuardarRelacion(documentoId, entidadSeleccionadaId.Value, servicioSeleccionadoId, subdivisionSeleccionadaId);
+        }
+
+        notificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = "Guardado exitoso",
+            Detail = "Los documentos han sido asociados correctamente.",
+            Duration = 4000
+        });
+    }
+
 
 }
 
