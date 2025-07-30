@@ -233,6 +233,7 @@
 
                             <!-- Selección de Servicio -->
                             <RadzenDropDown @bind-Value="servicioSeleccionadoId"
+                                            Change="OnServicioSeleccionado"
                                             Data="@serviciosFiltrados"
                                             TextProperty="ServicioBrindado"
                                             ValueProperty="Id"
@@ -244,6 +245,7 @@
 
                             <!-- Selección de Subdivisión -->
                             <RadzenDropDown @bind-Value="subdivisionSeleccionadaId"
+                                            Change="OnSubdivisionSeleccionada"
                                             Data="@subdivisionesFiltradas"
                                             TextProperty="NombreSubdiv"
                                             ValueProperty="Id"
@@ -352,6 +354,8 @@
     List<SubCategoria> todasSubcategorias = new();
     List<SubCategoria> subcategoriasFiltradas = new();
     List<NodoCategoria> jerarquiaSeleccionada = new();
+    private List<int> documentosSeleccionados = new();
+
 
     private NodoCategoria? nodoSeleccionado;
     private NodoCategoria nuevoNodo = new();
@@ -1927,45 +1931,59 @@
         }).ToList();
     }
 
-    private void OnEntidadSeleccionada(object valor)
+    private async Task OnEntidadSeleccionada(object valor)
     {
         if (valor is int entidadId)
         {
             entidadSeleccionadaId = entidadId;
 
-            serviciosFiltrados = servicios
-                .Where(s => s.EntidadId == entidadId)
-                .ToList();
-
-            subdivisionesFiltradas = subdivisiones
-                .Where(s => s.EntidadId == entidadId)
-                .ToList();
+            serviciosFiltrados = servicios.Where(s => s.EntidadId == entidadId).ToList();
+            subdivisionesFiltradas = subdivisiones.Where(s => s.EntidadId == entidadId).ToList();
 
             servicioSeleccionadoId = null;
             subdivisionSeleccionadaId = null;
+
+            await ActualizarDocumentosParaAsignacion();
         }
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+    private async Task OnServicioSeleccionado(object valor)
+    {
+        if (valor is int id)
+        {
+            servicioSeleccionadoId = id;
+            await ActualizarDocumentosParaAsignacion();
+        }
+    }
 
+    private async Task OnSubdivisionSeleccionada(object valor)
+    {
+        if (valor is int id)
+        {
+            subdivisionSeleccionadaId = id;
+            await ActualizarDocumentosParaAsignacion();
+        }
+    }
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
     private async Task CargarDocumentosParaSeleccion()
     {
         var sql = @"
-    SELECT
-        d.Id AS DocumentoId,
-        d.Nombre AS NombreDocumento,
-        c.Nombre AS Categoria,
-        sc.Nombre AS SubCategoria,
-        nc.Nombre AS Nodo
-    FROM Documento d
-    LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId
-    LEFT JOIN SubCategoria sc ON dc.SubCategoriaId = sc.Id
-    LEFT JOIN Categoria c ON sc.CategoriaId = c.Id
-    LEFT JOIN NodoCategoria nc ON dc.NodoCategoriaId = nc.Id
-    ";
+        SELECT
+            d.Id AS DocumentoId,
+            d.Nombre AS NombreDocumento,
+            c.Nombre AS Categoria,
+            sc.Nombre AS SubCategoria,
+            nc.Nombre AS Nodo
+        FROM Documento d
+        LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId
+        LEFT JOIN SubCategoria sc ON dc.SubCategoriaId = sc.Id
+        LEFT JOIN Categoria c ON sc.CategoriaId = c.Id
+        LEFT JOIN NodoCategoria nc ON dc.NodoCategoriaId = nc.Id";
 
         var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
 
@@ -1977,22 +1995,51 @@
             SubCategoria = r["SubCategoria"]?.ToString() ?? "-",
             Nodo = r["Nodo"]?.ToString() ?? "-"
         }).ToList();
+
+        Console.WriteLine($"📄 Total documentos disponibles cargados: {documentosDisponibles.Count}");
     }
 
     private async Task GuardarRelacion(int documentoId, int entidadId, int? servicioId, int? subdivisionId)
     {
         try
         {
-            // 1. Insertar en DocumentoEntidad
-            var dtEntidad = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoEntidad", IdAplicacion);
-            var fila1 = dtEntidad.NewRow();
-            fila1["DocumentoId"] = documentoId;
-            fila1["EntidadId"] = entidadId;
-            fila1["FechaAsociacion"] = DateTime.Now;
-            dtEntidad.Rows.Add(fila1);
-            await ServicioUsuario.InsertarTablaAsync(dtEntidad, "DocumentoEntidad", IdAplicacion);
+            // Verificar si ya existe la asignación en DocumentoAsignacion
+            var verificarSql = $@"
+            SELECT COUNT(*) FROM DocumentoAsignacion
+            WHERE DocumentoId = {documentoId}
+            AND EntidadId = {entidadId}
+            AND ISNULL(ServicioId, 0) = {servicioId ?? 0}
+            AND ISNULL(SubdivisionId, 0) = {subdivisionId ?? 0}";
 
-            // 2. Insertar en DocumentoAsignacion
+            var existeDt = await ServicioUsuario.TraerConsultaAsync(verificarSql, IdAplicacion);
+            int existe = Convert.ToInt32(existeDt.Rows[0][0]);
+
+            if (existe > 0)
+            {
+                Console.WriteLine($"⚠️ Ya existe la relación DocumentoId={documentoId}, EntidadId={entidadId}... No se insertará.");
+                return;
+            }
+
+            // Verificar si ya existe en DocumentoEntidad (relación simple entre documento y entidad)
+            var existeEntidadSql = $@"
+            SELECT COUNT(*) FROM DocumentoEntidad
+            WHERE DocumentoId = {documentoId} AND EntidadId = {entidadId}";
+
+            var existeEntidadDt = await ServicioUsuario.TraerConsultaAsync(existeEntidadSql, IdAplicacion);
+            int existeEntidad = Convert.ToInt32(existeEntidadDt.Rows[0][0]);
+
+            if (existeEntidad == 0)
+            {
+                var dtEntidad = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoEntidad", IdAplicacion);
+                var fila1 = dtEntidad.NewRow();
+                fila1["DocumentoId"] = documentoId;
+                fila1["EntidadId"] = entidadId;
+                fila1["FechaAsociacion"] = DateTime.Now;
+                dtEntidad.Rows.Add(fila1);
+                await ServicioUsuario.InsertarTablaAsync(dtEntidad, "DocumentoEntidad", IdAplicacion);
+            }
+
+            // Insertar nueva relación en DocumentoAsignacion
             var dtAsig = await ServicioUsuario.TraerEsquemaTablaAsync("DocumentoAsignacion", IdAplicacion);
             var fila2 = dtAsig.NewRow();
             fila2["DocumentoId"] = documentoId;
@@ -2000,23 +2047,20 @@
             fila2["ServicioId"] = servicioId ?? (object)DBNull.Value;
             fila2["SubdivisionId"] = subdivisionId ?? (object)DBNull.Value;
             fila2["FechaAsignacion"] = DateTime.Now;
-            // fila2["UsuarioAsignacion"] = usuarioActual;
-
+            // fila2["UsuarioAsignacion"] = usuarioActual; // Puedes incluir esto si lo tienes
             dtAsig.Rows.Add(fila2);
             await ServicioUsuario.InsertarTablaAsync(dtAsig, "DocumentoAsignacion", IdAplicacion);
 
+            Console.WriteLine($"✅ Documento {documentoId} asociado correctamente.");
             mensaje = $"✅ Documento {documentoId} asociado correctamente.";
-
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"❌ Error al asociar el documento {documentoId}: {ex.Message}");
             mensaje = $"❌ Error al asociar el documento {documentoId}: {ex.Message}";
-
         }
     }
 
-    private List<int> documentosSeleccionados = new(); 
-    
     private async Task GuardarAsignaciones()
     {
         if (!entidadSeleccionadaId.HasValue)
@@ -2031,19 +2075,143 @@
             return;
         }
 
-        foreach (var documentoId in documentosSeleccionados)
-        {
+        var asignadosBD = await ObtenerDocumentosAsignadosDesdeBD(entidadSeleccionadaId.Value, servicioSeleccionadoId, subdivisionSeleccionadaId);
+        var seleccionadosActuales = documentosSeleccionados.ToHashSet();
+
+        Console.WriteLine($"🧾 Asignados en BD: {string.Join(", ", asignadosBD)}");
+        Console.WriteLine($"📌 Seleccionados ahora: {string.Join(", ", seleccionadosActuales)}");
+
+        var aEliminar = asignadosBD.Except(seleccionadosActuales).ToList();
+        var aInsertar = seleccionadosActuales.Except(asignadosBD).ToList();
+
+        Console.WriteLine($"❌ A eliminar: {string.Join(", ", aEliminar)}");
+        Console.WriteLine($"➕ A insertar: {string.Join(", ", aInsertar)}");
+
+        if (aEliminar.Any())
+            await EliminarDocumentos(entidadSeleccionadaId.Value, servicioSeleccionadoId, subdivisionSeleccionadaId, aEliminar);
+            await EliminarDocumentoEntidad(entidadSeleccionadaId.Value, aEliminar);
+
+        foreach (var documentoId in aInsertar)
             await GuardarRelacion(documentoId, entidadSeleccionadaId.Value, servicioSeleccionadoId, subdivisionSeleccionadaId);
-        }
 
         notificationService.Notify(new NotificationMessage
         {
             Severity = NotificationSeverity.Success,
-            Summary = "Guardado exitoso",
-            Detail = "Los documentos han sido asociados correctamente.",
+            Summary = "Actualización exitosa",
+            Detail = "Las asignaciones de documentos se han sincronizado correctamente.",
             Duration = 4000
         });
     }
+
+    private async Task CargarDocumentosAsignados()
+    {
+        if (entidadSeleccionadaId is null)
+        {
+            documentosSeleccionados = new List<int>();
+            Console.WriteLine("⚠️ No hay entidad seleccionada.");
+            return;
+        }
+
+        string where = $"WHERE EntidadId = {entidadSeleccionadaId}";
+
+        if (servicioSeleccionadoId != null)
+            where += $" AND ServicioId = {servicioSeleccionadoId}";
+
+        if (subdivisionSeleccionadaId != null)
+            where += $" AND SubdivisionId = {subdivisionSeleccionadaId}";
+
+        string sql = $@"
+        SELECT DISTINCT DocumentoId
+        FROM DocumentoAsignacion
+        {where}
+    ";
+
+        var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+        documentosSeleccionados = dt.AsEnumerable()
+            .Select(r => Convert.ToInt32(r["DocumentoId"]))
+            .ToList();
+
+        // 🔍 Depuración
+        Console.WriteLine($"🧪 Total documentos seleccionados desde BD: {documentosSeleccionados.Count}");
+        foreach (var docId in documentosSeleccionados)
+        {
+            Console.WriteLine($"✔ Documento asignado: {docId}");
+        }
+
+        // Comprobamos si alguno de los IDs asignados no existe en documentosDisponibles
+        var idsDisponibles = documentosDisponibles.Select(d => d.DocumentoId).ToHashSet();
+        var noEncontrados = documentosSeleccionados.Where(id => !idsDisponibles.Contains(id)).ToList();
+
+        if (noEncontrados.Any())
+        {
+            Console.WriteLine("❌ Documentos seleccionados que no están en la lista de disponibles:");
+            foreach (var id in noEncontrados)
+            {
+                Console.WriteLine($" - DocumentoId: {id}");
+            }
+        }
+    }
+
+    private async Task ActualizarDocumentosParaAsignacion()
+    {
+        await CargarDocumentosParaSeleccion();
+        await CargarDocumentosAsignados();
+    }
+
+    private async Task<HashSet<int>> ObtenerDocumentosAsignadosDesdeBD(int entidadId, int? servicioId, int? subdivisionId)
+    {
+        string where = $"WHERE EntidadId = {entidadId}";
+        if (servicioId != null) where += $" AND ServicioId = {servicioId}";
+        if (subdivisionId != null) where += $" AND SubdivisionId = {subdivisionId}";
+
+        string sql = $@"SELECT DocumentoId FROM DocumentoAsignacion {where}";
+
+        var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+
+        return dt.AsEnumerable()
+            .Select(r => Convert.ToInt32(r["DocumentoId"]))
+            .ToHashSet();
+    }
+
+    private async Task EliminarDocumentos(int entidadId, int? servicioId, int? subdivisionId, List<int> documentosAEliminar)
+    {
+        if (!documentosAEliminar.Any()) return;
+
+        foreach (var documentoId in documentosAEliminar)
+        {
+            var condiciones = new List<string>
+        {
+            $"EntidadId = {entidadId}",
+            $"DocumentoId = {documentoId}",
+            $"ISNULL(ServicioId, 0) = {servicioId ?? 0}",
+            $"ISNULL(SubdivisionId, 0) = {subdivisionId ?? 0}"
+        };
+
+            var where = string.Join(" AND ", condiciones);
+            var sql = $"DELETE FROM DocumentoAsignacion WHERE {where}";
+
+            Console.WriteLine($"🗑 Ejecutando: {sql}");
+            await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion); // <-- Usa tu método para ejecutar SQL sin retorno
+        }
+    }
+
+    private async Task EliminarDocumentoEntidad(int entidadId, List<int> documentosAEliminar)
+    {
+        if (!documentosAEliminar.Any()) return;
+
+        foreach (var documentoId in documentosAEliminar)
+        {
+            string sql = $@"
+            DELETE FROM DocumentoEntidad
+            WHERE DocumentoId = {documentoId}
+            AND EntidadId = {entidadId}";
+
+            Console.WriteLine($"🗑 Eliminando DocumentoEntidad -> DocumentoId: {documentoId}, EntidadId: {entidadId}");
+            await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+        }
+    }
+
 
 }
 
