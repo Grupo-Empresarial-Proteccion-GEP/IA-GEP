@@ -101,7 +101,7 @@
                                       Size="ButtonSize.Small"
                                       ButtonStyle="ButtonStyle.Success"
                                       Shade="Shade.Lighter"
-                                      Click="GuardarDocumentoYRama" />
+                                      Click="GuardarDocumentoYRama2" />
 
                         <RadzenButton Icon="highlight_off"
                                       Size="ButtonSize.Small"
@@ -231,6 +231,18 @@
                                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                             Change="OnEntidadSeleccionada" />
 
+                            <!-- Selección de Subdivisión -->
+                            <RadzenDropDown @bind-Value="subdivisionSeleccionadaId"
+                                            Change="OnSubdivisionSeleccionada"
+                                            Data="@subdivisionesFiltradas"
+                                            TextProperty="NombreSubdiv"
+                                            ValueProperty="Id"
+                                            Placeholder="Seleccione un Departamento"
+                                            Class="w-100 mb-3"
+                                            AllowFiltering="true"
+                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                            Disabled="@(!entidadSeleccionadaId.HasValue)" />
+
                             <!-- Selección de Servicio -->
                             <RadzenDropDown @bind-Value="servicioSeleccionadoId"
                                             Change="OnServicioSeleccionado"
@@ -243,17 +255,6 @@
                                             FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                             Disabled="@(!entidadSeleccionadaId.HasValue)" />
 
-                            <!-- Selección de Subdivisión -->
-                            <RadzenDropDown @bind-Value="subdivisionSeleccionadaId"
-                                            Change="OnSubdivisionSeleccionada"
-                                            Data="@subdivisionesFiltradas"
-                                            TextProperty="NombreSubdiv"
-                                            ValueProperty="Id"
-                                            Placeholder="Seleccione una subdivisión"
-                                            Class="w-100 mb-3"
-                                            AllowFiltering="true"
-                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
-                                            Disabled="@(!entidadSeleccionadaId.HasValue)" />
 
                             <!-- Selección de Documentos -->
                             <RadzenDropDown @bind-Value="documentosSeleccionados"
@@ -1032,6 +1033,102 @@
 
     await GuardarDocumento();
     }
+
+
+    async Task GuardarDocumentoYRama2()
+    {
+
+        mensaje = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(nombreComun))
+            mensaje += "❌ Debes escribir un nombre para la rama y el documento.\n";
+
+        if (!documento.PlantillaId.HasValue || documento.PlantillaId.Value == 0)
+            mensaje += "❌ Debes seleccionar una plantilla para el documento.\n";
+
+        // ✅ DETENER si hay errores
+        if (!string.IsNullOrEmpty(mensaje))
+            return;
+
+        nuevoNodo.Nombre = nombreComun;
+        documento.Nombre = nombreComun;
+
+        await GuardarNodo();
+
+        var nombreEscapado = nombreComun.Replace("'", "''");
+        var dtNodoReciente = await ServicioUsuario.TraerConsultaAsync($@"
+            SELECT TOP 1 * FROM NodoCategoria
+            WHERE Nombre = '{nombreEscapado}'
+            ORDER BY Id DESC", 18);
+
+        if (dtNodoReciente.Rows.Count > 0)
+        {
+            nodoSeleccionadoId = Convert.ToInt32(dtNodoReciente.Rows[0]["Id"]);
+            Console.WriteLine($"✅ Nodo creado y confirmado con ID: {nodoSeleccionadoId}");
+
+            documento.NodoCategoriaId = nodoSeleccionadoId;
+        }
+        else
+        {
+            mensaje = "⚠️ No se encontró el nodo recién creado desde la base de datos.";
+            return;
+        }
+
+        await CargarNodos2();
+        await CargarSubcategorias();
+
+        nivelesDinamicos ??= new List<NodoSeleccion>();
+        nivelesDinamicos.Clear();
+        nivelesDinamicos.Add(new NodoSeleccion
+        {
+            NodoSeleccionadoId = nodoSeleccionadoId
+        });
+
+        var actual = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
+        subCategoriaSeleccionadaId = null;
+
+        while (actual != null)
+        {
+            var sub = todasSubcategorias.FirstOrDefault(s =>
+                s.Nombre.Trim().Equals(actual.Nombre.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (sub != null)
+            {
+                subCategoriaSeleccionadaId = sub.Id;
+                FiltrarNodos(sub.Id);
+                Console.WriteLine($"✅ SubCategoría encontrada: {sub.Nombre} (ID: {sub.Id})");
+                break;
+            }
+
+            if (actual.PadreId == 0)
+            {
+                Console.WriteLine($"🟨 Nodo '{actual.Nombre}' es una categoría raíz. No se buscarán más subcategorías.");
+                break;
+            }
+
+            actual = todosNodos.FirstOrDefault(n => n.Id == actual.PadreId);
+        }
+
+        if (!subCategoriaSeleccionadaId.HasValue)
+        {
+            var nodoRaiz = todosNodos.FirstOrDefault(n => n.Id == nodoSeleccionadoId);
+            if (nodoRaiz != null && nodoRaiz.PadreId == 0 && nodoRaiz.EsCategoria)
+            /*   {
+            Console.WriteLine($"✅ Nodo raíz '{nodoRaiz.Nombre}' detectado. Se permite continuar sin subcategoría.");
+        }
+    else*/
+            {
+                mensaje = $"⚠️ No se encontró ninguna subcategoría válida en la jerarquía ascendente desde el nodo ID: {nodoSeleccionadoId}";
+                return;
+            }
+        }
+
+        Console.WriteLine($"🧪 Verificación antes de guardar: NodoCategoriaIdFinal={documento.NodoCategoriaId}, SubCategoriaId={subCategoriaSeleccionadaId}");
+
+        await GuardarDocumento();
+        PrepararNuevoNodoComoHijo();
+    }
+
 
     private async Task GuardarNodo()
     {
