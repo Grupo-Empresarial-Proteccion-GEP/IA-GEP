@@ -57,8 +57,8 @@
                                                 Data="@entidades"
                                                 TextProperty="Nombre"
                                                 ValueProperty="Id"
-                                                Placeholder="Seleccione una entidad"
                                                 Change="@OnEntidadSeleccionada"
+                                                Placeholder="Seleccione una entidad"
                                                 AllowFiltering="true"
                                                 Class="w-100 mb-2" />
 
@@ -68,6 +68,7 @@
                                                 ValueProperty="Id"
                                                 Placeholder="Seleccione una subdivisión"
                                                 Disabled="@(!entidadSeleccionadaId.HasValue)"
+                                                Change="OnSubdivSeleccionada"
                                                 Class="w-100 mb-2" />
 
                                 <RadzenDropDown @bind-Value="servicioSeleccionadoId"
@@ -75,6 +76,7 @@
                                                 TextProperty="ServicioBrindado"
                                                 ValueProperty="Id"
                                                 Placeholder="Seleccione un servicio"
+                                                Change="OnServicioSeleccionado"
                                                 Disabled="@(!entidadSeleccionadaId.HasValue)"
                                                 Class="w-100 mb-2" />
 
@@ -1048,6 +1050,8 @@
         DireccionSubdiv_R = subdiv?.Direccion;
         TelefonoSubdiv_R = subdiv?.Telefono;
         CorreoSubdiv_R = subdiv?.Correo;
+
+        await CargarDocumentosParaSeleccion();
     }
 
     private async Task CargarServicios()
@@ -1082,30 +1086,44 @@
     }
 
     <!-- //////////////////////////////////////////////////////////////////////////////////// -->
-    
+   
     private async Task CargarDocumentosParaSeleccion()
     {
-        var sql = @"
-SELECT
-    d.Id AS DocumentoId,
-    d.Nombre AS NombreDocumento,
-    c.Nombre AS Categoria,
-    sc.Nombre AS SubCategoria,
-    nc.Nombre AS Nodo,
-    p.Referencia,
-    p.Version,
-    p.Estado,
-    p.RutaArchivo
-FROM Documento d
-LEFT JOIN DocumentoCategoria dc ON d.Id = dc.DocumentoId
-LEFT JOIN SubCategoria sc ON dc.SubCategoriaId = sc.Id
-LEFT JOIN Categoria c ON sc.CategoriaId = c.Id
-LEFT JOIN NodoCategoria nc ON dc.NodoCategoriaId = nc.Id
-LEFT JOIN Plantilla p ON d.PlantillaId = p.Id
+        if (entidadSeleccionadaId == null)
+        {
+            Console.WriteLine("⚠️ No hay entidad seleccionada.");
+            documentosDisponibles.Clear();
+            return;
+        }
 
-    ";
+        // Paso 1: Consultar el template desde la tabla
+        var resultado = await ServicioUsuario.TraerConsultaAsync(
+            "SELECT QueryTemplate FROM ConsultasSQL WHERE Nombre = 'ConsultaDocumentosPorFiltros'", IdAplicacion);
 
-        var dt = await ServicioUsuario.TraerConsultaAsync(sql, IdAplicacion);
+        if (resultado.Rows.Count == 0)
+        {
+            Console.WriteLine("⚠️ No se encontró la consulta en la tabla ConsultasSQL.");
+            return;
+        }
+
+        string queryTemplate = resultado.Rows[0]["QueryTemplate"]?.ToString() ?? "";
+
+        // Paso 2: Construir filtros dinámicos
+        var filtros = new List<string> { $"AND da.EntidadId = {entidadSeleccionadaId}" };
+
+        if (servicioSeleccionadoId != null)
+            filtros.Add($"AND da.ServicioId = {servicioSeleccionadoId}");
+
+        if (subdivisionSeleccionadaId != null)
+            filtros.Add($"AND da.SubdivisionId = {subdivisionSeleccionadaId}");
+
+        string filtroSQL = string.Join("\n", filtros);
+
+        // Paso 3: Reemplazar {{FILTROS}} en el template
+        string queryFinal = queryTemplate.Replace("{{FILTROS}}", filtroSQL);
+
+        // Paso 4: Ejecutar la consulta final
+        var dt = await ServicioUsuario.TraerConsultaAsync(queryFinal, IdAplicacion);
 
         documentosDisponibles = dt.AsEnumerable().Select(r => new DocumentoSeleccion
         {
@@ -1119,8 +1137,23 @@ LEFT JOIN Plantilla p ON d.PlantillaId = p.Id
             Estado = r["Estado"]?.ToString() ?? "",
             RutaArchivo = r["RutaArchivo"]?.ToString() ?? ""
         }).ToList();
-
     }
+
+
+    private async Task OnServicioSeleccionado(object value)
+    {
+        servicioSeleccionadoId = (int?)value;
+        await CargarDocumentosParaSeleccion();
+    }
+
+
+
+    private async Task OnSubdivSeleccionada(object value)
+    {
+        subdivisionSeleccionadaId = (int?)value;
+        await CargarDocumentosParaSeleccion();
+    }
+
 
     private DocumentoSeleccion? documentoSeleccionado;
     private async Task OnDocumentoSeleccionado(object value)

@@ -61,16 +61,10 @@
                               Disabled="@string.IsNullOrWhiteSpace(rutaSeleccionada)" />
             </div>
 
-            @if (!string.IsNullOrEmpty(mensaje2))
-            {
-                <div class="alert @(mensaje2.Contains("✅") ? "alert-success" : "alert-danger") mt-3">
-                    @mensaje2
-                </div>
-            }
 
             <!-- DataGrid de plantillas -->
             <RadzenDataGrid TItem="Plantilla" Data="@listaPlantillas" RowSelect="OnSeleccionarDesdeGrid"
-                            AllowPaging="true" PageSize="10"
+                            AllowPaging="true" PageSize="6"
                             AllowSorting="true"
                             FilterMode="FilterMode.Simple"
                             ShowPagingSummary="true"
@@ -112,13 +106,46 @@
     </RadzenColumn>
 </RadzenRow>
 
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div style="
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999;">
+
+        <div style="
+                position: fixed;
+                top: 45%;
+                left: 57%;
+                transform: translate(-50%, -50%);
+                background: rgb(255,255,255);
+                color: black;
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-size: 16px;
+                z-index: 9999;
+                text-align: center;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            ">
+            @mensaje
+        </div>
+    </div>
+}
+
+<div style="position: fixed; top: -6%; left: 6%;">
+    <RadzenDialog />
+</div>
+
 @code {
     private int? plantillaSeleccionadaId;
 
     Plantilla plantilla = new();
     List<Plantilla> listaPlantillas = new();
     List<string> estadosDisponibles = new() { "Activa", "Inactiva", "Obsoleta", "En revisión" };
-    private string? mensaje2;
+    
     private string? rutaSeleccionada;
 
     private async Task OnFileUpload(InputFileChangeEventArgs e)
@@ -141,12 +168,12 @@
                 plantilla.NombreArchivo = file.Name;
                 plantilla.RutaArchivo = dataUrl;
 
-                mensaje2 = $"✅ Archivo '{file.Name}' cargado correctamente.";
+                mensaje = $"✅ Archivo '{file.Name}' cargado correctamente.";
             }
         }
         catch (Exception ex)
         {
-            mensaje2 = $"❌ Error al leer archivo: {ex.Message}";
+            mensaje = $"❌ Error al leer archivo: {ex.Message}";
         }
     }
 
@@ -171,13 +198,13 @@
 
             await ServicioSoap.InsertarTablaAsync(dt, "Plantilla", 18);
 
-            mensaje2 = "✅ Plantilla registrada exitosamente.";
+            mensaje = "✅ Plantilla registrada exitosamente.";
             plantilla = new();
             await CargarPlantillas2();
         }
         catch (Exception ex)
         {
-            mensaje2 = $"❌ Error al registrar plantilla: {ex.Message}";
+            mensaje = $"❌ Error al registrar plantilla: {ex.Message}";
         }
     }
 
@@ -198,7 +225,7 @@
         }
         catch (Exception ex)
         {
-            mensaje2 = $"❌ Error al cargar plantillas: {ex.Message}";
+            mensaje = $"❌ Error al cargar plantillas: {ex.Message}";
         }
     }
 
@@ -231,12 +258,12 @@
                 await ServicioSoap.ActualizarCampoAsync("Plantilla", "RutaArchivo", $"'{rutaBase64}'", condicion, 18);
             }
 
-            mensaje2 = "✅ Plantilla actualizada correctamente.";
+            mensaje = "✅ Plantilla actualizada correctamente.";
             await CargarPlantillas2();
         }
         catch (Exception ex)
         {
-            mensaje2 = $"❌ Error al actualizar plantilla: {ex.Message}";
+            mensaje = $"❌ Error al actualizar plantilla: {ex.Message}";
         }
     }
 
@@ -257,7 +284,7 @@
             int relacionados = Convert.ToInt32(dtRelacionados.Rows[0]["Total"]);
             if (relacionados > 0)
             {
-                mensaje2 = $"❌ No se puede eliminar. Hay {relacionados} documento(s) que usan esta plantilla.";
+                mensaje = $"❌ No se puede eliminar. Hay {relacionados} documento(s) que usan esta plantilla.";
                 return;
             }
 
@@ -274,7 +301,7 @@
                 }
             }
 
-            mensaje2 = "✅ Plantilla eliminada correctamente.";
+            mensaje = "✅ Plantilla eliminada correctamente.";
             plantilla = new();
             rutaSeleccionada = null;
             plantillaSeleccionadaId = null;
@@ -282,7 +309,7 @@
         }
         catch (Exception ex)
         {
-            mensaje2 = $"❌ Error al eliminar plantilla: {ex.Message}";
+            mensaje = $"❌ Error al eliminar plantilla: {ex.Message}";
         }
     }
 
@@ -323,5 +350,29 @@
     protected override async Task OnInitializedAsync()
     {
         await CargarPlantillas2();
+    }
+
+    private string _mensaje;
+    private string mensaje
+    {
+        get => _mensaje;
+        set
+        {
+            _mensaje = value;
+
+
+            if (!string.IsNullOrEmpty(value))
+            {
+                _ = OcultarMensajeDespuesDeTiempo(); // Inicia la tarea en segundo plano
+            }
+        }
+    }
+
+    private async Task OcultarMensajeDespuesDeTiempo()
+    {
+
+        await Task.Delay(1500); // Espera 2 segundos
+        _mensaje = null;
+        await InvokeAsync(StateHasChanged); // Refresca UI para ocultarlo
     }
 }
