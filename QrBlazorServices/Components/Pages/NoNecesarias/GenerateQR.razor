@@ -1,4 +1,4 @@
-﻿@page "/generate"
+﻿@page "/generat"
 @using QRCoder
 @using System.Drawing
 @using System.Drawing.Imaging;
@@ -133,8 +133,8 @@
 
                         <!-- DATOS DEL USUARIO DEBAJO DE LA FOTO -->
                         <div style="position: absolute; top: 4.2cm; left: 4.5cm;">
-                            <h4 style="margin: 0px; font-size: 9.5pt;">@usuario.Nombre</h4>
-                            <h4 style="margin: 0px; font-size: 9pt;">@usuario.Cargo</h4>
+                            <h4 style="margin: 0px; font-size: 9.5pt; color:white">@usuario.Nombre</h4>
+                            <h4 style="margin: 0px; font-size: 9pt; color:white ">@usuario.Cargo</h4>
 
 
 
@@ -320,7 +320,7 @@
         try
         {
             await GenerarQR(); // Aquí el texto ya estará visible en pantalla
-            await GuardarUsuario();
+   
         }
         finally
         {
@@ -432,76 +432,76 @@
         }
     }
 
-    private async Task GuardarUsuario()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(usuario.Documento))
-            {
-                mensaje = "El documento no puede estar vacío.";
-                return;
-            }
+    // private async Task GuardarUsuario()
+    // {
+    //     try
+    //     {
+    //         if (string.IsNullOrWhiteSpace(usuario.Documento))
+    //         {
+    //             mensaje = "El documento no puede estar vacío.";
+    //             return;
+    //         }
 
-            string documento = usuario.Documento.Replace("'", "''");
-            string condicion = $"Documento = '{documento}'";
+    //         string documento = usuario.Documento.Replace("'", "''");
+    //         string condicion = $"Documento = '{documento}'";
 
-            string campos = "Id, Documento, Nombre, Cargo, Correo, Telefono";
+    //         string campos = "Id, Documento, Nombre, Cargo, Correo, Telefono";
 
-            // Traemos la fila existente para actualizar
-            var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Carnet2", campos, condicion, 18);
+    //         // Traemos la fila existente para actualizar
+    //         var resultado = await _servicioUsuario.TraerTablaParametrosAsync("Carnet2", campos, condicion, 18);
 
-            if (resultado != null && resultado.Rows.Count > 0)
-            {
-                resultado.TableName = "Carnet2";  // Muy importante asignar el nombre correcto
+    //         if (resultado != null && resultado.Rows.Count > 0)
+    //         {
+    //             resultado.TableName = "Carnet2";  // Muy importante asignar el nombre correcto
 
-                var fila = resultado.Rows[0];
+    //             var fila = resultado.Rows[0];
 
-                fila.BeginEdit();
-                fila["Nombre"] = usuario.Nombre ?? "";
-                fila["Cargo"] = usuario.Cargo ?? "";
-                fila["Correo"] = usuario.Correo ?? "";
-                fila["Telefono"] = usuario.Telefono ?? "";
-                fila.EndEdit();
+    //             fila.BeginEdit();
+    //             fila["Nombre"] = usuario.Nombre ?? "";
+    //             fila["Cargo"] = usuario.Cargo ?? "";
+    //             fila["Correo"] = usuario.Correo ?? "";
+    //             fila["Telefono"] = usuario.Telefono ?? "";
+    //             fila.EndEdit();
 
-                Console.WriteLine($"Estado de la fila antes de actualizar: {fila.RowState}");
+    //             Console.WriteLine($"Estado de la fila antes de actualizar: {fila.RowState}");
 
-                string respuesta = await _servicioUsuario.ActualizarFilasAsync(resultado, 18);
+    //             string respuesta = await _servicioUsuario.ActualizarFilasAsync(resultado, 18);
 
-                Console.WriteLine($"Respuesta del servidor al actualizar: {respuesta}");
+    //             Console.WriteLine($"Respuesta del servidor al actualizar: {respuesta}");
 
-                mensaje = "Usuario actualizado correctamente.";
-            }
+    //             mensaje = "Usuario actualizado correctamente.";
+    //         }
 
 
-            else
-            {
-                // El usuario no existe, insertamos
-                DataTable tablaUsuario = new DataTable("Usuarios");
-                tablaUsuario.Columns.Add("Id", typeof(int));
-                tablaUsuario.Columns.Add("Nombre", typeof(string));
-                tablaUsuario.Columns.Add("Documento", typeof(string));
-                tablaUsuario.Columns.Add("Cargo", typeof(string));
-                tablaUsuario.Columns.Add("Correo", typeof(string));
-                tablaUsuario.Columns.Add("Telefono", typeof(string));
+    //         else
+    //         {
+    //             // El usuario no existe, insertamos
+    //             DataTable tablaUsuario = new DataTable("Usuarios");
+    //             tablaUsuario.Columns.Add("Id", typeof(int));
+    //             tablaUsuario.Columns.Add("Nombre", typeof(string));
+    //             tablaUsuario.Columns.Add("Documento", typeof(string));
+    //             tablaUsuario.Columns.Add("Cargo", typeof(string));
+    //             tablaUsuario.Columns.Add("Correo", typeof(string));
+    //             tablaUsuario.Columns.Add("Telefono", typeof(string));
 
-                DataRow nuevaFila = tablaUsuario.NewRow();
-                nuevaFila["Id"] = 0;
-                nuevaFila["Nombre"] = usuario.Nombre ?? "";
-                nuevaFila["Documento"] = usuario.Documento ?? "";
-                nuevaFila["Cargo"] = usuario.Cargo ?? "";
-                nuevaFila["Correo"] = usuario.Correo ?? "";
-                nuevaFila["Telefono"] = usuario.Telefono ?? "";
+    //             DataRow nuevaFila = tablaUsuario.NewRow();
+    //             nuevaFila["Id"] = 0;
+    //             nuevaFila["Nombre"] = usuario.Nombre ?? "";
+    //             nuevaFila["Documento"] = usuario.Documento ?? "";
+    //             nuevaFila["Cargo"] = usuario.Cargo ?? "";
+    //             nuevaFila["Correo"] = usuario.Correo ?? "";
+    //             nuevaFila["Telefono"] = usuario.Telefono ?? "";
 
-                tablaUsuario.Rows.Add(nuevaFila);
-                await _servicioUsuario.InsertarTablaAsync(tablaUsuario, "Carnet2", 18);
-                mensaje = "Usuario guardado correctamente.";
-            }
-        }
-        catch (Exception ex)
-        {
-            mensaje = $"Error: {ex.Message}";
-        }
-    }
+    //             tablaUsuario.Rows.Add(nuevaFila);
+    //             await _servicioUsuario.InsertarTablaAsync(tablaUsuario, "Carnet2", 18);
+    //             mensaje = "Usuario guardado correctamente.";
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         mensaje = $"Error: {ex.Message}";
+    //     }
+    // }
 
     private string DataTableToXml(DataTable dt)
     {

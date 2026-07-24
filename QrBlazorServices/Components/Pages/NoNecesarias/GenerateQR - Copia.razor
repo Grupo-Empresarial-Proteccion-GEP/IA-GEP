@@ -1,0 +1,132 @@
+﻿@page "/generate-whatsapp"
+@using QRCoder
+@using System.Drawing
+@using System.ComponentModel.DataAnnotations
+
+<h3>Generador QR WhatsApp</h3>
+
+
+@using QrBlazorServices.Clases
+@using AccesoDatos
+
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+@inject AccesoDatosSoapClient ServicioUsuario
+
+@rendermode InteractiveServer
+
+<EditForm Model="@datosWhatsApp" OnValidSubmit="GenerarQR" FormName="WhatsAppForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-group">
+        <label>Teléfono (con indicativo país):</label>
+        <InputText class="form-control"
+                   @bind-Value="datosWhatsApp.Telefono"
+                   placeholder="Ej: 573001234567"
+                   @oninput="OnTelefonoChanged" />
+     
+
+        <label class="mt-2">Mensaje:</label>
+        <InputText class="form-control"
+                   @bind-Value="datosWhatsApp.Mensaje"
+                   placeholder="Ej: Hola, necesito información"
+                   @oninput="OnMensajeChanged" />
+        <ValidationMessage For="@(() => datosWhatsApp.Mensaje)" />
+    </div>
+
+    <button class="btn btn-primary mt-3" type="submit">Generar QR</button>
+</EditForm>
+
+
+@if (!string.IsNullOrEmpty(QRBase64))
+{
+    <div class="mt-4 text-center">
+        <p>Escanea el QR para abrir WhatsApp 👇</p>
+        <img src="data:image/png;base64,@QRBase64"
+             alt="QR Code" style="width:200px;height:200px;" />
+
+        <div class="mt-3">
+            <a href="@LinkWhatsApp" target="_blank" class="btn btn-success">
+                Abrir WhatsApp
+            </a>
+        </div>
+    </div>
+}
+
+@code {
+    private DatosWhatsApp datosWhatsApp = new DatosWhatsApp();  // 👈 siempre inicializado
+    private string QRBase64 = "";
+    private string LinkWhatsApp = "";
+
+
+    private void OnTelefonoChanged(ChangeEventArgs e)
+    {
+        Console.WriteLine($"[EVENT] Teléfono escrito: {e.Value}");
+    }
+
+    private void OnMensajeChanged(ChangeEventArgs e)
+    {
+        Console.WriteLine($"[EVENT] Mensaje escrito: {e.Value}");
+    }
+
+    private async Task GenerarQR()
+    {
+        // Evita nulls
+        if (string.IsNullOrWhiteSpace(datosWhatsApp.Telefono))
+        {
+            Console.WriteLine("ERROR -> No se ingresó teléfono.");
+            return;
+        }
+
+        // 1️⃣ Limpiar el teléfono: solo dígitos
+        var telefono = new string(datosWhatsApp.Telefono.Where(char.IsDigit).ToArray());
+        Console.WriteLine($"DEBUG -> Teléfono ingresado (crudo): {datosWhatsApp.Telefono}");
+        Console.WriteLine($"DEBUG -> Teléfono limpio (solo dígitos): {telefono}");
+
+        // 2️⃣ Si no empieza con "57" y tiene 10 dígitos, asumimos que es celular colombiano
+        if (!telefono.StartsWith("57") && telefono.Length == 10)
+        {
+            telefono = "57" + telefono;
+            Console.WriteLine($"DEBUG -> Se agregó 57: {telefono}");
+        }
+
+        // 3️⃣ Validar longitud mínima
+        if (telefono.Length < 12) // 57 + 10 dígitos
+        {
+            Console.WriteLine("ERROR -> Número inválido, muy corto.");
+            QRBase64 = "";
+            LinkWhatsApp = "";
+            StateHasChanged();
+            return;
+        }
+
+        // 4️⃣ Codificar el mensaje
+        var mensaje = Uri.EscapeDataString(datosWhatsApp.Mensaje ?? "");
+        Console.WriteLine($"DEBUG -> Mensaje codificado: {mensaje}");
+
+        // 5️⃣ Crear el link oficial de WhatsApp
+        LinkWhatsApp = $"https://wa.me/{telefono}?text={mensaje}";
+        Console.WriteLine($"DEBUG -> Link generado: {LinkWhatsApp}");
+
+        // 6️⃣ Generar el QR
+        using var generator = new QRCodeGenerator();
+        var data = generator.CreateQrCode(LinkWhatsApp, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(data);
+
+        var bytes = qrCode.GetGraphic(175, Color.Black, Color.White, true);
+        QRBase64 = Convert.ToBase64String(bytes);
+
+        Console.WriteLine("DEBUG -> QR generado correctamente.");
+        StateHasChanged();
+    }
+
+    public class DatosWhatsApp
+    {
+        [Required(ErrorMessage = "El teléfono es obligatorio")]
+        [RegularExpression(@"^\d{10,13}$", ErrorMessage = "Debe ser un número válido con entre 10 y 13 dígitos")]
+        public string Telefono { get; set; } = "";
+
+        public string Mensaje { get; set; } = "";
+    }
+}

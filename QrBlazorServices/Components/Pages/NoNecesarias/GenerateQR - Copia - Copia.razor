@@ -1,0 +1,90 @@
+﻿@page "/generate-qr"
+@using QRCoder
+@using System.Drawing
+@rendermode InteractiveServer
+
+<h3>Generador QR – Google Form</h3>
+
+<p>
+    Este QR abre el siguiente formulario:
+    <br />
+    <a href="@LinkForm" target="_blank">
+        @LinkForm
+    </a>
+</p>
+
+<button class="btn btn-primary mt-3" @onclick="GenerarQR">
+    Generar QR
+</button>
+
+@if (!string.IsNullOrEmpty(QRBase64))
+{
+    <div class="mt-4 text-center">
+        <p>Escanea el QR 👇</p>
+
+        <img src="data:image/png;base64,@QRBase64"
+             style="width:600px;height:600px;" />
+
+        <div class="mt-3">
+            <a href="@LinkForm" target="_blank" class="btn btn-success">
+                Abrir formulario
+            </a>
+        </div>
+    </div>
+}
+
+@code {
+
+    // 🔥 LINK QUEMADO AQUÍ
+    private string LinkForm =
+        "https://drive.google.com/file/d/1X8DPWdHctMkKU_jxrTPzDfwnXmzLtEap/view?usp=sharing";
+
+    private string QRBase64 = "";
+
+    private void GenerarQR()
+    {
+        using var generator = new QRCodeGenerator();
+
+        var data = generator.CreateQrCode(
+            LinkForm,
+            QRCodeGenerator.ECCLevel.H); // Alto nivel para soportar logo
+
+        using var qrCode = new QRCode(data);
+
+        string logoPath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "wwwroot",
+            "images",
+            "logoIngla2.png");
+
+        using Bitmap logo = new Bitmap(logoPath);
+
+        try
+        {
+            using Bitmap qrBitmap = qrCode.GetGraphic(
+                pixelsPerModule: 12,
+                //darkColor: ColorTranslator.FromHtml("#275AAD"),
+                darkColor: Color.Black,
+                lightColor: Color.White,
+                icon: logo,
+                iconSizePercent: 30,
+                iconBorderWidth: 0,
+                drawQuietZones: true,
+                //iconBackgroundColor: null
+                iconBackgroundColor: Color.White
+            );
+  
+
+        using var ms = new MemoryStream();
+
+        qrBitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+
+        QRBase64 = Convert.ToBase64String(ms.ToArray());
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+    }
+}
